@@ -4,6 +4,7 @@ import { Invoice } from './entities/invoice.entity';
 import { InvoicesService } from './invoices.service';
 import { InvoicesController } from './invoices.controller';
 import { OrdersModule } from '../orders/orders.module';
+import { SettingsModule } from '../settings/settings.module';
 
 /**
  * 請求書模块
@@ -12,6 +13,7 @@ import { OrdersModule } from '../orders/orders.module';
   imports: [
     TypeOrmModule.forFeature([Invoice]),
     forwardRef(() => OrdersModule),
+    SettingsModule,
   ],
   providers: [InvoicesService],
   controllers: [InvoicesController],
