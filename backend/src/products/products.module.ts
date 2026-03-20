@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
+import { EventService } from '../common/services/event.service';
 
 /**
  * 商品模块
@@ -10,7 +11,7 @@ import { ProductsController } from './products.controller';
  */
 @Module({
   imports: [TypeOrmModule.forFeature([Product])],
-  providers: [ProductsService],
+  providers: [ProductsService, EventService],
   controllers: [ProductsController],
   exports: [ProductsService],
 })
