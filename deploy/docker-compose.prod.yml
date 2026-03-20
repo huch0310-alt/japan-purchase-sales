@@ -58,8 +58,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ../nginx/prod.conf:/etc/nginx/nginx.conf:ro
-      - ../nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - backend
       - web-admin
