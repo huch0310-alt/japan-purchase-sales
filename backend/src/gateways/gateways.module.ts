@@ -1,5 +1,8 @@
 import { Module, Global } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import { RealtimeGateway } from './realtime.gateway';
+import { JwtStrategy } from '../auth/strategies/jwt.strategy';
 
 /**
  * WebSocket网关模块
@@ -7,7 +10,14 @@ import { RealtimeGateway } from './realtime.gateway';
  */
 @Global()
 @Module({
-  providers: [RealtimeGateway],
-  exports: [RealtimeGateway],
+  imports: [
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this',
+      signOptions: { expiresIn: '7d' },
+    }),
+  ],
+  providers: [RealtimeGateway, JwtStrategy],
+  exports: [RealtimeGateway, JwtModule],
 })
 export class GatewaysModule {}
