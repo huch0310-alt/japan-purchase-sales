@@ -6,6 +6,7 @@ import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
 import { ProductsModule } from '../products/products.module';
 import { SettingsModule } from '../settings/settings.module';
+import { UsersModule } from '../users/users.module';
 
 /**
  * 订单模块
@@ -15,6 +16,7 @@ import { SettingsModule } from '../settings/settings.module';
     TypeOrmModule.forFeature([Order, OrderItem]),
     ProductsModule,
     SettingsModule,
+    UsersModule,
   ],
   providers: [OrdersService],
   controllers: [OrdersController],
