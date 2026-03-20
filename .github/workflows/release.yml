@@ -1,0 +1,146 @@
+# 日本采销管理系统 - Release工作流
+# 版本发布: 构建生产镜像、创建版本标签
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  # 构建生产镜像
+  build-production:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 登录到Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          REGISTRY: ghcr.io
+
+      - name: 获取版本号
+        id: version
+        run: echo "VERSION=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+
+      - name: 构建后端生产镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}/backend:${{ steps.version.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ github.repository }}/backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 构建前端生产镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: ./web-admin
+          file: ./web-admin/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}/web-admin:${{ steps.version.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ github.repository }}/web-admin:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 输出镜像信息
+        id: images
+        run: |
+          echo "backend=${{ env.REGISTRY }}/${{ github.repository }}/backend:${{ steps.version.outputs.VERSION }}" >> $GITHUB_OUTPUT
+          echo "web=${{ env.REGISTRY }}/${{ github.repository }}/web-admin:${{ steps.version.outputs.VERSION }}" >> $GITHUB_OUTPUT
+
+    outputs:
+      backend-image: ${{ steps.images.outputs.backend }}
+      web-image: ${{ steps.images.outputs.web }}
+      version: ${{ steps.version.outputs.VERSION }}
+
+  # 部署到生产服务器
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: build-production
+    if: github.event.release.prerelease == false
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 部署到生产服务器
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRODUCTION_SERVER_HOST }}
+          username: ${{ secrets.PRODUCTION_SERVER_USER }}
+          key: ${{ secrets.PRODUCTION_SERVER_SSH_KEY }}
+          script: |
+            cd /opt/japan-purchase-sales
+
+            # 拉取最新镜像
+            docker-compose -f docker-compose.prod.yml pull
+
+            # 停止旧容器
+            docker-compose -f docker-compose.prod.yml down
+
+            # 启动新容器
+            docker-compose -f docker-compose.prod.yml up -d
+
+            # 等待服务启动
+            sleep 30
+
+            # 健康检查
+            curl -f http://localhost:3000/api/health || exit 1
+
+            # 清理旧镜像
+            docker system prune -f
+
+            echo "Deployment completed successfully!"
+
+  # 发布Flutter APP
+  release-flutter:
+    runs-on: ubuntu-latest
+    needs: build-production
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+
+      - name: 安装依赖
+        working-directory: flutter-app
+        run: flutter pub get
+
+      - name: 构建发布版APK
+        working-directory: flutter-app
+        run: flutter build apk --release
+
+      - name: 构建iOS (仅在macOS上)
+        if: runner.os == 'macOS'
+        working-directory: flutter-app
+        run: flutter build ipa --release
+
+      - name: 上传到Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            flutter-app/build/app/outputs/flutter-apk/app-release.apk
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

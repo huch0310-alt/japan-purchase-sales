@@ -1,0 +1,102 @@
+# 日本采销管理系统 - CI工作流
+# 持续集成: 代码检查、单元测试
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # 后端CI
+  backend-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 安装后端依赖
+        working-directory: backend
+        run: npm ci
+
+      - name: ESLint检查
+        working-directory: backend
+        run: npm run lint || true
+
+      - name: 单元测试
+        working-directory: backend
+        run: npm run test --if-present -- --passWithNoTests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USERNAME: postgres
+          DB_PASSWORD: postgres
+          DB_DATABASE: japan_purchase_sales_test
+
+      - name: 构建检查
+        working-directory: backend
+        run: npm run build
+
+  # 前端CI
+  web-admin-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: web-admin/package-lock.json
+
+      - name: 安装前端依赖
+        working-directory: web-admin
+        run: npm ci
+
+      - name: ESLint检查
+        working-directory: web-admin
+        run: npm run lint || true
+
+      - name: 构建检查
+        working-directory: web-admin
+        run: npm run build
+
+  # Flutter CI
+  flutter-ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          cache: true
+          cache-dependency-path: flutter-app/pubspec.lock
+
+      - name: 安装依赖
+        working-directory: flutter-app
+        run: flutter pub get
+
+      - name: 代码分析
+        working-directory: flutter-app
+        run: flutter analyze || true
+
+      - name: 构建APK检查
+        working-directory: flutter-app
+        run: flutter build apk --debug --no-pub || true

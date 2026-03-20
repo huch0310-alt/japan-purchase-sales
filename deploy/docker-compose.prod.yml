@@ -1,0 +1,103 @@
+# 日本采销管理系统 - 生产环境Docker Compose配置
+# 适用于腾讯云2核4G服务器
+
+version: '3.8'
+
+services:
+  # 后端服务
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: japan-sales-backend
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-japan2024SecurePass}
+      - DB_DATABASE=japan_purchase_sales
+      - DB_SYNCHRONIZE=true
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this}
+      - JWT_EXPIRES_IN=7d
+      - PORT=3001
+    expose:
+      - "3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - japan-sales-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3001/api"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Web管理后台
+  web-admin:
+    build:
+      context: ../web-admin
+      dockerfile: Dockerfile
+    container_name: japan-sales-web
+    restart: always
+    expose:
+      - "80"
+    depends_on:
+      - backend
+    networks:
+      - japan-sales-network
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: japan-sales-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../nginx/prod.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - web-admin
+    networks:
+      - japan-sales-network
+
+  # PostgreSQL数据库
+  postgres:
+    image: postgres:14-alpine
+    container_name: japan-sales-postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-japan2024SecurePass}
+      - POSTGRES_DB=japan_purchase_sales
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - japan-sales-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d japan_purchase_sales"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # 2核4G服务器内存配置
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+# 网络配置
+networks:
+  japan-sales-network:
+    driver: bridge
+
+# 数据卷配置
+volumes:
+  postgres_data:
+    driver: local
