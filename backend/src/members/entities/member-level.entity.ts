@@ -17,7 +17,7 @@ export class MemberLevel {
   @Column('int', { default: 0 })
   minPoints: number;
 
-  @Column('decimal(5,2)', { default: 100 })
+  @Column('float', { default: 100 })
   discount: number;
 
   @Column('varchar', { length: 200, nullable: true })

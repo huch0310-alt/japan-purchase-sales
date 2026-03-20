@@ -38,7 +38,7 @@ export class Return {
   })
   status: ReturnStatus;
 
-  @Column('decimal(10,2)')
+  @Column('float')
   amount: number;
 
   @Column('uuid', { nullable: true })

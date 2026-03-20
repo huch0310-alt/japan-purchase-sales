@@ -27,13 +27,13 @@ export class Promotion {
   })
   type: PromotionType;
 
-  @Column('decimal(10,2)')
+  @Column('float')
   discountValue: number;
 
-  @Column('decimal(10,2)', { nullable: true })
+  @Column('float', { nullable: true })
   minAmount: number;
 
-  @Column('decimal(10,2)', { nullable: true })
+  @Column('float', { nullable: true })
   maxDiscount: number;
 
   @Column('date')

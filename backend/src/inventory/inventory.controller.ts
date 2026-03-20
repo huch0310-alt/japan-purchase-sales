@@ -20,7 +20,7 @@ export class InventoryController {
    * 记录库存变动
    */
   @Post('record')
-  @ApiOperation('记录库存变动')
+  @ApiOperation({ summary: '记录库存变动' })
   @Roles('super_admin', 'admin', 'procurement')
   async recordInventory(@Body() body: {
     productId: string;
@@ -28,7 +28,6 @@ export class InventoryController {
     quantity: number;
     remark?: string;
   }) {
-    // 从请求中获取操作人ID（通过JWT）
     const operatorId = 'current-user-id';
     return this.inventoryService.recordInventory({
       ...body,
@@ -40,7 +39,7 @@ export class InventoryController {
    * 获取库存记录
    */
   @Get('logs')
-  @ApiOperation('获取库存记录')
+  @ApiOperation({ summary: '获取库存记录' })
   @Roles('super_admin', 'admin', 'procurement')
   async getLogs(
     @Query('productId') productId?: string,
@@ -58,7 +57,7 @@ export class InventoryController {
    * 设置库存预警
    */
   @Post('alert')
-  @ApiOperation('设置库存预警')
+  @ApiOperation({ summary: '设置库存预警' })
   @Roles('super_admin', 'admin')
   async setAlert(@Body() body: { productId: string; minQuantity: number }) {
     return this.inventoryService.setAlert(body.productId, body.minQuantity);
@@ -68,7 +67,7 @@ export class InventoryController {
    * 获取预警列表
    */
   @Get('alerts')
-  @ApiOperation('获取预警列表')
+  @ApiOperation({ summary: '获取预警列表' })
   @Roles('super_admin', 'admin')
   async getAlerts(@Query('isActive') isActive?: string) {
     return this.inventoryService.getAlerts(isActive === 'true' ? true : isActive === 'false' ? false : undefined);
@@ -78,7 +77,7 @@ export class InventoryController {
    * 获取低库存商品
    */
   @Get('low-stock')
-  @ApiOperation('获取低库存商品')
+  @ApiOperation({ summary: '获取低库存商品' })
   @Roles('super_admin', 'admin', 'procurement')
   async getLowStock() {
     return this.inventoryService.getLowStockProducts();
@@ -88,7 +87,7 @@ export class InventoryController {
    * 获取库存统计
    */
   @Get('stats')
-  @ApiOperation('获取库存统计')
+  @ApiOperation({ summary: '获取库存统计' })
   @Roles('super_admin', 'admin')
   async getStats() {
     return this.inventoryService.getInventoryStats();

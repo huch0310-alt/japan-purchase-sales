@@ -25,10 +25,10 @@ export class Coupon {
   })
   type: CouponType;
 
-  @Column('decimal(10,2)')
+  @Column('float')
   value: number;
 
-  @Column('decimal(10,2)', { nullable: true })
+  @Column('float', { nullable: true })
   minAmount: number;
 
   @Column('date')

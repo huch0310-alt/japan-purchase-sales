@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { Product } from '../../products/entities/product.entity';
 import { Order } from '../../orders/entities/order.entity';
-import { OperationLog } from '../../logs/entities/log.entity';
+import { OperationLog } from '../../../logs/entities/log.entity';
 
 /**
  * 员工实体

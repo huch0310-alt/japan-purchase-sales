@@ -20,7 +20,7 @@ export class MembersController {
    * 获取所有会员等级
    */
   @Get('levels')
-  @ApiOperation('获取会员等级列表')
+  @ApiOperation({ summary: '获取会员等级列表' })
   async getLevels() {
     return this.membersService.getLevels();
   }
@@ -29,7 +29,7 @@ export class MembersController {
    * 获取客户会员信息
    */
   @Get('customer/:customerId')
-  @ApiOperation('获取客户会员信息')
+  @ApiOperation({ summary: '获取客户会员信息' })
   async getCustomerMember(@Param('customerId') customerId: string) {
     return this.membersService.getCustomerMember(customerId);
   }
@@ -38,7 +38,7 @@ export class MembersController {
    * 添加积分
    */
   @Post('points/add')
-  @ApiOperation('添加积分')
+  @ApiOperation({ summary: '添加积分' })
   @Roles('super_admin', 'admin')
   async addPoints(@Body() body: { customerId: string; points: number; type: PointsType; remark?: string }) {
     return this.membersService.addPoints(
@@ -54,7 +54,7 @@ export class MembersController {
    * 使用积分
    */
   @Post('points/use')
-  @ApiOperation('使用积分')
+  @ApiOperation({ summary: '使用积分' })
   async usePoints(@Body() body: { customerId: string; points: number; remark?: string }) {
     return this.membersService.usePoints(
       body.customerId,
@@ -68,7 +68,7 @@ export class MembersController {
    * 获取积分记录
    */
   @Get('points/logs/:customerId')
-  @ApiOperation('获取积分记录')
+  @ApiOperation({ summary: '获取积分记录' })
   async getPointsLogs(
     @Param('customerId') customerId: string,
     @Query('limit') limit?: number,

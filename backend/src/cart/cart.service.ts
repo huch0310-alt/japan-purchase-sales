@@ -48,7 +48,7 @@ export class CartService {
   /**
    * 更新购物车商品数量
    */
-  async updateQuantity(id: string, quantity: number): Promise<CartItem> {
+  async updateQuantity(id: string, quantity: number): Promise<CartItem | void> {
     if (quantity <= 0) {
       return this.deleteItem(id);
     }

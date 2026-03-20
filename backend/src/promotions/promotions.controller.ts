@@ -18,14 +18,14 @@ export class PromotionsController {
   // ==================== 促销活动 ====================
 
   @Post()
-  @ApiOperation('创建促销活动')
+  @ApiOperation({ summary: '创建促销活动' })
   @Roles('super_admin', 'admin')
   async createPromotion(@Body() body: any) {
     return this.promotionsService.createPromotion(body);
   }
 
   @Get('active')
-  @ApiOperation('获取进行中的促销活动')
+  @ApiOperation({ summary: '获取进行中的促销活动' })
   async getActivePromotions() {
     return this.promotionsService.getActivePromotions();
   }
@@ -33,21 +33,21 @@ export class PromotionsController {
   // ==================== 优惠券 ====================
 
   @Post('coupons')
-  @ApiOperation('创建优惠券')
+  @ApiOperation({ summary: '创建优惠券' })
   @Roles('super_admin', 'admin')
   async createCoupon(@Body() body: any) {
     return this.promotionsService.createCoupon(body);
   }
 
   @Get('coupons')
-  @ApiOperation('获取优惠券列表')
+  @ApiOperation({ summary: '获取优惠券列表' })
   @Roles('super_admin', 'admin')
   async getCoupons(@Query('isActive') isActive?: string) {
     return this.promotionsService.getCoupons(isActive === 'true' ? true : isActive === 'false' ? false : undefined);
   }
 
   @Post('coupons/validate')
-  @ApiOperation('验证优惠券')
+  @ApiOperation({ summary: '验证优惠券' })
   async validateCoupon(@Body() body: { code: string; orderAmount: number }) {
     return this.promotionsService.validateCoupon(body.code, body.orderAmount);
   }

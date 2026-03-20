@@ -20,7 +20,7 @@ export class ReturnsController {
    * 创建退货申请
    */
   @Post()
-  @ApiOperation('创建退货申请')
+  @ApiOperation({ summary: '创建退货申请' })
   async create(@Body() body: {
     orderId: string;
     orderItemId?: string;
@@ -34,7 +34,7 @@ export class ReturnsController {
    * 获取退货列表
    */
   @Get()
-  @ApiOperation('获取退货列表')
+  @ApiOperation({ summary: '获取退货列表' })
   @Roles('super_admin', 'admin')
   async findAll(@Query('status') status?: ReturnStatus) {
     return this.returnsService.findAll(status);
@@ -44,7 +44,7 @@ export class ReturnsController {
    * 批准退货
    */
   @Put(':id/approve')
-  @ApiOperation('批准退货')
+  @ApiOperation({ summary: '批准退货' })
   @Roles('super_admin', 'admin')
   async approve(@Param('id') id: string) {
     const operatorId = 'current-user-id';
@@ -55,7 +55,7 @@ export class ReturnsController {
    * 拒绝退货
    */
   @Put(':id/reject')
-  @ApiOperation('拒绝退货')
+  @ApiOperation({ summary: '拒绝退货' })
   @Roles('super_admin', 'admin')
   async reject(@Param('id') id: string, @Body('reason') reason: string) {
     return this.returnsService.reject(id, reason);
@@ -65,7 +65,7 @@ export class ReturnsController {
    * 完成退货
    */
   @Put(':id/complete')
-  @ApiOperation('完成退货')
+  @ApiOperation({ summary: '完成退货' })
   @Roles('super_admin', 'admin')
   async complete(@Param('id') id: string) {
     return this.returnsService.complete(id);

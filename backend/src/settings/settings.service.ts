@@ -16,6 +16,16 @@ export class SettingService {
   /**
    * 获取设置值
    */
+  /**
+   * 获取设置值（简写）
+   */
+  async get(key: string): Promise<string | null> {
+    return this.getValue(key);
+  }
+
+  /**
+   * 获取设置值
+   */
   async getValue(key: string): Promise<string | null> {
     const setting = await this.settingRepository.findOne({ where: { key } });
     return setting ? setting.value : null;
