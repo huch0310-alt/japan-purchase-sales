@@ -39,6 +39,9 @@ export class Staff {
   @OneToMany(() => Order, order => order.confirmedBy)
   confirmedOrders: Order[];
 
+  // 向前引用，避免循环依赖
+  operationLogs: any[];
+
   @CreateDateColumn()
   createdAt: Date;
 
