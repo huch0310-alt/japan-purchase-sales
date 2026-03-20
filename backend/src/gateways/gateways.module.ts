@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { RealtimeGateway } from './realtime.gateway';
 import { JwtStrategy } from '../auth/strategies/jwt.strategy';
+import { AuthModule } from '../auth/auth.module';
 
 /**
  * WebSocket网关模块
@@ -16,6 +17,7 @@ import { JwtStrategy } from '../auth/strategies/jwt.strategy';
       secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this',
       signOptions: { expiresIn: '7d' },
     }),
+    AuthModule,
   ],
   providers: [RealtimeGateway, JwtStrategy],
   exports: [RealtimeGateway, JwtModule],
