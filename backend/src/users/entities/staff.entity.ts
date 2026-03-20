@@ -1,7 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { Product } from '../../products/entities/product.entity';
 import { Order } from '../../orders/entities/order.entity';
-import { OperationLog } from '../../../logs/entities/log.entity';
 
 /**
  * 员工实体
@@ -39,9 +38,6 @@ export class Staff {
 
   @OneToMany(() => Order, order => order.confirmedBy)
   confirmedOrders: Order[];
-
-  @OneToMany(() => OperationLog, log => log.user)
-  operationLogs: OperationLog[];
 
   @CreateDateColumn()
   createdAt: Date;

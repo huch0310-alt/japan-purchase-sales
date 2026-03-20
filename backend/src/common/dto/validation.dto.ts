@@ -105,6 +105,20 @@ export class ApproveProductDto {
 }
 
 /**
+ * 订单项DTO
+ */
+export class OrderItemDto {
+  @ApiProperty()
+  @IsString()
+  productId: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @Min(1)
+  quantity: number;
+}
+
+/**
  * 订单创建DTO
  */
 export class CreateOrderDto {
@@ -128,17 +142,6 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   remark?: string;
-}
-
-export class OrderItemDto {
-  @ApiProperty()
-  @IsString()
-  productId: string;
-
-  @ApiProperty()
-  @IsNumber()
-  @Min(1)
-  quantity: number;
 }
 
 /**
