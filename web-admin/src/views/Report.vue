@@ -5,17 +5,17 @@
         <el-card>
           <template #header>
             <div class="card-header">
-              <span>报表统计</span>
+              <span>{{ t('report.title') }}</span>
               <div>
                 <el-date-picker
                   v-model="dateRange"
                   type="daterange"
-                  range-separator="至"
-                  start-placeholder="开始日期"
-                  end-placeholder="结束日期"
+                  :range-separator="t('report.startDate')"
+                  :start-placeholder="t('report.startDate')"
+                  :end-placeholder="t('report.endDate')"
                   @change="loadData"
                 />
-                <el-button type="primary" style="margin-left: 10px" @click="handleExport">导出Excel</el-button>
+                <el-button type="primary" style="margin-left: 10px" @click="handleExport">{{ t('report.exportExcel') }}</el-button>
               </div>
             </div>
           </template>
@@ -26,7 +26,7 @@
     <el-row :gutter="20" style="margin-top: 20px">
       <el-col :span="12">
         <el-card>
-          <template #header><span>销售趋势图</span></template>
+          <template #header><span>{{ t('report.salesTrendChart') }}</span></template>
           <div ref="salesChartRef" style="height: 300px"></div>
         </el-card>
       </el-col>
@@ -77,9 +77,12 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+
+const { t } = useI18n()
 
 const dateRange = ref([])
 const salesChartRef = ref()
