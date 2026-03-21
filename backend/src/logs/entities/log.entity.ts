@@ -1,5 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Staff } from '../../users/entities/staff.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
 
 /**
  * 操作日志实体
@@ -10,9 +9,7 @@ export class OperationLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Staff, staff => staff.operationLogs, { nullable: true })
-  @JoinColumn({ name: 'user_id' })
-  user: Staff;
+  // Staff relation removed to avoid circular dependency
 
   @Column({ nullable: true })
   userId: string;
