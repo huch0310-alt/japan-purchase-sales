@@ -3,28 +3,28 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>账单管理</span>
+          <span>{{ t('invoice.title') }}</span>
           <div>
-            <el-button type="primary" @click="handleCreate">生成請求書</el-button>
+            <el-button type="primary" @click="handleCreate">{{ t('invoice.createInvoice') }}</el-button>
           </div>
         </div>
       </template>
 
       <el-table :data="tableData" border stripe>
-        <el-table-column prop="invoiceNo" label="請求書番号" width="180" />
-        <el-table-column prop="companyName" label="客户" min-width="150" />
-        <el-table-column prop="subtotal" label="小计（税拔）" width="120">
+        <el-table-column prop="invoiceNo" :label="t('invoice.invoiceNo')" width="180" />
+        <el-table-column prop="companyName" :label="t('order.customer')" min-width="150" />
+        <el-table-column prop="subtotal" :label="t('invoice.subtotalNoTax')" width="120">
           <template #default="{ row }">¥{{ row.subtotal }}</template>
         </el-table-column>
-        <el-table-column prop="taxAmount" label="消费税" width="100">
+        <el-table-column prop="taxAmount" :label="t('invoice.taxAmount')" width="100">
           <template #default="{ row }">¥{{ row.taxAmount }}</template>
         </el-table-column>
-        <el-table-column prop="totalAmount" label="税込合计" width="120">
+        <el-table-column prop="totalAmount" :label="t('invoice.totalWithTax')" width="120">
           <template #default="{ row }">
             <span style="font-weight: bold; color: #f56c6c">¥{{ row.totalAmount }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" :label="t('common.status')" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
@@ -74,8 +74,11 @@
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+
+const { t } = useI18n()
 
 const tableData = ref([])
 const createVisible = ref(false)
@@ -91,7 +94,7 @@ const getStatusType = (status) => {
 }
 
 const getStatusText = (status) => {
-  const map = { unpaid: '未払い', paid: '支払済', overdue: '期限超過' }
+  const map = { unpaid: t('invoice.unpaid'), paid: t('invoice.paid'), overdue: t('invoice.overdue') }
   return map[status] || status
 }
 
