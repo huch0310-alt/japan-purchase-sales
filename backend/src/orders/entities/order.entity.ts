@@ -1,6 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn, UpdateDateColumn } from 'typeorm';
 import { Customer } from '../../users/entities/customer.entity';
-import { Staff } from '../../users/entities/staff.entity';
 import { OrderItem } from './order-item.entity';
 
 /**
@@ -52,9 +51,8 @@ export class Order {
   @Column({ type: 'text', nullable: true })
   remark: string;  // 备注
 
-  @ManyToOne(() => Staff, staff => staff.confirmedOrders)
-  @JoinColumn({ name: 'confirmed_by' })
-  confirmedBy: Staff;
+  // confirmedBy relation removed to avoid circular dependency
+  // confirmedBy: Staff;
 
   @Column({ nullable: true })
   confirmedById: string;  // 确认人ID

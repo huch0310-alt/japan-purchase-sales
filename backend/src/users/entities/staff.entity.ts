@@ -1,6 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
-import { Product } from '../../products/entities/product.entity';
-import { Order } from '../../orders/entities/order.entity';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 /**
  * 员工实体
@@ -32,15 +30,6 @@ export class Staff {
 
   @Column({ default: true })
   isActive: boolean;  // 是否激活
-
-  @OneToMany(() => Product, product => product.createdByStaff)
-  products: Product[];
-
-  @OneToMany(() => Order, order => order.confirmedBy)
-  confirmedOrders: Order[];
-
-  // 向前引用，避免循环依赖
-  operationLogs: any[];
 
   @CreateDateColumn()
   createdAt: Date;

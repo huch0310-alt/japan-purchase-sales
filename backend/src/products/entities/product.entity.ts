@@ -1,6 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { Category } from '../../categories/entities/category.entity';
-import { Staff } from '../../users/entities/staff.entity';
 import { OrderItem } from '../../orders/entities/order-item.entity';
 import { CartItem } from '../../cart/entities/cart-item.entity';
 
@@ -47,9 +46,7 @@ export class Product {
   })
   status: string;  // 状态：pending-待审核, approved-已通过, rejected-已拒绝, active-上架, inactive-下架
 
-  @ManyToOne(() => Staff, staff => staff.products)
-  @JoinColumn({ name: 'created_by' })
-  createdByStaff: Staff;
+  // createdByStaff relation removed to avoid circular dependency
 
   @Column({ nullable: true })
   createdBy: string;  // 采集人ID
