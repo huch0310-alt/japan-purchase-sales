@@ -3,21 +3,21 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>商品管理</span>
+          <span>{{ t('product.title') }}</span>
           <div>
-            <el-select v-model="filterStatus" placeholder="状态筛选" style="width: 120px; margin-right: 10px" @change="loadData">
-              <el-option label="全部" value="" />
-              <el-option label="上架" value="active" />
-              <el-option label="下架" value="inactive" />
-              <el-option label="待审核" value="pending" />
+            <el-select v-model="filterStatus" :placeholder="t('product.statusFilter')" style="width: 120px; margin-right: 10px" @change="loadData">
+              <el-option :label="t('common.all')" value="" />
+              <el-option :label="t('product.active')" value="active" />
+              <el-option :label="t('product.inactive')" value="inactive" />
+              <el-option :label="t('product.pending')" value="pending" />
             </el-select>
-            <el-button type="primary" @click="loadData">刷新</el-button>
+            <el-button type="primary" @click="loadData">{{ t('common.refresh') }}</el-button>
           </div>
         </div>
       </template>
 
       <el-table :data="tableData" border stripe>
-        <el-table-column label="商品图片" width="80">
+        <el-table-column :label="t('product.productImage')" width="80">
           <template #default="{ row }">
             <el-image
               v-if="row.photoUrl"
@@ -30,29 +30,29 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="商品名称" min-width="150" />
-        <el-table-column prop="categoryName" label="分类" width="100" />
-        <el-table-column prop="quantity" label="库存" width="80" />
-        <el-table-column prop="unit" label="单位" width="60" />
-        <el-table-column prop="purchasePrice" label="采购价" width="90">
+        <el-table-column prop="name" :label="t('product.title')" min-width="150" />
+        <el-table-column prop="categoryName" :label="t('product.category')" width="100" />
+        <el-table-column prop="quantity" :label="t('product.inventory')" width="80" />
+        <el-table-column prop="unit" :label="t('product.unit')" width="60" />
+        <el-table-column prop="purchasePrice" :label="t('product.purchasePrice')" width="90">
           <template #default="{ row }">¥{{ row.purchasePrice }}</template>
         </el-table-column>
-        <el-table-column prop="salePrice" label="销售价" width="90">
+        <el-table-column prop="salePrice" :label="t('product.salePrice')" width="90">
           <template #default="{ row }">¥{{ row.salePrice }}</template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="90">
+        <el-table-column prop="status" :label="t('common.status')" width="90">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="160" />
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column prop="createdAt" :label="t('common.createTime')" width="160" />
+        <el-table-column :label="t('common.action')" width="150" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
+            <el-button type="primary" link @click="handleEdit(row)">{{ t('common.edit') }}</el-button>
             <el-button :type="row.status === 'active' ? 'warning' : 'success'" link @click="handleToggleStatus(row)">
-              {{ row.status === 'active' ? '下架' : '上架' }}
+              {{ row.status === 'active' ? t('product.offShelf') : t('product.onShelf') }}
             </el-button>
-            <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+            <el-button type="danger" link @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -69,19 +69,19 @@
     </el-card>
 
     <!-- 编辑对话框 -->
-    <el-dialog v-model="dialogVisible" title="编辑商品" width="600px">
+    <el-dialog v-model="dialogVisible" :title="t('product.editProduct')" width="600px">
       <el-form ref="formRef" :model="form" label-width="100px">
-        <el-form-item label="商品名称">
+        <el-form-item :label="t('product.title')">
           <el-input v-model="form.name" />
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="库存数量">
+            <el-form-item :label="t('product.inventory')">
               <el-input-number v-model="form.quantity" :min="0" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="单位">
+            <el-form-item :label="t('product.unit')">
               <el-select v-model="form.unit" allow-create filterable>
                 <el-option v-for="u in units" :key="u" :label="u" :value="u" />
               </el-select>
@@ -90,23 +90,23 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="采购价">
+            <el-form-item :label="t('product.purchasePrice')">
               <el-input-number v-model="form.purchasePrice" :min="0" :precision="2" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="销售价">
+            <el-form-item :label="t('product.salePrice')">
               <el-input-number v-model="form.salePrice" :min="0" :precision="2" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="商品说明">
+        <el-form-item :label="t('product.description')">
           <el-input v-model="form.description" type="textarea" :rows="3" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
+        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleSubmit">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -114,8 +114,11 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api'
+
+const { t } = useI18n()
 
 const tableData = ref([])
 const dialogVisible = ref(false)
@@ -145,7 +148,7 @@ const getStatusType = (status) => {
 }
 
 const getStatusText = (status) => {
-  const map = { active: '上架', inactive: '下架', pending: '待审核', approved: '已通过', rejected: '已拒绝' }
+  const map = { active: t('product.active'), inactive: t('product.inactive'), pending: t('product.pending'), approved: t('product.approved'), rejected: t('product.rejected') }
   return map[status] || status
 }
 
@@ -157,7 +160,7 @@ const loadData = async () => {
     tableData.value = res.data
     pagination.total = res.data.length
   } catch (e) {
-    ElMessage.error('加载失败')
+    ElMessage.error(t('messages.loadFailed'))
   }
 }
 
@@ -170,22 +173,22 @@ const handleToggleStatus = async (row) => {
   try {
     const endpoint = row.status === 'active' ? 'deactivate' : 'activate'
     await api.put(`/products/${row.id}/${endpoint}`)
-    ElMessage.success(row.status === 'active' ? '已下架' : '已上架')
+    ElMessage.success(row.status === 'active' ? t('product.deactivated') : t('product.activated'))
     loadData()
   } catch (e) {
-    ElMessage.error('操作失败')
+    ElMessage.error(t('messages.operationFailed'))
   }
 }
 
 const handleDelete = (row) => {
-  ElMessageBox.confirm('确定要删除该商品吗？', '提示', { type: 'warning' })
+  ElMessageBox.confirm(t('messages.confirmDelete'), t('common.tip'), { type: 'warning' })
     .then(async () => {
       try {
         await api.delete(`/products/${row.id}`)
-        ElMessage.success('删除成功')
+        ElMessage.success(t('messages.deleteSuccess'))
         loadData()
       } catch (e) {
-        ElMessage.error('删除失败')
+        ElMessage.error(t('messages.deleteFailed'))
       }
     })
 }
@@ -193,11 +196,11 @@ const handleDelete = (row) => {
 const handleSubmit = async () => {
   try {
     await api.put(`/products/${form.id}`, form)
-    ElMessage.success('更新成功')
+    ElMessage.success(t('messages.updateSuccess'))
     dialogVisible.value = false
     loadData()
   } catch (e) {
-    ElMessage.error('更新失败')
+    ElMessage.error(t('messages.saveFailed'))
   }
 }
 

@@ -1,10 +1,10 @@
 <template>
   <div class="product-detail-page">
-    <el-page-header @back="goBack" content="商品详情">
+    <el-page-header @back="goBack" :content="t('nav.productDetail')">
       <template #extra>
-        <el-button type="primary" @click="handleEdit">编辑</el-button>
+        <el-button type="primary" @click="handleEdit">{{ t('common.edit') }}</el-button>
         <el-button :type="product.status === 'active' ? 'warning' : 'success'" @click="handleToggleStatus">
-          {{ product.status === 'active' ? '下架' : '上架' }}
+          {{ product.status === 'active' ? t('product.offShelf') : t('product.onShelf') }}
         </el-button>
       </template>
     </el-page-header>
@@ -18,36 +18,36 @@
       <el-col :span="16">
         <el-card>
           <el-descriptions :column="1" border>
-            <el-descriptions-item label="商品名称">{{ product.name }}</el-descriptions-item>
-            <el-descriptions-item label="分类">{{ product.category?.name || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="库存">{{ product.quantity }} {{ product.unit }}</el-descriptions-item>
-            <el-descriptions-item label="采购价">¥{{ product.purchasePrice }}</el-descriptions-item>
-            <el-descriptions-item label="销售价">¥{{ product.salePrice }}</el-descriptions-item>
-            <el-descriptions-item label="状态">
+            <el-descriptions-item :label="t('product.title')">{{ product.name }}</el-descriptions-item>
+            <el-descriptions-item :label="t('product.category')">{{ product.category?.name || '-' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('product.inventory')">{{ product.quantity }} {{ product.unit }}</el-descriptions-item>
+            <el-descriptions-item :label="t('product.purchasePrice')">¥{{ product.purchasePrice }}</el-descriptions-item>
+            <el-descriptions-item :label="t('product.salePrice')">¥{{ product.salePrice }}</el-descriptions-item>
+            <el-descriptions-item :label="t('common.status')">
               <el-tag :type="getStatusType(product.status)">{{ getStatusText(product.status) }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="商品说明">{{ product.description || '无' }}</el-descriptions-item>
-            <el-descriptions-item label="创建时间">{{ product.createdAt }}</el-descriptions-item>
-            <el-descriptions-item label="更新时间">{{ product.updatedAt }}</el-descriptions-item>
+            <el-descriptions-item :label="t('product.description')">{{ product.description || '-' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('common.createTime')">{{ product.createdAt }}</el-descriptions-item>
+            <el-descriptions-item :label="t('common.updateTime')">{{ product.updatedAt }}</el-descriptions-item>
           </el-descriptions>
         </el-card>
       </el-col>
     </el-row>
 
     <!-- 编辑对话框 -->
-    <el-dialog v-model="editVisible" title="编辑商品" width="600px">
+    <el-dialog v-model="editVisible" :title="t('product.editProduct')" width="600px">
       <el-form :model="editForm" label-width="100px">
-        <el-form-item label="商品名称">
+        <el-form-item :label="t('product.title')">
           <el-input v-model="editForm.name" />
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="库存数量">
+            <el-form-item :label="t('product.inventory')">
               <el-input-number v-model="editForm.quantity" :min="0" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="单位">
+            <el-form-item :label="t('product.unit')">
               <el-select v-model="editForm.unit" allow-create filterable style="width: 100%">
                 <el-option v-for="u in units" :key="u" :label="u" :value="u" />
               </el-select>
@@ -56,23 +56,23 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="采购价">
+            <el-form-item :label="t('product.purchasePrice')">
               <el-input-number v-model="editForm.purchasePrice" :min="0" :precision="2" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="销售价">
+            <el-form-item :label="t('product.salePrice')">
               <el-input-number v-model="editForm.salePrice" :min="0" :precision="2" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="商品说明">
+        <el-form-item :label="t('product.description')">
           <el-input v-model="editForm.description" type="textarea" :rows="3" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="editVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
+        <el-button @click="editVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleSubmit">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -81,9 +81,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -98,7 +100,7 @@ const getStatusType = (status) => {
 }
 
 const getStatusText = (status) => {
-  const map = { active: '上架', inactive: '下架', pending: '待审核', approved: '已通过', rejected: '已拒绝' }
+  const map = { active: t('product.active'), inactive: t('product.inactive'), pending: t('product.pending'), approved: t('product.approved'), rejected: t('product.rejected') }
   return map[status] || status
 }
 
@@ -107,7 +109,7 @@ const loadData = async () => {
     const res = await api.get(`/products/${route.params.id}`)
     product.value = res.data
   } catch (e) {
-    ElMessage.error('加载失败')
+    ElMessage.error(t('messages.loadFailed'))
   }
 }
 
@@ -124,21 +126,21 @@ const handleToggleStatus = async () => {
   try {
     const endpoint = product.value.status === 'active' ? 'deactivate' : 'activate'
     await api.put(`/products/${product.value.id}/${endpoint}`)
-    ElMessage.success(product.value.status === 'active' ? '已下架' : '已上架')
+    ElMessage.success(product.value.status === 'active' ? t('product.deactivated') : t('product.activated'))
     loadData()
   } catch (e) {
-    ElMessage.error('操作失败')
+    ElMessage.error(t('messages.operationFailed'))
   }
 }
 
 const handleSubmit = async () => {
   try {
     await api.put(`/products/${product.value.id}`, editForm.value)
-    ElMessage.success('更新成功')
+    ElMessage.success(t('messages.updateSuccess'))
     editVisible.value = false
     loadData()
   } catch (e) {
-    ElMessage.error('更新失败')
+    ElMessage.error(t('messages.operationFailed'))
   }
 }
 
