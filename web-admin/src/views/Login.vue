@@ -1,5 +1,23 @@
 <template>
   <div class="login-container">
+    <div class="language-switch-wrapper">
+      <el-dropdown @command="handleLanguageChange">
+        <span class="language-switch">
+          {{ languages.find(l => l.value === locale)?.label }}
+        </span>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item
+              v-for="lang in languages"
+              :key="lang.value"
+              :command="lang.value"
+            >
+              {{ lang.label }}
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+    </div>
     <el-card class="login-card">
       <template #header>
         <div class="card-header">
@@ -30,15 +48,30 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '../store/user'
+import { useLanguageStore } from '../store/language'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
-const { t } = useI18n()
+const languageStore = useLanguageStore()
+const { t, locale: i18nLocale } = useI18n()
+
+const locale = computed(() => languageStore.locale)
+
+const languages = [
+  { value: 'zh', label: '中文' },
+  { value: 'ja', label: '日本語' },
+  { value: 'en', label: 'English' }
+]
+
+const handleLanguageChange = (lang) => {
+  languageStore.setLocale(lang)
+  i18nLocale.value = lang
+}
 
 const formRef = ref()
 const loading = ref(false)
@@ -77,10 +110,30 @@ const handleLogin = async () => {
 <style scoped>
 .login-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   background: linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%);
+}
+
+.language-switch-wrapper {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.language-switch {
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 5px 10px;
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 4px;
+}
+
+.language-switch:hover {
+  background: rgba(255,255,255,0.1);
 }
 
 .login-card {
