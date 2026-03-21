@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import store from '../store'
+import { useUserStore } from '../store/user'
 
 // 路由配置
 const routes = [
@@ -120,7 +120,8 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  const user = store.state.user
+  const userStore = useUserStore()
+  const user = userStore.user
 
   if (to.meta.requiresAuth !== false && !token) {
     next('/login')
