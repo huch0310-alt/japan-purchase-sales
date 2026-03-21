@@ -9,7 +9,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.customerCount }}</div>
-              <div class="stat-label">客户数量</div>
+              <div class="stat-label">{{ t('dashboard.customerCount') }}</div>
             </div>
           </div>
         </el-card>
@@ -22,7 +22,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.productCount }}</div>
-              <div class="stat-label">商品数量</div>
+              <div class="stat-label">{{ t('dashboard.productCount') }}</div>
             </div>
           </div>
         </el-card>
@@ -35,7 +35,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-value">{{ stats.orderCount }}</div>
-              <div class="stat-label">订单数量</div>
+              <div class="stat-label">{{ t('dashboard.orderCount') }}</div>
             </div>
           </div>
         </el-card>
@@ -48,7 +48,7 @@
             </div>
             <div class="stat-info">
               <div class="stat-value">¥{{ stats.todaySales }}</div>
-              <div class="stat-label">今日销售额</div>
+              <div class="stat-label">{{ t('dashboard.todaySales') }}</div>
             </div>
           </div>
         </el-card>
@@ -59,7 +59,7 @@
       <el-col :span="12">
         <el-card>
           <template #header>
-            <span>销售趋势</span>
+            <span>{{ t('dashboard.salesTrend') }}</span>
           </template>
           <div ref="salesChartRef" style="height: 300px"></div>
         </el-card>
@@ -67,12 +67,12 @@
       <el-col :span="12">
         <el-card>
           <template #header>
-            <span>热销商品排行</span>
+            <span>{{ t('dashboard.hotProducts') }}</span>
           </template>
           <el-table :data="hotProducts" height="300">
-            <el-table-column prop="name" label="商品名称" />
-            <el-table-column prop="saleCount" label="销售数量" width="100" />
-            <el-table-column prop="saleAmount" label="销售额" width="100">
+            <el-table-column prop="name" :label="t('dashboard.productName')" />
+            <el-table-column prop="saleCount" :label="t('dashboard.salesQuantity')" width="100" />
+            <el-table-column prop="saleAmount" :label="t('dashboard.salesAmount')" width="100">
               <template #default="{ row }">
                 ¥{{ row.saleAmount }}
               </template>
@@ -86,7 +86,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import * as echarts from 'echarts'
+
+const { t } = useI18n()
 
 const stats = ref({
   customerCount: 0,
