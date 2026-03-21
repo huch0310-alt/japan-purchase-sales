@@ -58,7 +58,7 @@ export class StaffService {
   async findAll(): Promise<Staff[]> {
     return this.staffRepository.find({
       order: { createdAt: 'DESC' },
-      relations: false, // 不自动加载关联数据，避免UUID错误
+      loadRelationIds: false, // 不加载关联ID，避免UUID错误
     });
   }
 
