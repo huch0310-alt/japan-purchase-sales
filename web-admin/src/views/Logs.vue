@@ -32,11 +32,11 @@
             <el-tag>{{ getRoleText(row.userRole) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="module" label="模块" width="100" />
-        <el-table-column prop="action" label="操作" width="100" />
-        <el-table-column prop="detail" label="详情" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="ip" label="IP地址" width="130" />
-        <el-table-column prop="createdAt" label="操作时间" width="180" />
+        <el-table-column prop="module" :label="t('logs.module')" width="100" />
+        <el-table-column prop="action" :label="t('logs.action')" width="100" />
+        <el-table-column prop="detail" :label="t('logs.detail')" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="ip" :label="t('logs.ip')" width="130" />
+        <el-table-column prop="createdAt" :label="t('logs.operationTime')" width="180" />
       </el-table>
 
       <el-pagination
@@ -67,7 +67,12 @@ const filterModule = ref('')
 const pagination = reactive({ page: 1, pageSize: 20, total: 0 })
 
 const getRoleText = (role) => {
-  const map = { super_admin: '超级管理员', admin: '管理员', procurement: '采购', sales: '销售' }
+  const map = {
+    super_admin: t('staff.superAdmin'),
+    admin: t('staff.admin'),
+    procurement: t('staff.procurement'),
+    sales: t('staff.sales')
+  }
   return map[role] || role
 }
 
@@ -83,7 +88,7 @@ const loadData = async () => {
     tableData.value = res.data
     pagination.total = res.data.length
   } catch (e) {
-    ElMessage.error('加载失败')
+    ElMessage.error(t('messages.loadFailed'))
   }
 }
 

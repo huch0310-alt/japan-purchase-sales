@@ -53,43 +53,43 @@
     </el-card>
 
     <!-- 订单详情对话框 -->
-    <el-dialog v-model="detailVisible" title="订单详情" width="800px">
+    <el-dialog v-model="detailVisible" :title="t('order.orderDetails')" width="800px">
       <div v-if="currentOrder" class="order-detail">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="订单号">{{ currentOrder.orderNo }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
+          <el-descriptions-item :label="t('order.orderNo')">{{ currentOrder.orderNo }}</el-descriptions-item>
+          <el-descriptions-item :label="t('common.status')">
             <el-tag :type="getStatusType(currentOrder.status)">{{ getStatusText(currentOrder.status) }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="客户">{{ currentOrder.customer?.companyName }}</el-descriptions-item>
-          <el-descriptions-item label="收货人">{{ currentOrder.contactPerson }}</el-descriptions-item>
-          <el-descriptions-item label="联系电话">{{ currentOrder.contactPhone }}</el-descriptions-item>
-          <el-descriptions-item label="下单时间">{{ currentOrder.createdAt }}</el-descriptions-item>
-          <el-descriptions-item label="送货地址" :span="2">{{ currentOrder.deliveryAddress }}</el-descriptions-item>
-          <el-descriptions-item label="备注" :span="2">{{ currentOrder.remark || '无' }}</el-descriptions-item>
+          <el-descriptions-item :label="t('order.customer')">{{ currentOrder.customer?.companyName }}</el-descriptions-item>
+          <el-descriptions-item :label="t('order.receiver')">{{ currentOrder.contactPerson }}</el-descriptions-item>
+          <el-descriptions-item :label="t('common.phone')">{{ currentOrder.contactPhone }}</el-descriptions-item>
+          <el-descriptions-item :label="t('order.orderTime')">{{ currentOrder.createdAt }}</el-descriptions-item>
+          <el-descriptions-item :label="t('customer.deliveryAddress')" :span="2">{{ currentOrder.deliveryAddress }}</el-descriptions-item>
+          <el-descriptions-item :label="t('common.remark')" :span="2">{{ currentOrder.remark || '-' }}</el-descriptions-item>
         </el-descriptions>
 
-        <el-divider>商品明细</el-divider>
+        <el-divider>{{ t('order.productDetails') }}</el-divider>
         <el-table :data="currentOrder.items" border>
-          <el-table-column prop="productName" label="商品名称" />
-          <el-table-column prop="quantity" label="数量" width="80" />
-          <el-table-column prop="unitPrice" label="单价" width="100">
+          <el-table-column prop="productName" :label="t('dashboard.productName')" />
+          <el-table-column prop="quantity" :label="t('dashboard.salesQuantity')" width="80" />
+          <el-table-column prop="unitPrice" :label="t('product.salePrice')" width="100">
             <template #default="{ row }">¥{{ row.unitPrice }}</template>
           </el-table-column>
-          <el-table-column label="小计" width="100">
+          <el-table-column :label="t('order.subtotal')" width="100">
             <template #default="{ row }">¥{{ row.unitPrice * row.quantity }}</template>
           </el-table-column>
         </el-table>
 
         <div class="total-section">
-          <div>小计: ¥{{ currentOrder.subtotal }}</div>
-          <div>VIP折扣: -¥{{ currentOrder.discountAmount }}</div>
-          <div>消费税: ¥{{ currentOrder.taxAmount }}</div>
-          <div class="total">合计: ¥{{ currentOrder.totalAmount }}</div>
+          <div>{{ t('order.subtotal') }}: ¥{{ currentOrder.subtotal }}</div>
+          <div>{{ t('order.discount') }}: -¥{{ currentOrder.discountAmount }}</div>
+          <div>{{ t('order.taxAmount') }}: ¥{{ currentOrder.taxAmount }}</div>
+          <div class="total">{{ t('order.total') }}: ¥{{ currentOrder.totalAmount }}</div>
         </div>
       </div>
       <template #footer>
-        <el-button @click="detailVisible = false">关闭</el-button>
-        <el-button v-if="currentOrder?.status === 'pending'" type="primary" @click="handleConfirm(currentOrder)">确认订单</el-button>
+        <el-button @click="detailVisible = false">{{ t('common.close') }}</el-button>
+        <el-button v-if="currentOrder?.status === 'pending'" type="primary" @click="handleConfirm(currentOrder)">{{ t('order.confirmOrder') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -128,7 +128,7 @@ const loadData = async () => {
     const res = await api.get('/orders', { params })
     tableData.value = res.data
   } catch (e) {
-    ElMessage.error('加载失败')
+    ElMessage.error(t('messages.loadFailed'))
   }
 }
 
@@ -138,34 +138,34 @@ const handleView = async (row) => {
     currentOrder.value = res.data
     detailVisible.value = true
   } catch (e) {
-    ElMessage.error('加载详情失败')
+    ElMessage.error(t('messages.loadFailed'))
   }
 }
 
 const handleConfirm = async (row) => {
   try {
     await api.put(`/orders/${row.id}/confirm`)
-    ElMessage.success('确认成功')
+    ElMessage.success(t('messages.operationSuccess'))
     detailVisible.value = false
     loadData()
   } catch (e) {
-    ElMessage.error('操作失败')
+    ElMessage.error(t('messages.operationFailed'))
   }
 }
 
 const handleComplete = async (row) => {
   try {
     await api.put(`/orders/${row.id}/complete`)
-    ElMessage.success('已完成')
+    ElMessage.success(t('messages.operationSuccess'))
     loadData()
   } catch (e) {
-    ElMessage.error('操作失败')
+    ElMessage.error(t('messages.operationFailed'))
   }
 }
 
 const handlePrint = () => {
   // TODO: 实现打印功能
-  ElMessage.info('打印功能开发中')
+  ElMessage.info(t('order.printing'))
 }
 
 const handleSelectionChange = (selection) => {

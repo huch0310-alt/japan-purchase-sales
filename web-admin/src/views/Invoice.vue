@@ -29,44 +29,44 @@
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="issueDate" label="开具日期" width="120" />
-        <el-table-column prop="dueDate" label="到期日期" width="120">
+        <el-table-column prop="issueDate" :label="t('invoice.issueDate')" width="120" />
+        <el-table-column prop="dueDate" :label="t('invoice.dueDate')" width="120">
           <template #default="{ row }">
             <span :class="{ 'overdue': isOverdue(row) }">{{ row.dueDate }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column :label="t('common.action')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleView(row)">查看</el-button>
-            <el-button type="success" link @click="handleDownloadPdf(row)">下载PDF</el-button>
-            <el-button v-if="row.status === 'unpaid'" type="warning" link @click="handleMarkPaid(row)">标记付款</el-button>
+            <el-button type="primary" link @click="handleView(row)">{{ t('common.view') }}</el-button>
+            <el-button type="success" link @click="handleDownloadPdf(row)">{{ t('invoice.downloadPdf') }}</el-button>
+            <el-button v-if="row.status === 'unpaid'" type="warning" link @click="handleMarkPaid(row)">{{ t('invoice.markPaid') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
     <!-- 生成請求書对话框 -->
-    <el-dialog v-model="createVisible" title="生成請求書" width="600px">
+    <el-dialog v-model="createVisible" :title="t('invoice.createInvoice')" width="600px">
       <el-form :model="createForm" label-width="100px">
-        <el-form-item label="选择客户">
-          <el-select v-model="createForm.customerId" placeholder="请选择客户" filterable style="width: 100%">
+        <el-form-item :label="t('invoice.selectCustomer')">
+          <el-select v-model="createForm.customerId" :placeholder="t('invoice.selectCustomer')" filterable style="width: 100%">
             <el-option v-for="c in customers" :key="c.id" :label="c.companyName" :value="c.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="选择订单">
+        <el-form-item :label="t('invoice.selectOrder')">
           <el-table :data="customerOrders" border @selection-change="handleOrderSelect">
             <el-table-column type="selection" width="50" />
-            <el-table-column prop="orderNo" label="订单号" />
-            <el-table-column prop="totalAmount" label="金额">
+            <el-table-column prop="orderNo" :label="t('order.orderNo')" />
+            <el-table-column prop="totalAmount" :label="t('order.amount')">
               <template #default="{ row }">¥{{ row.totalAmount }}</template>
             </el-table-column>
-            <el-table-column prop="createdAt" label="下单时间" />
+            <el-table-column prop="createdAt" :label="t('order.orderTime')" />
           </el-table>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="createVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmitCreate">生成</el-button>
+        <el-button @click="createVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleSubmitCreate">{{ t('invoice.generate') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -107,7 +107,7 @@ const loadData = async () => {
     const res = await api.get('/invoices')
     tableData.value = res.data
   } catch (e) {
-    ElMessage.error('加载失败')
+    ElMessage.error(t('messages.loadFailed'))
   }
 }
 
@@ -116,7 +116,7 @@ const loadCustomers = async () => {
     const res = await api.get('/customers')
     customers.value = res.data
   } catch (e) {
-    ElMessage.error('加载客户失败')
+    ElMessage.error(t('messages.loadFailed'))
   }
 }
 
@@ -134,7 +134,7 @@ watch(() => createForm.customerId, async (customerId) => {
     const res = await api.get('/orders', { params: { customerId, status: 'confirmed' } })
     customerOrders.value = res.data
   } catch (e) {
-    ElMessage.error('加载订单失败')
+    ElMessage.error(t('messages.loadFailed'))
   }
 })
 
@@ -144,7 +144,7 @@ const handleOrderSelect = (selection) => {
 
 const handleSubmitCreate = async () => {
   if (!createForm.customerId || selectedOrders.value.length === 0) {
-    ElMessage.warning('请选择客户和订单')
+    ElMessage.warning(t('messages.selectCustomerOrder'))
     return
   }
   try {
@@ -152,11 +152,11 @@ const handleSubmitCreate = async () => {
       customerId: createForm.customerId,
       orderIds: selectedOrders.value.map(o => o.id)
     })
-    ElMessage.success('請求書生成成功')
+    ElMessage.success(t('invoice.createSuccess'))
     createVisible.value = false
     loadData()
   } catch (e) {
-    ElMessage.error('生成失败')
+    ElMessage.error(t('messages.operationFailed'))
   }
 }
 
@@ -166,16 +166,16 @@ const handleView = (row) => {
 
 const handleDownloadPdf = async (row) => {
   // TODO: 实现PDF下载
-  ElMessage.info('PDF下载功能开发中')
+  ElMessage.info(t('invoice.downloadPdf') + ' - ' + t('report.exporting'))
 }
 
 const handleMarkPaid = async (row) => {
   try {
     await api.put(`/invoices/${row.id}/paid`)
-    ElMessage.success('已标记为已付款')
+    ElMessage.success(t('invoice.paidMarked'))
     loadData()
   } catch (e) {
-    ElMessage.error('操作失败')
+    ElMessage.error(t('messages.operationFailed'))
   }
 }
 

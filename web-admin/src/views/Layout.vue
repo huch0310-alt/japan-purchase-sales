@@ -109,7 +109,7 @@ const locale = computed(() => languageStore.locale)
 
 const languages = [
   { value: 'zh', label: '中文' },
-  { value: 'ja', label: '日本語' },
+  { value: 'ja', label: t('language.ja') },
   { value: 'en', label: 'English' }
 ]
 

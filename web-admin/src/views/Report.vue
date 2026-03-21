@@ -32,7 +32,7 @@
       </el-col>
       <el-col :span="12">
         <el-card>
-          <template #header><span>分类销售占比</span></template>
+          <template #header><span>{{ t('report.categorySales') }}</span></template>
           <div ref="categoryChartRef" style="height: 300px"></div>
         </el-card>
       </el-col>
@@ -41,21 +41,21 @@
     <el-row :gutter="20" style="margin-top: 20px">
       <el-col :span="8">
         <el-card>
-          <template #header><span>热销商品排行</span></template>
+          <template #header><span>{{ t('report.hotProducts') }}</span></template>
           <el-table :data="hotProducts" height="250">
             <el-table-column type="index" width="50" />
-            <el-table-column prop="name" label="商品名称" />
-            <el-table-column prop="sales" label="销量" width="80" />
+            <el-table-column prop="name" :label="t('dashboard.productName')" />
+            <el-table-column prop="sales" :label="t('report.sales')" width="80" />
           </el-table>
         </el-card>
       </el-col>
       <el-col :span="8">
         <el-card>
-          <template #header><span>客户购买排行</span></template>
+          <template #header><span>{{ t('report.customerRanking') }}</span></template>
           <el-table :data="topCustomers" height="250">
             <el-table-column type="index" width="50" />
-            <el-table-column prop="companyName" label="客户名称" />
-            <el-table-column prop="amount" label="销售额" width="100">
+            <el-table-column prop="companyName" :label="t('report.customerName')" />
+            <el-table-column prop="amount" :label="t('dashboard.salesAmount')" width="100">
               <template #default="{ row }">¥{{ row.amount }}</template>
             </el-table-column>
           </el-table>
@@ -63,11 +63,11 @@
       </el-col>
       <el-col :span="8">
         <el-card>
-          <template #header><span>采购人员业绩</span></template>
+          <template #header><span>{{ t('report.procurementPerformance') }}</span></template>
           <el-table :data="procurementStats" height="250">
             <el-table-column type="index" width="50" />
-            <el-table-column prop="name" label="人员" />
-            <el-table-column prop="count" label="采集数量" width="80" />
+            <el-table-column prop="name" :label="t('report.staff')" />
+            <el-table-column prop="count" :label="t('report.procurementCount')" width="80" />
           </el-table>
         </el-card>
       </el-col>
@@ -140,7 +140,7 @@ const loadData = async () => {
 
 const handleExport = async () => {
   // TODO: 实现Excel导出
-  ElMessage.info('导出功能开发中')
+  ElMessage.info(t('report.exporting'))
 }
 
 onMounted(() => { loadData() })

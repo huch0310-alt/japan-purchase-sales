@@ -1,52 +1,52 @@
 <template>
   <div class="settings-page">
     <el-card>
-      <template #header><span>系统设置</span></template>
+      <template #header><span>{{ t('settings.title') }}</span></template>
       <el-form :model="form" label-width="120px">
-        <el-divider>公司信息（請求書发出方）</el-divider>
+        <el-divider>{{ t('settings.companyInfo') }}</el-divider>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="公司名称">
+            <el-form-item :label="t('settings.companyName')">
               <el-input v-model="form.company_name" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="负责人">
+            <el-form-item :label="t('settings.representative')">
               <el-input v-model="form.company_representative" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="公司地址">
+        <el-form-item :label="t('settings.companyAddress')">
           <el-input v-model="form.company_address" />
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="8">
-            <el-form-item label="电话">
+            <el-form-item :label="t('common.phone')">
               <el-input v-model="form.company_phone" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="传真">
+            <el-form-item :label="t('settings.fax')">
               <el-input v-model="form.company_fax" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="邮箱">
+            <el-form-item :label="t('settings.email')">
               <el-input v-model="form.company_email" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="法人代表">
+        <el-form-item :label="t('settings.legalRepresentative')">
           <el-input v-model="form.company_legal_representative" />
         </el-form-item>
-        <el-form-item label="银行账户">
+        <el-form-item :label="t('settings.bankAccount')">
           <el-input v-model="form.company_bank" />
         </el-form-item>
 
-        <el-divider>财务设置</el-divider>
+        <el-divider>{{ t('settings.financeSettings') }}</el-divider>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="消费税率(%)">
+            <el-form-item :label="t('settings.taxRate')">
               <el-select v-model="form.tax_rate">
                 <el-option label="10%" value="10" />
                 <el-option label="8%" value="8" />
@@ -54,21 +54,21 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="默认账期(天)">
+            <el-form-item :label="t('settings.defaultPaymentDays')">
               <el-input-number v-model="form.default_payment_days" :min="1" :max="90" />
             </el-form-item>
           </el-col>
         </el-row>
 
-        <el-divider>单位设置</el-divider>
-        <el-form-item label="商品单位">
+        <el-divider>{{ t('settings.unitSettings') }}</el-divider>
+        <el-form-item :label="t('settings.productUnits')">
           <el-select v-model="form.units" multiple allow-create filterable style="width: 100%">
             <el-option v-for="u in defaultUnits" :key="u" :label="u" :value="u" />
           </el-select>
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="handleSave">保存设置</el-button>
+          <el-button type="primary" @click="handleSave">{{ t('settings.saveSettings') }}</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -111,7 +111,7 @@ const loadData = async () => {
       }
     })
   } catch (e) {
-    ElMessage.error('加载失败')
+    ElMessage.error(t('messages.loadFailed'))
   }
 }
 
@@ -122,9 +122,9 @@ const handleSave = async () => {
       value: Array.isArray(value) ? value.join(',') : String(value)
     }))
     await api.post('/settings', settings)
-    ElMessage.success('保存成功')
+    ElMessage.success(t('messages.saveSuccess'))
   } catch (e) {
-    ElMessage.error('保存失败')
+    ElMessage.error(t('messages.saveFailed'))
   }
 }
 

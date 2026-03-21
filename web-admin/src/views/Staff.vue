@@ -35,32 +35,32 @@
     </el-card>
 
     <!-- 新增/编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑员工' : '新增员工'" width="500px">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? t('staff.editStaff') : t('staff.addStaff')" width="500px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="账号" prop="username">
+        <el-form-item :label="t('staff.username')" prop="username">
           <el-input v-model="form.username" :disabled="isEdit" />
         </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input v-model="form.password" type="password" show-password placeholder="不修改请留空" />
+        <el-form-item :label="t('staff.password')" prop="password">
+          <el-input v-model="form.password" type="password" show-password :placeholder="t('staff.leaveEmpty')" />
         </el-form-item>
-        <el-form-item label="姓名" prop="name">
+        <el-form-item :label="t('staff.fullName')" prop="name">
           <el-input v-model="form.name" />
         </el-form-item>
-        <el-form-item label="电话" prop="phone">
+        <el-form-item :label="t('staff.phone')" prop="phone">
           <el-input v-model="form.phone" />
         </el-form-item>
-        <el-form-item label="角色" prop="role">
+        <el-form-item :label="t('staff.role')" prop="role">
           <el-select v-model="form.role">
-            <el-option label="超级管理员" value="super_admin" />
-            <el-option label="管理员" value="admin" />
-            <el-option label="采购" value="procurement" />
-            <el-option label="销售" value="sales" />
+            <el-option :label="t('staff.superAdmin')" value="super_admin" />
+            <el-option :label="t('staff.admin')" value="admin" />
+            <el-option :label="t('staff.procurement')" value="procurement" />
+            <el-option :label="t('staff.sales')" value="sales" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
+        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleSubmit">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -89,9 +89,9 @@ const form = reactive({
 })
 
 const rules = {
-  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
-  name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  role: [{ required: true, message: '请选择角色', trigger: 'change' }]
+  username: [{ required: true, message: t('validation.enterUsername'), trigger: 'blur' }],
+  name: [{ required: true, message: t('validation.enterName'), trigger: 'blur' }],
+  role: [{ required: true, message: t('validation.pleaseSelect', { field: t('staff.role') }), trigger: 'change' }]
 }
 
 const getRoleType = (role) => {
@@ -100,7 +100,12 @@ const getRoleType = (role) => {
 }
 
 const getRoleText = (role) => {
-  const map = { super_admin: '超级管理员', admin: '管理员', procurement: '采购', sales: '销售' }
+  const map = {
+    super_admin: t('staff.superAdmin'),
+    admin: t('staff.admin'),
+    procurement: t('staff.procurement'),
+    sales: t('staff.sales')
+  }
   return map[role] || role
 }
 
@@ -109,7 +114,7 @@ const loadData = async () => {
     const res = await api.get('/staff')
     tableData.value = res.data
   } catch (e) {
-    ElMessage.error('加载失败')
+    ElMessage.error(t('messages.loadFailed'))
   }
 }
 
@@ -126,14 +131,14 @@ const handleEdit = (row) => {
 }
 
 const handleDelete = (row) => {
-  ElMessageBox.confirm('确定要删除该员工吗？', '提示', { type: 'warning' })
+  ElMessageBox.confirm(t('messages.confirmDelete'), t('common.tip'), { type: 'warning' })
     .then(async () => {
       try {
         await api.delete(`/staff/${row.id}`)
-        ElMessage.success('删除成功')
+        ElMessage.success(t('messages.deleteSuccess'))
         loadData()
       } catch (e) {
-        ElMessage.error('删除失败')
+        ElMessage.error(t('messages.deleteFailed'))
       }
     })
 }
@@ -145,15 +150,15 @@ const handleSubmit = async () => {
     try {
       if (isEdit.value) {
         await api.put(`/staff/${form.id}`, form)
-        ElMessage.success('更新成功')
+        ElMessage.success(t('messages.updateSuccess'))
       } else {
         await api.post('/staff', form)
-        ElMessage.success('创建成功')
+        ElMessage.success(t('messages.createSuccess'))
       }
       dialogVisible.value = false
       loadData()
     } catch (e) {
-      ElMessage.error(e.response?.data?.message || '操作失败')
+      ElMessage.error(e.response?.data?.message || t('messages.operationFailed'))
     }
   })
 }
