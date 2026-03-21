@@ -61,12 +61,12 @@
         <div class="header-content">
           <el-dropdown @command="handleLanguageChange">
             <span class="language-switch">
-              {{ languages.value.find(l => l.value === locale)?.label }}
+              {{ languages.find(l => l.value === locale)?.label }}
             </span>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item
-                  v-for="lang in languages.value"
+                  v-for="lang in languages"
                   :key="lang.value"
                   :command="lang.value"
                 >
@@ -107,11 +107,11 @@ const isAdmin = computed(() => userStore.isAdmin)
 const activeMenu = computed(() => route.path)
 const locale = computed(() => languageStore.locale)
 
-const languages = computed(() => [
-  { value: 'zh', label: t('language.zh') },
-  { value: 'ja', label: t('language.ja') },
-  { value: 'en', label: t('language.en') }
-])
+const languages = [
+  { value: 'zh', label: '中文' },
+  { value: 'ja', label: '日本語' },
+  { value: 'en', label: 'English' }
+]
 
 const handleLanguageChange = (lang) => {
   languageStore.setLocale(lang)
