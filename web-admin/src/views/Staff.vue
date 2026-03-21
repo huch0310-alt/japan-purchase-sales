@@ -3,31 +3,31 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>员工管理</span>
-          <el-button type="primary" @click="handleAdd">新增员工</el-button>
+          <span>{{ t('staff.title') }}</span>
+          <el-button type="primary" @click="handleAdd">{{ t('staff.addStaff') }}</el-button>
         </div>
       </template>
 
       <el-table :data="tableData" border stripe>
-        <el-table-column prop="username" label="账号" width="120" />
-        <el-table-column prop="name" label="姓名" width="120" />
-        <el-table-column prop="phone" label="电话" width="150" />
-        <el-table-column prop="role" label="角色" width="120">
+        <el-table-column prop="username" :label="t('staff.username')" width="120" />
+        <el-table-column prop="name" :label="t('staff.fullName')" width="120" />
+        <el-table-column prop="phone" :label="t('staff.phone')" width="150" />
+        <el-table-column prop="role" :label="t('staff.role')" width="120">
           <template #default="{ row }">
             <el-tag :type="getRoleType(row.role)">{{ getRoleText(row.role) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="isActive" label="状态" width="80">
+        <el-table-column prop="isActive" :label="t('common.status')" width="80">
           <template #default="{ row }">
             <el-tag :type="row.isActive ? 'success' : 'danger'">
-              {{ row.isActive ? '正常' : '禁用' }}
+              {{ row.isActive ? t('staff.normal') : t('staff.disabled') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="180" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column prop="createdAt" :label="t('common.createTime')" width="180" />
+        <el-table-column :label="t('common.action')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
+            <el-button type="primary" link @click="handleEdit(row)">{{ t('common.edit') }}</el-button>
             <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -68,8 +68,11 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api'
+
+const { t } = useI18n()
 
 const tableData = ref([])
 const dialogVisible = ref(false)
