@@ -170,7 +170,7 @@ export class OrdersService {
   async findById(id: string): Promise<Order | null> {
     return this.orderRepository.findOne({
       where: { id },
-      relations: ['customer', 'items', 'items.product', 'confirmedBy'],
+      relations: ['customer', 'items', 'items.product'],
     });
   }
 

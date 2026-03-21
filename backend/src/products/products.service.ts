@@ -57,7 +57,7 @@ export class ProductsService {
   async findPending(): Promise<Product[]> {
     return this.productRepository.find({
       where: { status: 'pending' },
-      relations: ['category', 'createdByStaff'],
+      relations: ['category'],
       order: { createdAt: 'DESC' },
     });
   }
