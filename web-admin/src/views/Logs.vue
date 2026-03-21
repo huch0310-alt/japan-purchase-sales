@@ -3,31 +3,31 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>操作日志</span>
+          <span>{{ t('logs.title') }}</span>
           <div>
             <el-date-picker
               v-model="dateRange"
               type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
+              :range-separator="t('report.startDate')"
+              :start-placeholder="t('logs.startDate')"
+              :end-placeholder="t('logs.endDate')"
               @change="loadData"
               style="margin-right: 10px"
             />
-            <el-select v-model="filterModule" placeholder="模块筛选" style="width: 120px; margin-right: 10px" @change="loadData">
-              <el-option label="全部" value="" />
-              <el-option label="用户" value="users" />
-              <el-option label="商品" value="products" />
-              <el-option label="订单" value="orders" />
-              <el-option label="請求書" value="invoices" />
+            <el-select v-model="filterModule" :placeholder="t('logs.moduleFilter')" style="width: 120px; margin-right: 10px" @change="loadData">
+              <el-option :label="t('logs.all')" value="" />
+              <el-option :label="t('logs.users')" value="users" />
+              <el-option :label="t('logs.products')" value="products" />
+              <el-option :label="t('logs.orders')" value="orders" />
+              <el-option :label="t('logs.invoices')" value="invoices" />
             </el-select>
           </div>
         </div>
       </template>
 
       <el-table :data="tableData" border stripe>
-        <el-table-column prop="userName" label="操作人" width="120" />
-        <el-table-column prop="userRole" label="角色" width="100">
+        <el-table-column prop="userName" :label="t('logs.operator')" width="120" />
+        <el-table-column prop="userRole" :label="t('logs.role')" width="100">
           <template #default="{ row }">
             <el-tag>{{ getRoleText(row.userRole) }}</el-tag>
           </template>
@@ -54,8 +54,11 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+
+const { t } = useI18n()
 
 const tableData = ref([])
 const dateRange = ref([])
