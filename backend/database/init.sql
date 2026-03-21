@@ -155,9 +155,9 @@ CREATE TABLE IF NOT EXISTS settings (
 );
 
 -- 插入默认管理员账号 (密码: admin123)
--- 密码哈希: bcrypt(admin123) = $2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- 密码哈希: bcrypt(admin123) = $2b$10$PPe0LFMXuGo4j6YSVZh7juz.Dij.UH4ZLrN7zeiyfdfk2XdXCV/.K
 INSERT INTO staff (username, "passwordHash", name, phone, role)
-VALUES ('admin', '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '管理员', '090-1234-5678', 'super_admin')
+VALUES ('admin', '$2b$10$PPe0LFMXuGo4j6YSVZh7juz.Dij.UH4ZLrN7zeiyfdfk2XdXCV/.K', '管理员', '090-1234-5678', 'super_admin')
 ON CONFLICT (username) DO NOTHING;
 
 -- 插入默认分类
