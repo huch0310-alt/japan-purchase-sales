@@ -77,8 +77,11 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+
+const { t } = useI18n()
 
 const form = reactive({
   company_name: '',
