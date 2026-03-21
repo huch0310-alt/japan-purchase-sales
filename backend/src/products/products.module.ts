@@ -13,6 +13,6 @@ import { EventService } from '../common/services/event.service';
   imports: [TypeOrmModule.forFeature([Product])],
   providers: [ProductsService, EventService],
   controllers: [ProductsController],
-  exports: [ProductsService],
+  exports: [ProductsService, EventService],
 })
 export class ProductsModule {}
