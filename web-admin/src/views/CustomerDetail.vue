@@ -1,25 +1,25 @@
 <template>
   <div class="customer-detail-page">
-    <el-page-header @back="goBack" content="客户详情">
+    <el-page-header @back="goBack" :content="t('nav.customerDetail')">
       <template #extra>
-        <el-button type="primary" @click="handleEdit">编辑</el-button>
+        <el-button type="primary" @click="handleEdit">{{ t('common.edit') }}</el-button>
       </template>
     </el-page-header>
 
     <el-row :gutter="20" style="margin-top: 20px">
       <el-col :span="12">
         <el-card>
-          <template #header><span>基本信息</span></template>
+          <template #header><span>{{ t('customer.basicInfo') }}</span></template>
           <el-descriptions :column="1" border>
-            <el-descriptions-item label="账号">{{ customer.username }}</el-descriptions-item>
-            <el-descriptions-item label="公司名称">{{ customer.companyName }}</el-descriptions-item>
-            <el-descriptions-item label="联系人">{{ customer.contactPerson }}</el-descriptions-item>
-            <el-descriptions-item label="联系电话">{{ customer.phone }}</el-descriptions-item>
-            <el-descriptions-item label="送货地址">{{ customer.address }}</el-descriptions-item>
-            <el-descriptions-item label="VIP折扣">{{ customer.vipDiscount }}%</el-descriptions-item>
-            <el-descriptions-item label="状态">
+            <el-descriptions-item :label="t('customer.username')">{{ customer.username }}</el-descriptions-item>
+            <el-descriptions-item :label="t('customer.companyName')">{{ customer.companyName }}</el-descriptions-item>
+            <el-descriptions-item :label="t('customer.contactPerson')">{{ customer.contactPerson }}</el-descriptions-item>
+            <el-descriptions-item :label="t('customer.contactPhone')">{{ customer.phone }}</el-descriptions-item>
+            <el-descriptions-item :label="t('customer.deliveryAddress')">{{ customer.address }}</el-descriptions-item>
+            <el-descriptions-item :label="t('customer.vipDiscount')">{{ customer.vipDiscount }}%</el-descriptions-item>
+            <el-descriptions-item :label="t('common.status')">
               <el-tag :type="customer.isActive ? 'success' : 'danger'">
-                {{ customer.isActive ? '正常' : '禁用' }}
+                {{ customer.isActive ? t('customer.normal') : t('customer.disabled') }}
               </el-tag>
             </el-descriptions-item>
           </el-descriptions>
@@ -28,12 +28,12 @@
 
       <el-col :span="12">
         <el-card>
-          <template #header><span>請求書信息</span></template>
+          <template #header><span>{{ t('customer.invoiceInfo') }}</span></template>
           <el-descriptions :column="1" border>
-            <el-descriptions-item label="請求書抬头">{{ customer.invoiceName || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="公司地址">{{ customer.invoiceAddress || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="电话">{{ customer.invoicePhone || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="银行账户">{{ customer.invoiceBank || '-' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('customer.invoiceName')">{{ customer.invoiceName || '-' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('customer.companyAddress')">{{ customer.invoiceAddress || '-' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('common.phone')">{{ customer.invoicePhone || '-' }}</el-descriptions-item>
+            <el-descriptions-item :label="t('customer.bankAccount')">{{ customer.invoiceBank || '-' }}</el-descriptions-item>
           </el-descriptions>
         </el-card>
       </el-col>
@@ -42,86 +42,86 @@
     <el-card style="margin-top: 20px">
       <template #header>
         <div class="card-header">
-          <span>订单记录</span>
+          <span>{{ t('order.title') }}</span>
         </div>
       </template>
       <el-table :data="orders" border>
-        <el-table-column prop="orderNo" label="订单号" width="180" />
-        <el-table-column prop="totalAmount" label="金额" width="100">
+        <el-table-column prop="orderNo" :label="t('order.orderNo')" width="180" />
+        <el-table-column prop="totalAmount" :label="t('order.amount')" width="100">
           <template #default="{ row }">¥{{ row.totalAmount }}</template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" :label="t('common.status')" width="100">
           <template #default="{ row }">
             <el-tag>{{ getOrderStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="下单时间" width="180" />
+        <el-table-column prop="createdAt" :label="t('order.orderTime')" width="180" />
       </el-table>
     </el-card>
 
     <el-card style="margin-top: 20px">
-      <template #header><span>消费统计</span></template>
+      <template #header><span>{{ t('report.customerRanking') }}</span></template>
       <el-row :gutter="20">
         <el-col :span="6">
           <div class="stat-card">
             <div class="stat-value">{{ stats.orderCount }}</div>
-            <div class="stat-label">订单总数</div>
+            <div class="stat-label">{{ t('order.total') }}</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="stat-card">
             <div class="stat-value">¥{{ stats.totalAmount }}</div>
-            <div class="stat-label">消费总额</div>
+            <div class="stat-label">{{ t('order.total') }}</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="stat-card">
             <div class="stat-value">¥{{ stats.avgAmount }}</div>
-            <div class="stat-label">平均订单金额</div>
+            <div class="stat-label">{{ t('order.amount') }}</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="stat-card">
             <div class="stat-value">{{ stats.lastOrderDate }}</div>
-            <div class="stat-label">最后下单</div>
+            <div class="stat-label">{{ t('order.orderTime') }}</div>
           </div>
         </el-col>
       </el-row>
     </el-card>
 
-    <el-dialog v-model="editVisible" title="编辑客户" width="600px">
+    <el-dialog v-model="editVisible" :title="t('customer.editCustomer')" width="600px">
       <el-form :model="editForm" label-width="100px">
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="公司名称">
+            <el-form-item :label="t('customer.companyName')">
               <el-input v-model="editForm.companyName" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="VIP折扣">
+            <el-form-item :label="t('customer.vipDiscount')">
               <el-input-number v-model="editForm.vipDiscount" :min="0" :max="100" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="联系人">
+            <el-form-item :label="t('customer.contactPerson')">
               <el-input v-model="editForm.contactPerson" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="联系电话">
+            <el-form-item :label="t('customer.contactPhone')">
               <el-input v-model="editForm.phone" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="送货地址">
+        <el-form-item :label="t('customer.deliveryAddress')">
           <el-input v-model="editForm.address" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="editVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确定</el-button>
+        <el-button @click="editVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="handleSubmit">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -130,9 +130,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
@@ -143,7 +145,7 @@ const editForm = ref({})
 const stats = ref({ orderCount: 0, totalAmount: 0, avgAmount: 0, lastOrderDate: '-' })
 
 const getOrderStatusText = (status) => {
-  const map = { pending: '待确认', confirmed: '已确认', completed: '已完成', cancelled: '已取消' }
+  const map = { pending: t('order.pending'), confirmed: t('order.confirmed'), completed: t('order.completed'), cancelled: t('order.cancelled') }
   return map[status] || status
 }
 
@@ -166,7 +168,7 @@ const loadData = async () => {
       lastOrderDate: orders.value.length ? orders.value[0].createdAt.split('T')[0] : '-'
     }
   } catch (e) {
-    ElMessage.error('加载失败')
+    ElMessage.error(t('messages.loadFailed'))
   }
 }
 
@@ -179,11 +181,11 @@ const handleEdit = () => {
 const handleSubmit = async () => {
   try {
     await api.put(`/customers/${customer.value.id}`, editForm.value)
-    ElMessage.success('更新成功')
+    ElMessage.success(t('messages.updateSuccess'))
     editVisible.value = false
     loadData()
   } catch (e) {
-    ElMessage.error('更新失败')
+    ElMessage.error(t('messages.operationFailed'))
   }
 }
 
