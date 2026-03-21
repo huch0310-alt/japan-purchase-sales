@@ -1,14 +1,28 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { createI18n } from 'vue-i18n'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import router from './router'
 import App from './App.vue'
 import { socketService } from './services/socket'
+import zh from './locales/zh'
+import ja from './locales/ja'
+import en from './locales/en'
+import { useLanguageStore } from './store/language'
 
 // 全局样式
 import './assets/styles/main.css'
+
+// 创建 i18n 实例
+const savedLocale = localStorage.getItem('language') || 'zh'
+const i18n = createI18n({
+  legacy: false,
+  locale: savedLocale,
+  fallbackLocale: 'zh',
+  messages: { zh, ja, en }
+})
 
 const app = createApp(App)
 
@@ -18,6 +32,7 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
 }
 
 app.use(createPinia())
+app.use(i18n)
 app.use(router)
 app.use(ElementPlus)
 
