@@ -3,7 +3,7 @@
     <!-- 侧边栏 -->
     <el-aside width="200px">
       <div class="logo">
-        <h3>日本采销系统</h3>
+        <h3>{{ t('login.title') }}</h3>
       </div>
       <el-menu
         :default-active="activeMenu"
@@ -61,12 +61,12 @@
         <div class="header-content">
           <el-dropdown @command="handleLanguageChange">
             <span class="language-switch">
-              {{ languages.find(l => l.value === locale)?.label }}
+              {{ languages.value.find(l => l.value === locale)?.label }}
             </span>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item
-                  v-for="lang in languages"
+                  v-for="lang in languages.value"
                   :key="lang.value"
                   :command="lang.value"
                 >
@@ -107,11 +107,11 @@ const isAdmin = computed(() => userStore.isAdmin)
 const activeMenu = computed(() => route.path)
 const locale = computed(() => languageStore.locale)
 
-const languages = [
-  { value: 'zh', label: '中文' },
-  { value: 'ja', label: '日本語' },
-  { value: 'en', label: 'English' }
-]
+const languages = computed(() => [
+  { value: 'zh', label: t('language.zh') },
+  { value: 'ja', label: t('language.ja') },
+  { value: 'en', label: t('language.en') }
+])
 
 const handleLanguageChange = (lang) => {
   languageStore.setLocale(lang)
@@ -119,9 +119,9 @@ const handleLanguageChange = (lang) => {
 }
 
 const handleLogout = () => {
-  ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
+  ElMessageBox.confirm(t('header.confirmLogout'), t('common.tip'), {
+    confirmButtonText: t('common.confirm'),
+    cancelButtonText: t('common.cancel'),
     type: 'warning'
   }).then(() => {
     userStore.logout()
