@@ -3,40 +3,40 @@
     <el-card>
       <template #header>
         <div class="card-header">
-          <span>订单管理</span>
+          <span>{{ t('order.title') }}</span>
           <div>
-            <el-select v-model="filterStatus" placeholder="状态筛选" style="width: 120px; margin-right: 10px" @change="loadData">
-              <el-option label="全部" value="" />
-              <el-option label="待确认" value="pending" />
-              <el-option label="已确认" value="confirmed" />
-              <el-option label="已完成" value="completed" />
-              <el-option label="已取消" value="cancelled" />
+            <el-select v-model="filterStatus" :placeholder="t('common.status')" style="width: 120px; margin-right: 10px" @change="loadData">
+              <el-option :label="t('common.all')" value="" />
+              <el-option :label="t('order.pending')" value="pending" />
+              <el-option :label="t('order.confirmed')" value="confirmed" />
+              <el-option :label="t('order.completed')" value="completed" />
+              <el-option :label="t('order.cancelled')" value="cancelled" />
             </el-select>
-            <el-button type="primary" icon="Printer" @click="handlePrint">打印</el-button>
+            <el-button type="primary" icon="Printer" @click="handlePrint">{{ t('common.print') }}</el-button>
           </div>
         </div>
       </template>
 
       <el-table :data="tableData" border stripe @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="50" />
-        <el-table-column prop="orderNo" label="订单号" width="180" />
-        <el-table-column prop="companyName" label="客户" min-width="150" />
-        <el-table-column prop="contactPerson" label="收货人" width="100" />
-        <el-table-column prop="contactPhone" label="电话" width="130" />
-        <el-table-column prop="totalAmount" label="金额" width="100">
+        <el-table-column prop="orderNo" :label="t('order.orderNo')" width="180" />
+        <el-table-column prop="companyName" :label="t('order.customer')" min-width="150" />
+        <el-table-column prop="contactPerson" :label="t('order.receiver')" width="100" />
+        <el-table-column prop="contactPhone" :label="t('common.phone')" width="130" />
+        <el-table-column prop="totalAmount" :label="t('order.amount')" width="100">
           <template #default="{ row }">¥{{ row.totalAmount }}</template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="90">
+        <el-table-column prop="status" :label="t('common.status')" width="90">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="下单时间" width="160" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column prop="createdAt" :label="t('order.orderTime')" width="160" />
+        <el-table-column :label="t('common.action')" width="180" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleView(row)">详情</el-button>
-            <el-button v-if="row.status === 'pending'" type="success" link @click="handleConfirm(row)">确认</el-button>
-            <el-button v-if="row.status === 'confirmed'" type="info" link @click="handleComplete(row)">完成</el-button>
+            <el-button type="primary" link @click="handleView(row)">{{ t('common.detail') }}</el-button>
+            <el-button v-if="row.status === 'pending'" type="success" link @click="handleConfirm(row)">{{ t('order.confirm') }}</el-button>
+            <el-button v-if="row.status === 'confirmed'" type="info" link @click="handleComplete(row)">{{ t('order.complete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -97,8 +97,11 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+
+const { t } = useI18n()
 
 const tableData = ref([])
 const detailVisible = ref(false)
@@ -114,7 +117,7 @@ const getStatusType = (status) => {
 }
 
 const getStatusText = (status) => {
-  const map = { pending: '待确认', confirmed: '已确认', completed: '已完成', cancelled: '已取消' }
+  const map = { pending: t('order.pending'), confirmed: t('order.confirmed'), completed: t('order.completed'), cancelled: t('order.cancelled') }
   return map[status] || status
 }
 
