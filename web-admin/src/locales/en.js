@@ -10,7 +10,11 @@ export default {
     invoice: 'Invoices',
     report: 'Reports',
     settings: 'Settings',
-    logs: 'Logs'
+    logs: 'Logs',
+    customerDetail: 'Customer Detail',
+    productDetail: 'Product Detail',
+    orderDetail: 'Order Detail',
+    invoiceDetail: 'Invoice Detail'
   },
   header: {
     logout: 'Logout'

@@ -14,43 +14,43 @@
       >
         <el-menu-item index="/dashboard">
           <el-icon><DataLine /></el-icon>
-          <span>信息统计</span>
+          <span>{{ t('nav.dashboard') }}</span>
         </el-menu-item>
         <el-menu-item index="/customer">
           <el-icon><User /></el-icon>
-          <span>客户管理</span>
+          <span>{{ t('nav.customer') }}</span>
         </el-menu-item>
         <el-menu-item index="/staff" v-if="isAdmin">
           <el-icon><UserFilled /></el-icon>
-          <span>员工管理</span>
+          <span>{{ t('nav.staff') }}</span>
         </el-menu-item>
         <el-menu-item index="/product">
           <el-icon><Goods /></el-icon>
-          <span>商品管理</span>
+          <span>{{ t('nav.product') }}</span>
         </el-menu-item>
         <el-menu-item index="/category">
           <el-icon><Collection /></el-icon>
-          <span>分类管理</span>
+          <span>{{ t('nav.category') }}</span>
         </el-menu-item>
         <el-menu-item index="/order">
           <el-icon><Document /></el-icon>
-          <span>订单管理</span>
+          <span>{{ t('nav.order') }}</span>
         </el-menu-item>
         <el-menu-item index="/invoice">
           <el-icon><Tickets /></el-icon>
-          <span>账单管理</span>
+          <span>{{ t('nav.invoice') }}</span>
         </el-menu-item>
         <el-menu-item index="/report">
           <el-icon><TrendCharts /></el-icon>
-          <span>报表统计</span>
+          <span>{{ t('nav.report') }}</span>
         </el-menu-item>
         <el-menu-item index="/settings" v-if="isAdmin">
           <el-icon><Setting /></el-icon>
-          <span>系统设置</span>
+          <span>{{ t('nav.settings') }}</span>
         </el-menu-item>
         <el-menu-item index="/logs" v-if="isAdmin">
           <el-icon><Clock /></el-icon>
-          <span>操作日志</span>
+          <span>{{ t('nav.logs') }}</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -59,9 +59,25 @@
     <el-container>
       <el-header>
         <div class="header-content">
+          <el-dropdown @command="handleLanguageChange">
+            <span class="language-switch">
+              {{ languages.find(l => l.value === locale)?.label }}
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item
+                  v-for="lang in languages"
+                  :key="lang.value"
+                  :command="lang.value"
+                >
+                  {{ lang.label }}
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           <span class="username">{{ user?.name }}</span>
           <el-button type="danger" size="small" @click="handleLogout">
-            退出登录
+            {{ t('header.logout') }}
           </el-button>
         </div>
       </el-header>
@@ -75,16 +91,32 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '../store/user'
+import { useLanguageStore } from '../store/language'
 import { ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const languageStore = useLanguageStore()
+const { t, locale: i18nLocale } = useI18n()
 
 const user = computed(() => userStore.user)
 const isAdmin = computed(() => userStore.isAdmin)
 const activeMenu = computed(() => route.path)
+const locale = computed(() => languageStore.locale)
+
+const languages = [
+  { value: 'zh', label: '中文' },
+  { value: 'ja', label: '日本語' },
+  { value: 'en', label: 'English' }
+]
+
+const handleLanguageChange = (lang) => {
+  languageStore.setLocale(lang)
+  i18nLocale.value = lang
+}
 
 const handleLogout = () => {
   ElMessageBox.confirm('确定要退出登录吗？', '提示', {

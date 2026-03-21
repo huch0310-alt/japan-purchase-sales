@@ -10,7 +10,11 @@ export default {
     invoice: '账单管理',
     report: '报表统计',
     settings: '系统设置',
-    logs: '操作日志'
+    logs: '操作日志',
+    customerDetail: '客户详情',
+    productDetail: '商品详情',
+    orderDetail: '订单详情',
+    invoiceDetail: '账单详情'
   },
   header: {
     logout: '退出登录'

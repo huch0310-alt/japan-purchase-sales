@@ -10,7 +10,11 @@ export default {
     invoice: '請求書管理',
     report: 'レポート統計',
     settings: 'システム設定',
-    logs: '操作ログ'
+    logs: '操作ログ',
+    customerDetail: '顧客詳細',
+    productDetail: '商品詳細',
+    orderDetail: '注文詳細',
+    invoiceDetail: '請求書詳細'
   },
   header: {
     logout: 'ログアウト'
