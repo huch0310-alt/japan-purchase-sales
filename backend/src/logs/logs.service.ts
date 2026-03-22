@@ -38,8 +38,7 @@ export class LogsService {
     startDate?: Date;
     endDate?: Date;
   }): Promise<OperationLog[]> {
-    const query = this.logRepository.createQueryBuilder('log')
-      .leftJoinAndSelect('log.user', 'user');
+    const query = this.logRepository.createQueryBuilder('log');
 
     if (filters?.userId) {
       query.andWhere('log.user_id = :userId', { userId: filters.userId });
