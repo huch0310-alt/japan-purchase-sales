@@ -40,6 +40,10 @@
           <el-icon><Tickets /></el-icon>
           <span>{{ t('nav.invoice') }}</span>
         </el-menu-item>
+        <el-menu-item index="/invoice-generate">
+          <el-icon><Document /></el-icon>
+          <span>{{ t('nav.invoiceGenerate') }}</span>
+        </el-menu-item>
         <el-menu-item index="/report">
           <el-icon><TrendCharts /></el-icon>
           <span>{{ t('nav.report') }}</span>

@@ -91,6 +91,12 @@ const routes = [
         meta: { title: 'nav.invoiceDetail' }
       },
       {
+        path: 'invoice-generate',
+        name: 'InvoiceGenerate',
+        component: () => import('../views/InvoiceGenerate.vue'),
+        meta: { title: 'nav.invoiceGenerate' }
+      },
+      {
         path: 'report',
         name: 'Report',
         component: () => import('../views/Report.vue'),

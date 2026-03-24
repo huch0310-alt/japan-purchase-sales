@@ -8,6 +8,7 @@ export default {
     unit: 'Units',
     order: 'Orders',
     invoice: 'Invoices',
+    invoiceGenerate: 'Generate Invoice',
     report: 'Reports',
     settings: 'Settings',
     logs: 'Logs',
@@ -184,6 +185,7 @@ export default {
     taxAmount: 'Tax',
     discount: 'VIP Discount',
     total: 'Total',
+    totalAmount: 'Order Amount',
     orderTime: 'Order Time',
     confirmOrder: 'Confirm Order',
     orderDetails: 'Order Details',
@@ -197,7 +199,8 @@ export default {
     cancelled: 'Cancelled',
     confirm: 'Confirm',
     complete: 'Complete',
-    printing: 'Print function under development'
+    printing: 'Print function under development',
+    selectCustomer: 'Select Customer'
   },
   invoice: {
     title: 'Invoice Management',
@@ -221,7 +224,14 @@ export default {
     generate: 'Generate',
     generated: 'Invoice Generated',
     yes: 'Yes',
-    no: 'No'
+    no: 'No',
+    onlyCompletedOrders: 'Show completed orders only',
+    confirmGenerate: 'Confirm Generation',
+    confirmMessage: 'Generate invoice for {count} order(s)? Total: ¥{total}',
+    selectDueDate: 'Select due date',
+    mustSameCustomer: 'Orders must be from the same customer',
+    generateSuccess: 'Invoice generated successfully',
+    generateFailed: 'Failed to generate invoice'
   },
   report: {
     title: 'Report Statistics',

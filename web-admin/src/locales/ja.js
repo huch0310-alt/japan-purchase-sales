@@ -8,6 +8,7 @@ export default {
     unit: '単位管理',
     order: '注文管理',
     invoice: '請求書管理',
+    invoiceGenerate: '請求書の生成',
     report: 'レポート統計',
     settings: 'システム設定',
     logs: '操作ログ',
@@ -184,6 +185,7 @@ export default {
     taxAmount: '消費税',
     discount: 'VIP割引',
     total: '合計',
+    totalAmount: '注文金額',
     orderTime: '注文日時',
     confirmOrder: '注文を確認',
     orderDetails: '注文詳細',
@@ -197,7 +199,8 @@ export default {
     cancelled: 'キャンセル',
     confirm: '確認',
     complete: '完了',
-    printing: '印刷機能開発中'
+    printing: '印刷機能開発中',
+    selectCustomer: '顧客を選択'
   },
   invoice: {
     title: '請求書管理',
@@ -221,7 +224,14 @@ export default {
     generate: '生成',
     generated: '請求書生成済み',
     yes: 'はい',
-    no: 'いいえ'
+    no: 'いいえ',
+    onlyCompletedOrders: '完了した注文のみ表示',
+    confirmGenerate: '生成確認',
+    confirmMessage: '{count}件の注文の請求書を生成しますか？合計: ¥{total}',
+    selectDueDate: '支払期限を選択',
+    mustSameCustomer: '同じ顧客の注文のみ選択できます',
+    generateSuccess: '請求書の生成に成功しました',
+    generateFailed: '請求書の生成に失敗しました'
   },
   report: {
     title: 'レポート統計',

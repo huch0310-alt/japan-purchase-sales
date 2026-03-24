@@ -8,6 +8,7 @@ export default {
     unit: '单位管理',
     order: '订单管理',
     invoice: '账单管理',
+    invoiceGenerate: '生成请求书',
     report: '报表统计',
     settings: '系统设置',
     logs: '操作日志',
@@ -184,6 +185,7 @@ export default {
     taxAmount: '消费税',
     discount: 'VIP折扣',
     total: '合计',
+    totalAmount: '订单金额',
     orderTime: '下单时间',
     confirmOrder: '确认订单',
     orderDetails: '订单详情',
@@ -197,7 +199,8 @@ export default {
     cancelled: '已取消',
     confirm: '确认',
     complete: '完成',
-    printing: '打印功能开发中'
+    printing: '打印功能开发中',
+    selectCustomer: '选择客户'
   },
   invoice: {
     title: '账单管理',
@@ -221,7 +224,14 @@ export default {
     generate: '生成',
     generated: '已生成请求书',
     yes: '是',
-    no: '否'
+    no: '否',
+    onlyCompletedOrders: '仅显示已完成订单',
+    confirmGenerate: '确认生成',
+    confirmMessage: '确定要生成 {count} 张订单的请求书吗？总计: ¥{total}',
+    selectDueDate: '选择到期日',
+    mustSameCustomer: '只能选择同一客户的订单',
+    generateSuccess: '请求书生成成功',
+    generateFailed: '请求书生成失败'
   },
   report: {
     title: '报表统计',
