@@ -1,6 +1,6 @@
 import { Injectable, Inject, forwardRef, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import { Invoice } from './entities/invoice.entity';
 import { Order } from '../orders/entities/order.entity';
 import { OrdersService } from '../orders/orders.service';
@@ -24,6 +24,7 @@ export class InvoicesService {
     @Inject(forwardRef(() => OrdersService))
     private ordersService: OrdersService,
     private settingService: SettingService,
+    private dataSource: DataSource,
   ) {}
 
   /**
@@ -44,69 +45,80 @@ export class InvoicesService {
     customerId: string;
     orderIds: string[];
   }): Promise<Invoice> {
-    // 获取订单信息
-    let subtotal = 0;
-    for (const orderId of data.orderIds) {
-      const order = await this.ordersService.findById(orderId);
-      if (!order) {
-        throw new Error(`订单 ${orderId} 不存在`);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 获取订单信息
+      let subtotal = 0;
+      for (const orderId of data.orderIds) {
+        const order = await this.ordersService.findById(orderId);
+        if (!order) {
+          throw new Error(`订单 ${orderId} 不存在`);
+        }
+        if (order.customerId !== data.customerId) {
+          throw new Error('订单与客户不匹配');
+        }
+        if (order.status !== 'completed') {
+          throw new BadRequestException(`订单 ${order.orderNo} 状态不是已完成，无法生成请求书`);
+        }
+        if (order.invoiceId) {
+          throw new BadRequestException(`订单 ${order.orderNo} 已生成过请求书`);
+        }
+        subtotal += Number(order.subtotal);
       }
-      if (order.customerId !== data.customerId) {
-        throw new Error('订单与客户不匹配');
-      }
-      if (order.status !== 'completed') {
-        throw new BadRequestException(`订单 ${order.orderNo} 状态不是已完成，无法生成请求书`);
-      }
-      if (order.invoiceId) {
-        throw new BadRequestException(`订单 ${order.orderNo} 已生成过请求书`);
-      }
-      subtotal += Number(order.subtotal);
+
+      // 获取消费税率
+      const taxRate = await this.settingService.getValue('tax_rate') || '10';
+      const taxRateNum = parseInt(taxRate) / 100;
+
+      // 计算消费税
+      const taxAmount = Math.round(subtotal * taxRateNum);
+
+      // 税込合计
+      const totalAmount = subtotal + taxAmount;
+
+      // 获取账期天数
+      const defaultPaymentDays = parseInt(
+        await this.settingService.getValue('default_payment_days') || '30'
+      );
+
+      const issueDate = new Date();
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + defaultPaymentDays);
+
+      const invoice = queryRunner.manager.create(Invoice, {
+        invoiceNo: this.generateInvoiceNo(),
+        customerId: data.customerId,
+        orderIds: data.orderIds,
+        subtotal,
+        taxAmount,
+        totalAmount,
+        issueDate,
+        dueDate,
+        status: 'unpaid',
+      });
+
+      // 1. 保存发票获取id
+      const savedInvoice = await queryRunner.manager.save(Invoice, invoice);
+
+      // 2. 更新所有订单的 invoice_id 字段
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(Order)
+        .set({ invoiceId: savedInvoice.id })
+        .where('id IN (:...orderIds)', { orderIds: data.orderIds })
+        .execute();
+
+      await queryRunner.commitTransaction();
+      return savedInvoice;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    // 获取消费税率
-    const taxRate = await this.settingService.getValue('tax_rate') || '10';
-    const taxRateNum = parseInt(taxRate) / 100;
-
-    // 计算消费税
-    const taxAmount = Math.round(subtotal * taxRateNum);
-
-    // 税込合计
-    const totalAmount = subtotal + taxAmount;
-
-    // 获取账期天数
-    const defaultPaymentDays = parseInt(
-      await this.settingService.getValue('default_payment_days') || '30'
-    );
-
-    const issueDate = new Date();
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + defaultPaymentDays);
-
-    const invoice = this.invoiceRepository.create({
-      invoiceNo: this.generateInvoiceNo(),
-      customerId: data.customerId,
-      orderIds: data.orderIds,
-      subtotal,
-      taxAmount,
-      totalAmount,
-      issueDate,
-      dueDate,
-      status: 'unpaid',
-    });
-
-    // 1. 保存发票获取id
-    const savedInvoice = await this.invoiceRepository.save(invoice);
-
-    // 2. 更新所有订单的 invoice_id 字段
-    await this.orderRepository
-      .createQueryBuilder()
-      .update(Order)
-      .set({ invoiceId: savedInvoice.id })
-      .where('id IN (:...orderIds)', { orderIds: data.orderIds })
-      .execute();
-
-    // 3. 返回保存的发票
-    return savedInvoice;
   }
 
   /**
