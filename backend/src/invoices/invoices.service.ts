@@ -1,7 +1,8 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Invoice } from './entities/invoice.entity';
+import { Order } from '../orders/entities/order.entity';
 import { OrdersService } from '../orders/orders.service';
 import { SettingService } from '../settings/settings.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,6 +19,8 @@ export class InvoicesService {
   constructor(
     @InjectRepository(Invoice)
     private invoiceRepository: Repository<Invoice>,
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
     @Inject(forwardRef(() => OrdersService))
     private ordersService: OrdersService,
     private settingService: SettingService,
@@ -50,6 +53,12 @@ export class InvoicesService {
       }
       if (order.customerId !== data.customerId) {
         throw new Error('订单与客户不匹配');
+      }
+      if (order.status !== 'completed') {
+        throw new BadRequestException(`订单 ${order.orderNo} 状态不是已完成，无法生成请求书`);
+      }
+      if (order.invoiceId) {
+        throw new BadRequestException(`订单 ${order.orderNo} 已生成过请求书`);
       }
       subtotal += Number(order.subtotal);
     }
@@ -85,7 +94,19 @@ export class InvoicesService {
       status: 'unpaid',
     });
 
-    return this.invoiceRepository.save(invoice);
+    // 1. 保存发票获取id
+    const savedInvoice = await this.invoiceRepository.save(invoice);
+
+    // 2. 更新所有订单的 invoice_id 字段
+    await this.orderRepository
+      .createQueryBuilder()
+      .update(Order)
+      .set({ invoiceId: savedInvoice.id })
+      .where('id IN (:...orderIds)', { orderIds: data.orderIds })
+      .execute();
+
+    // 3. 返回保存的发票
+    return savedInvoice;
   }
 
   /**
@@ -167,7 +188,7 @@ export class InvoicesService {
       .update(Invoice)
       .set({ status: 'overdue' })
       .where('status = :status', { status: 'unpaid' })
-      .andWhere('due_date < :now', { now })
+      .andWhere('dueDate < :now', { now })
       .execute();
   }
 
@@ -405,8 +426,8 @@ export class InvoicesService {
       .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.customer', 'customer')
       .where('invoice.status = :status', { status: 'unpaid' })
-      .andWhere('invoice.due_date <= :reminderDate', { reminderDate })
-      .andWhere('invoice.due_date >= :today', { today })
+      .andWhere('invoice.dueDate <= :reminderDate', { reminderDate })
+      .andWhere('invoice.dueDate >= :today', { today })
       .getMany();
   }
 }
