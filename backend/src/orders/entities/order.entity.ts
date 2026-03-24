@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn, UpdateDateColumn } from 'typeorm';
 import { Customer } from '../../users/entities/customer.entity';
+import { Invoice } from '../../invoices/entities/invoice.entity';
 import { OrderItem } from './order-item.entity';
 
 /**
@@ -56,6 +57,12 @@ export class Order {
 
   @Column({ nullable: true })
   confirmedById: string;  // 确认人ID
+
+  @ManyToOne(() => Invoice, { nullable: true })
+  invoice: Invoice;
+
+  @Column({ name: 'invoice_id', type: 'uuid', nullable: true })
+  invoiceId: string;
 
   @OneToMany(() => OrderItem, item => item.order, { cascade: true })
   items: OrderItem[];
