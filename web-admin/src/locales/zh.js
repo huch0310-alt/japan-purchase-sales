@@ -92,7 +92,9 @@ export default {
     operationSuccess: '操作成功',
     operationFailed: '操作失败',
     confirmDelete: '确定要删除吗？',
-    selectCustomerOrder: '请选择客户和订单'
+    selectCustomerOrder: '请选择客户和订单',
+    addSuccess: '添加成功',
+    addFailed: '添加失败'
   },
   login: {
     title: '日本采销管理系统',
@@ -155,7 +157,10 @@ export default {
     offShelf: '下架',
     onShelf: '上架',
     deactivated: '已下架',
-    activated: '已上架'
+    activated: '已上架',
+    enterProductName: '请输入商品名称',
+    selectCategory: '请选择分类',
+    enterDescription: '请输入商品说明'
   },
   category: {
     title: '分类管理',
@@ -213,7 +218,10 @@ export default {
     markPaid: '标记付款',
     paidMarked: '已标记为已付款',
     createSuccess: '請求書生成成功',
-    generate: '生成'
+    generate: '生成',
+    generated: '已生成请求书',
+    yes: '是',
+    no: '否'
   },
   report: {
     title: '报表统计',

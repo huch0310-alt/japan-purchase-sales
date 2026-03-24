@@ -92,7 +92,9 @@ export default {
     operationSuccess: '操作成功',
     operationFailed: '操作失敗',
     confirmDelete: '削除しますか？',
-    selectCustomerOrder: '顧客と注文を選択してください'
+    selectCustomerOrder: '顧客と注文を選択してください',
+    addSuccess: '追加成功',
+    addFailed: '追加失敗'
   },
   login: {
     title: '日本調達販売管理システム',
@@ -155,7 +157,10 @@ export default {
     offShelf: '下架',
     onShelf: '上架',
     deactivated: '下架済み',
-    activated: '上架済み'
+    activated: '上架済み',
+    enterProductName: '商品名を入力してください',
+    selectCategory: 'カテゴリを選択してください',
+    enterDescription: '商品説明を入力してください'
   },
   category: {
     title: 'カテゴリ管理',
@@ -213,7 +218,10 @@ export default {
     markPaid: '支払済みにする',
     paidMarked: '支払済みしました',
     createSuccess: '請求書生成成功',
-    generate: '生成'
+    generate: '生成',
+    generated: '請求書生成済み',
+    yes: 'はい',
+    no: 'いいえ'
   },
   report: {
     title: 'レポート統計',

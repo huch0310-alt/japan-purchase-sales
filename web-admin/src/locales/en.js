@@ -92,7 +92,9 @@ export default {
     operationSuccess: 'Operation successful',
     operationFailed: 'Operation failed',
     confirmDelete: 'Are you sure you want to delete?',
-    selectCustomerOrder: 'Please select customer and order'
+    selectCustomerOrder: 'Please select customer and order',
+    addSuccess: 'Added successfully',
+    addFailed: 'Failed to add'
   },
   login: {
     title: 'Japan Purchase Sales Management System',
@@ -155,7 +157,10 @@ export default {
     offShelf: 'Off Shelf',
     onShelf: 'On Shelf',
     deactivated: 'Deactivated',
-    activated: 'Activated'
+    activated: 'Activated',
+    enterProductName: 'Please enter product name',
+    selectCategory: 'Please select category',
+    enterDescription: 'Please enter description'
   },
   category: {
     title: 'Category Management',
@@ -213,7 +218,10 @@ export default {
     markPaid: 'Mark as Paid',
     paidMarked: 'Marked as paid',
     createSuccess: 'Invoice generated successfully',
-    generate: 'Generate'
+    generate: 'Generate',
+    generated: 'Invoice Generated',
+    yes: 'Yes',
+    no: 'No'
   },
   report: {
     title: 'Report Statistics',

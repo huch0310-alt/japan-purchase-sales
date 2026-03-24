@@ -31,6 +31,16 @@
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
+        <el-table-column :label="t('invoice.generated')" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.invoiceId" type="success" size="small">
+              {{ t('invoice.yes') }}
+            </el-tag>
+            <el-tag v-else type="info" size="small">
+              {{ t('invoice.no') }}
+            </el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="createdAt" :label="t('order.orderTime')" width="160" />
         <el-table-column :label="t('common.action')" width="180" fixed="right">
           <template #default="{ row }">
