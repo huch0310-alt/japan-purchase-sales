@@ -20,10 +20,16 @@
         <el-table-column prop="customer.companyName" :label="t('order.customer')" />
         <el-table-column prop="totalAmount" :label="t('order.totalAmount')" width="120">
           <template #default="{ row }">
-            ¥{{ row.totalAmount }}
+            ¥{{ row.totalAmount }} <!-- TODO: i18n currency symbol when available -->
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" :label="t('order.orderTime')" width="160" />
+        <el-table-column prop="invoiceId" :label="t('invoice.status')" width="120">
+          <template #default="{ row }">
+            <el-tag v-if="row.invoiceId" type="success">{{ t('invoice.alreadyInvoiced') }}</el-tag>
+            <el-tag v-else type="info">{{ t('invoice.available') }}</el-tag>
+          </template>
+        </el-table-column>
       </el-table>
 
       <div class="action-bar">
@@ -50,7 +56,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '../api'
 import { ElMessage } from 'element-plus'
@@ -72,8 +78,12 @@ const selectedAmount = computed(() => {
 const checkSelectable = (row) => !row.invoiceId
 
 const loadCustomers = async () => {
-  const res = await api.get('/customers')
-  customers.value = res.data
+  try {
+    const res = await api.get('/customers')
+    customers.value = res.data
+  } catch (e) {
+    console.error('Failed to load customers:', e)
+  }
 }
 
 const loadOrders = async () => {
@@ -82,6 +92,8 @@ const loadOrders = async () => {
     const params = filterCustomerId.value ? { customerId: filterCustomerId.value } : {}
     const res = await api.get('/orders/available-for-invoice', { params })
     orders.value = res.data
+  } catch (e) {
+    ElMessage.error(t('messages.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -110,6 +122,10 @@ const generateInvoice = () => {
 }
 
 const confirmGenerate = async () => {
+  if (!invoiceForm.value.dueDate) {
+    ElMessage.error(t('invoice.pleaseSelectDueDate'))
+    return
+  }
   const customerId = selectedOrders.value[0].customerId
   const orderIds = selectedOrders.value.map(o => o.id)
 
@@ -127,8 +143,10 @@ const confirmGenerate = async () => {
   }
 }
 
-loadCustomers()
-loadOrders()
+onMounted(() => {
+  loadCustomers()
+  loadOrders()
+})
 </script>
 
 <style scoped>
