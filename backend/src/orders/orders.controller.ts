@@ -146,6 +146,20 @@ export class OrdersController {
   }
 
   /**
+   * 获取可生成请求书的订单列表（已完成但未开单）
+   */
+  @Get('available-for-invoice')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'admin', 'sales')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取可生成请求书的订单列表' })
+  async findAvailableForInvoice(
+    @Query('customerId') customerId?: string,
+  ) {
+    return this.ordersService.findCompletedWithoutInvoice(customerId);
+  }
+
+  /**
    * 获取销售报表
    */
   @Get('reports/sales')

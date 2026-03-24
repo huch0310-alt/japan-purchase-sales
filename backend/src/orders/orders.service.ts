@@ -99,8 +99,9 @@ export class OrdersService {
       const taxRate = await this.settingService.getValue('tax_rate') || '10';
       const taxRateNum = parseInt(taxRate) / 100;
 
-      // 计算VIP折扣
-      const discountAmount = subtotal * (1 - customer.vipDiscount / 100);
+      // 计算VIP折扣 (vipDiscount是0-1之间的小数，如0.10表示10%折扣)
+      const vipDiscountNum = parseFloat(String(customer.vipDiscount));
+      const discountAmount = subtotal * vipDiscountNum;
       const afterDiscount = subtotal - discountAmount;
 
       // 计算消费税
@@ -334,13 +335,33 @@ export class OrdersService {
   }
 
   /**
+   * 获取客户的已完成但未生成请求书的订单
+   */
+  async findCompletedWithoutInvoice(customerId?: string): Promise<Order[]> {
+    const queryBuilder = this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoinAndSelect('order.customer', 'customer')
+      .leftJoinAndSelect('order.items', 'items')
+      .where('order.status = :status', { status: 'completed' })
+      .andWhere('order.invoiceId IS NULL');
+
+    if (customerId) {
+      queryBuilder.andWhere('order.customerId = :customerId', { customerId });
+    }
+
+    return queryBuilder
+      .orderBy('order.createdAt', 'DESC')
+      .getMany();
+  }
+
+  /**
    * 获取销售报表数据
    */
   async getSalesReport(startDate: Date, endDate: Date): Promise<any> {
     const orders = await this.orderRepository
       .createQueryBuilder('order')
-      .where('order.created_at >= :startDate', { startDate })
-      .andWhere('order.created_at <= :endDate', { endDate })
+      .where('order.createdAt >= :startDate', { startDate })
+      .andWhere('order.createdAt <= :endDate', { endDate })
       .andWhere('order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
       .getMany();
 
