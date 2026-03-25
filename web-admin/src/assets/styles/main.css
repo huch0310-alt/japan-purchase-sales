@@ -34,6 +34,11 @@
   --color-warning: #D4A84B;
   --color-danger: #C75B5B;
 
+  /* 滚动条 */
+  --color-scrollbar-track: #f1f1f1;
+  --color-scrollbar-thumb: #888;
+  --color-scrollbar-thumb-hover: #555;
+
   /* 表格 */
   --color-table-header-bg: rgba(183, 110, 121, 0.08);
   --color-table-row-hover: rgba(183, 110, 121, 0.05);
