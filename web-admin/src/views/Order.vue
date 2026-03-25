@@ -24,7 +24,7 @@
         <el-table-column prop="contactPerson" :label="t('order.receiver')" width="100" />
         <el-table-column prop="contactPhone" :label="t('common.phone')" width="130" />
         <el-table-column prop="totalAmount" :label="t('order.amount')" width="100">
-          <template #default="{ row }">¥{{ row.totalAmount }}</template>
+          <template #default="{ row }">{{ formatCurrency(row.totalAmount) }}</template>
         </el-table-column>
         <el-table-column prop="status" :label="t('common.status')" width="90">
           <template #default="{ row }">
@@ -41,7 +41,9 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" :label="t('order.orderTime')" width="160" />
+        <el-table-column prop="createdAt" :label="t('order.orderTime')" width="160">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column :label="t('common.action')" width="180" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleView(row)">{{ t('common.detail') }}</el-button>
@@ -73,7 +75,7 @@
           <el-descriptions-item :label="t('order.customer')">{{ currentOrder.customer?.companyName }}</el-descriptions-item>
           <el-descriptions-item :label="t('order.receiver')">{{ currentOrder.contactPerson }}</el-descriptions-item>
           <el-descriptions-item :label="t('common.phone')">{{ currentOrder.contactPhone }}</el-descriptions-item>
-          <el-descriptions-item :label="t('order.orderTime')">{{ currentOrder.createdAt }}</el-descriptions-item>
+          <el-descriptions-item :label="t('order.orderTime')">{{ formatDateTime(currentOrder.createdAt) }}</el-descriptions-item>
           <el-descriptions-item :label="t('customer.deliveryAddress')" :span="2">{{ currentOrder.deliveryAddress }}</el-descriptions-item>
           <el-descriptions-item :label="t('common.remark')" :span="2">{{ currentOrder.remark || '-' }}</el-descriptions-item>
         </el-descriptions>
@@ -83,18 +85,18 @@
           <el-table-column prop="productName" :label="t('dashboard.productName')" />
           <el-table-column prop="quantity" :label="t('dashboard.salesQuantity')" width="80" />
           <el-table-column prop="unitPrice" :label="t('product.salePrice')" width="100">
-            <template #default="{ row }">¥{{ row.unitPrice }}</template>
+            <template #default="{ row }">¥{{ Number(row.unitPrice || 0).toLocaleString() }}</template>
           </el-table-column>
           <el-table-column :label="t('order.subtotal')" width="100">
-            <template #default="{ row }">¥{{ row.unitPrice * row.quantity }}</template>
+            <template #default="{ row }">¥{{ (Number(row.unitPrice || 0) * Number(row.quantity || 0)).toLocaleString() }}</template>
           </el-table-column>
         </el-table>
 
         <div class="total-section">
-          <div>{{ t('order.subtotal') }}: ¥{{ currentOrder.subtotal }}</div>
-          <div>{{ t('order.discount') }}: -¥{{ currentOrder.discountAmount }}</div>
-          <div>{{ t('order.taxAmount') }}: ¥{{ currentOrder.taxAmount }}</div>
-          <div class="total">{{ t('order.total') }}: ¥{{ currentOrder.totalAmount }}</div>
+          <div>{{ t('order.subtotal') }}: {{ formatCurrency(currentOrder.subtotal) }}</div>
+          <div>{{ t('order.discount') }}: -{{ formatCurrency(currentOrder.discountAmount) }}</div>
+          <div>{{ t('order.taxAmount') }}: {{ formatCurrency(currentOrder.taxAmount) }}</div>
+          <div class="total">{{ t('order.total') }}: {{ formatCurrency(currentOrder.totalAmount) }}</div>
         </div>
       </div>
       <template #footer>
@@ -110,6 +112,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+import { formatDateTime } from '../utils/format'
+import { formatCurrency } from '../utils/format'
 
 const { t } = useI18n()
 
