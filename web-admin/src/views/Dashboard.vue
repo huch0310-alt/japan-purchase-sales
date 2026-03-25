@@ -47,7 +47,7 @@
               <el-icon :size="30"><Money /></el-icon>
             </div>
             <div class="stat-info">
-              <div class="stat-value">¥{{ stats.todaySales }}</div>
+              <div class="stat-value">{{ formatCurrency(stats.todaySales) }}</div>
               <div class="stat-label">{{ t('dashboard.todaySales') }}</div>
             </div>
           </div>
@@ -74,7 +74,7 @@
             <el-table-column prop="saleCount" :label="t('dashboard.salesQuantity')" width="100" />
             <el-table-column prop="saleAmount" :label="t('dashboard.salesAmount')" width="100">
               <template #default="{ row }">
-                ¥{{ row.saleAmount }}
+                {{ formatCurrency(row.saleAmount) }}
               </template>
             </el-table-column>
           </el-table>
@@ -88,6 +88,8 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as echarts from 'echarts'
+import { formatCurrency } from '../utils/format'
+import api from '../api'
 
 const { t } = useI18n()
 
@@ -101,40 +103,70 @@ const stats = ref({
 const salesChartRef = ref()
 const hotProducts = ref([])
 
-onMounted(() => {
-  // 模拟数据
-  stats.value = {
-    customerCount: 156,
-    productCount: 428,
-    orderCount: 892,
-    todaySales: '12,580'
+const loadStats = async () => {
+  try {
+    const res = await api.get('/stats/dashboard')
+    stats.value = {
+      customerCount: res.data.customerCount || 0,
+      productCount: res.data.productCount || 0,
+      orderCount: res.data.orderCount || 0,
+      todaySales: res.data.todaySales || 0
+    }
+  } catch (e) {
+    console.error('Failed to load stats:', e)
   }
+}
 
-  // 销售趋势图表
-  const chart = echarts.init(salesChartRef.value)
-  chart.setOption({
-    tooltip: { trigger: 'axis' },
-    xAxis: {
-      type: 'category',
-      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-    },
-    yAxis: { type: 'value' },
-    series: [{
-      data: [820, 932, 901, 934, 1290, 1330, 1320],
-      type: 'line',
-      smooth: true,
-      areaStyle: { color: 'rgba(64, 158, 255, 0.2)' }
-    }]
-  })
+const loadHotProducts = async () => {
+  try {
+    const res = await api.get('/stats/hot-products', { params: { limit: 5 } })
+    hotProducts.value = (res.data || []).map(p => ({
+      name: p.name,
+      saleCount: p.salesCount || 0,
+      // 销售额 = 销售价 × 销售数量
+      saleAmount: (p.salePrice || 0) * (p.salesCount || 0)
+    }))
+  } catch (e) {
+    console.error('Failed to load hot products:', e)
+  }
+}
 
-  // 热销商品
-  hotProducts.value = [
-    { name: '新鲜猪肉', saleCount: 520, saleAmount: 15600 },
-    { name: '鸡蛋', saleCount: 480, saleAmount: 9600 },
-    { name: '新鲜蔬菜', saleCount: 350, saleAmount: 8750 },
-    { name: '牛奶', saleCount: 280, saleAmount: 5600 },
-    { name: '面包', saleCount: 220, saleAmount: 4400 }
-  ]
+const loadSalesTrend = async () => {
+  try {
+    const res = await api.get('/stats/sales-trend')
+    const data = res.data || []
+    const chart = echarts.init(salesChartRef.value)
+    chart.setOption({
+      tooltip: { trigger: 'axis' },
+      xAxis: {
+        type: 'category',
+        data: data.map(d => d.date || d.label || '')
+      },
+      yAxis: { type: 'value' },
+      series: [{
+        data: data.map(d => d.amount || d.value || 0),
+        type: 'line',
+        smooth: true,
+        areaStyle: { color: 'rgba(64, 158, 255, 0.2)' }
+      }]
+    })
+  } catch (e) {
+    console.error('Failed to load sales trend:', e)
+    // 即使失败也初始化图表，避免页面空白
+    const chart = echarts.init(salesChartRef.value)
+    chart.setOption({
+      tooltip: { trigger: 'axis' },
+      xAxis: { type: 'category', data: [] },
+      yAxis: { type: 'value' },
+      series: [{ data: [], type: 'line', smooth: true }]
+    })
+  }
+}
+
+onMounted(() => {
+  loadStats()
+  loadHotProducts()
+  loadSalesTrend()
 })
 </script>
 
@@ -145,14 +177,15 @@ onMounted(() => {
 }
 
 .stat-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 8px;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   margin-right: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .stat-info {
@@ -160,14 +193,16 @@ onMounted(() => {
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #333;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-family: 'DIN Alternate', 'Roboto', sans-serif;
+  line-height: 1.2;
 }
 
 .stat-label {
-  font-size: 14px;
-  color: #999;
+  font-size: 13px;
+  color: var(--color-text-secondary);
   margin-top: 4px;
 }
 </style>
