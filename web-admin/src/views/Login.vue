@@ -107,41 +107,72 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: radial-gradient(ellipse at center, #1a2744 0%, #0f1c3a 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 网格纹理 */
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(rgba(183, 110, 121, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(183, 110, 121, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
 }
 
 .language-switch-wrapper {
   position: absolute;
   top: 20px;
   right: 20px;
+  z-index: 10;
 }
 
 .language-switch {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-secondary);
   cursor: pointer;
   font-size: 14px;
   padding: 8px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+  background: rgba(10, 15, 26, 0.5);
 }
 
 .language-switch:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-accent-light);
   border-color: var(--color-accent);
-  color: #fff;
+  color: var(--color-text-primary);
 }
 
 .login-card {
   width: 400px;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--color-card-border);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  z-index: 5;
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .card-header h2 {
   text-align: center;
   margin: 0;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
