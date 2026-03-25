@@ -16,7 +16,7 @@
             <el-descriptions-item :label="t('customer.contactPerson')">{{ customer.contactPerson }}</el-descriptions-item>
             <el-descriptions-item :label="t('customer.contactPhone')">{{ customer.phone }}</el-descriptions-item>
             <el-descriptions-item :label="t('customer.deliveryAddress')">{{ customer.address }}</el-descriptions-item>
-            <el-descriptions-item :label="t('customer.vipDiscount')">{{ customer.vipDiscount }}%</el-descriptions-item>
+            <el-descriptions-item :label="t('customer.vipDiscount')">{{ ((customer.vipDiscount || 0) * 100).toFixed(0) }}%</el-descriptions-item>
             <el-descriptions-item :label="t('common.status')">
               <el-tag :type="customer.isActive ? 'success' : 'danger'">
                 {{ customer.isActive ? t('customer.normal') : t('customer.disabled') }}
@@ -48,14 +48,16 @@
       <el-table :data="orders" border>
         <el-table-column prop="orderNo" :label="t('order.orderNo')" width="180" />
         <el-table-column prop="totalAmount" :label="t('order.amount')" width="100">
-          <template #default="{ row }">¥{{ row.totalAmount }}</template>
+          <template #default="{ row }">¥{{ Number(row.totalAmount || 0).toLocaleString() }}</template>
         </el-table-column>
         <el-table-column prop="status" :label="t('common.status')" width="100">
           <template #default="{ row }">
             <el-tag>{{ getOrderStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" :label="t('order.orderTime')" width="180" />
+        <el-table-column prop="createdAt" :label="t('order.orderTime')" width="180">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
       </el-table>
     </el-card>
 
@@ -70,13 +72,13 @@
         </el-col>
         <el-col :span="6">
           <div class="stat-card">
-            <div class="stat-value">¥{{ stats.totalAmount }}</div>
+            <div class="stat-value">{{ formatCurrency(stats.totalAmount) }}</div>
             <div class="stat-label">{{ t('order.total') }}</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="stat-card">
-            <div class="stat-value">¥{{ stats.avgAmount }}</div>
+            <div class="stat-value">¥{{ Number(stats.avgAmount || 0).toLocaleString() }}</div>
             <div class="stat-label">{{ t('order.amount') }}</div>
           </div>
         </el-col>
@@ -133,6 +135,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+import { formatDateTime, formatDate, formatCurrency } from '../utils/format'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -153,7 +156,11 @@ const loadData = async () => {
   try {
     const res = await api.get(`/customers/${route.params.id}`)
     customer.value = res.data
-    editForm.value = { ...res.data }
+    // VIP折扣：数据库存储0.10，转换为10%显示
+    editForm.value = {
+      ...res.data,
+      vipDiscount: res.data.vipDiscount ? res.data.vipDiscount * 100 : 100
+    }
 
     // 获取客户订单
     const orderRes = await api.get('/orders', { params: { customerId: route.params.id } })
@@ -165,7 +172,7 @@ const loadData = async () => {
       orderCount: orders.value.length,
       totalAmount: totalAmount.toLocaleString(),
       avgAmount: orders.value.length ? (totalAmount / orders.value.length).toFixed(0) : 0,
-      lastOrderDate: orders.value.length ? orders.value[0].createdAt.split('T')[0] : '-'
+      lastOrderDate: orders.value.length ? formatDate(orders.value[0].createdAt) : '-'
     }
   } catch (e) {
     ElMessage.error(t('messages.loadFailed'))
@@ -180,7 +187,12 @@ const handleEdit = () => {
 
 const handleSubmit = async () => {
   try {
-    await api.put(`/customers/${customer.value.id}`, editForm.value)
+    // VIP折扣：用户输入10%，转换为0.10存储到数据库
+    const submitData = {
+      ...editForm.value,
+      vipDiscount: Number(editForm.value.vipDiscount) / 100
+    }
+    await api.put(`/customers/${customer.value.id}`, submitData)
     ElMessage.success(t('messages.updateSuccess'))
     editVisible.value = false
     loadData()
