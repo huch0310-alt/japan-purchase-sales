@@ -15,14 +15,20 @@
         </el-descriptions-item>
         <el-descriptions-item :label="t('order.customer')">{{ invoice.customer?.companyName }}</el-descriptions-item>
         <el-descriptions-item :label="t('common.contact')">{{ invoice.customer?.contactPerson }}</el-descriptions-item>
-        <el-descriptions-item :label="t('invoice.issueDate')">{{ invoice.issueDate }}</el-descriptions-item>
-        <el-descriptions-item :label="t('invoice.dueDate')" :class="{ 'overdue': isOverdue }">{{ invoice.dueDate }}</el-descriptions-item>
-        <el-descriptions-item :label="t('invoice.subtotalNoTax')">¥{{ invoice.subtotal }}</el-descriptions-item>
-        <el-descriptions-item :label="t('invoice.taxAmount')">¥{{ invoice.taxAmount }}</el-descriptions-item>
-        <el-descriptions-item :label="t('order.total')" :span="2">
-          <span style="font-size: 20px; font-weight: bold; color: #f56c6c">¥{{ invoice.totalAmount }}</span>
+        <el-descriptions-item :label="t('invoice.issueDate')">{{ formatDate(invoice.issueDate) }}</el-descriptions-item>
+        <el-descriptions-item :label="t('invoice.dueDate')" :class="{ 'overdue': isOverdue }">{{ formatDate(invoice.dueDate) }}</el-descriptions-item>
+        <el-descriptions-item :label="t('invoice.subtotalNoTax')">
+          {{ formatCurrency(invoice.subtotal) }}
         </el-descriptions-item>
-        <el-descriptions-item :label="t('invoice.dueDate')" v-if="invoice.paidAt">{{ invoice.paidAt }}</el-descriptions-item>
+        <el-descriptions-item :label="t('invoice.taxAmount')">
+          {{ formatCurrency(invoice.taxAmount) }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('order.total')" :span="2">
+          <span style="font-size: 20px; font-weight: bold; color: var(--color-danger);">
+            {{ formatCurrency(invoice.totalAmount) }}
+          </span>
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('invoice.paidAt')" v-if="invoice.paidAt">{{ formatDateTime(invoice.paidAt) }}</el-descriptions-item>
       </el-descriptions>
     </el-card>
 
@@ -32,9 +38,11 @@
       </template>
       <el-table :data="orders" border>
         <el-table-column prop="orderNo" :label="t('order.orderNo')" />
-        <el-table-column prop="createdAt" :label="t('order.orderTime')" />
+        <el-table-column prop="createdAt" :label="t('order.orderTime')">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column prop="totalAmount" :label="t('order.amount')">
-          <template #default="{ row }">¥{{ row.totalAmount }}</template>
+          <template #default="{ row }">{{ formatCurrency(row.totalAmount) }}</template>
         </el-table-column>
         <el-table-column prop="status" :label="t('common.status')">
           <template #default="{ row }">
@@ -52,6 +60,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+import { formatDateTime, formatDate } from '../utils/format'
+import { formatCurrency } from '../utils/format'
 
 const { t } = useI18n()
 const route = useRoute()
