@@ -1,34 +1,52 @@
 :root {
-  --color-primary: #409EFF;
-  --color-primary-hover: #53a8ff;
-  --color-accent: #00d9ff;
-  --color-sidebar-bg: #1a1a2e;
-  --color-sidebar-active: #16213e;
-  --color-sidebar-text: #bfcbd9;
-  --color-sidebar-active-text: #ffffff;
-  --color-bg-page: #f0f2f5;
-  --color-bg-card: #ffffff;
-  --color-success: #52c41a;
-  --color-warning: #faad14;
-  --color-danger: #ff4d4f;
-  --color-text-primary: #303133;
-  --color-text-secondary: #909399;
-  --color-border: #ebeef5;
-  --color-table-header-bg: #fafafa;
-  --color-scrollbar-track: #f1f1f1;
-  --color-scrollbar-thumb: #888;
-  --color-scrollbar-thumb-hover: #555;
-  --shadow-button-hover: 0 4px 12px rgba(64, 158, 255, 0.4);
+  /* 背景渐变 */
+  --color-bg-start: #0f1c3a;
+  --color-bg-mid: #1a2744;
+  --color-bg-end: #0f1c3a;
+
+  /* 侧边栏 */
+  --color-sidebar-bg: #0a0f1a;
+
+  /* 卡片 */
+  --color-card-bg: rgba(255, 255, 255, 0.03);
+  --color-card-border: rgba(183, 110, 121, 0.1);
+
+  /* 强调色 - 玫瑰金 */
+  --color-accent: #B76E79;
+  --color-accent-hover: #C9848D;
+  --color-accent-light: rgba(183, 110, 121, 0.15);
+
+  /* 主色 */
+  --color-primary: #B76E79;
+  --color-primary-hover: #C9848D;
+
+  /* 文字 */
+  --color-text-primary: #E8E8E8;
+  --color-text-secondary: #8B8B8B;
+  --color-text-muted: #5A5A5A;
+
+  /* 边框 */
+  --color-border: rgba(183, 110, 121, 0.2);
+  --color-divider: rgba(255, 255, 255, 0.05);
+
+  /* 功能色 */
+  --color-success: #5D9B6B;
+  --color-warning: #D4A84B;
+  --color-danger: #C75B5B;
+
+  /* 表格 */
+  --color-table-header-bg: rgba(183, 110, 121, 0.08);
+  --color-table-row-hover: rgba(183, 110, 121, 0.05);
+
+  /* 阴影 */
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 8px 30px rgba(183, 110, 121, 0.15);
+  --shadow-accent: 0 4px 15px rgba(183, 110, 121, 0.3);
 
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
   --radius-xl: 16px;
-
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-  --shadow-hover: 0 8px 24px rgba(64, 158, 255, 0.15);
 }
 
 * {
@@ -41,6 +59,7 @@ body {
   font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
   font-size: 14px;
   color: var(--color-text-primary);
+  background: linear-gradient(180deg, var(--color-bg-start) 0%, var(--color-bg-mid) 50%, var(--color-bg-end) 100%);
 }
 
 /* Element Plus 覆盖样式 */
@@ -53,25 +72,27 @@ body {
 
 .el-card {
   border-radius: var(--radius-lg);
-  border: none;
-  box-shadow: var(--shadow-md);
-  transition: box-shadow 0.3s ease;
+  border: 1px solid var(--color-card-border);
+  background: var(--color-card-bg);
+  box-shadow: var(--shadow-card);
+  transition: all 0.3s ease;
 }
 
 .el-card:hover {
+  border-color: var(--color-border);
   box-shadow: var(--shadow-hover);
 }
 
 .el-button--primary {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
   border: none;
   border-radius: var(--radius-md);
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
+  box-shadow: var(--shadow-accent);
 }
 
 .el-button--primary:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-button-hover);
+  box-shadow: 0 6px 20px rgba(183, 110, 121, 0.4);
 }
 
 .el-button {
