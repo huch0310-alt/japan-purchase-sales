@@ -19,7 +19,7 @@
         <el-table-column prop="address" :label="t('customer.deliveryAddress')" min-width="150" show-overflow-tooltip />
         <el-table-column prop="vipDiscount" :label="t('customer.vipDiscount')" width="100">
           <template #default="{ row }">
-            {{ row.vipDiscount }}%
+            {{ ((row.vipDiscount || 0) * 100).toFixed(0) }}%
           </template>
         </el-table-column>
         <el-table-column prop="isActive" :label="t('common.status')" width="80">
@@ -119,6 +119,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { formatDateTime } from '../utils/format'
+import { formatCurrency } from '../utils/format'
 import api from '../api'
 
 const { t } = useI18n()
@@ -196,11 +198,28 @@ const handleSubmit = async () => {
   await formRef.value.validate(async (valid) => {
     if (!valid) return
     try {
+      // 构建提交数据，移除空值字段避免后端UUID验证失败
+      // VIP折扣：用户输入10表示10%，存储为0.10
+      const submitData = { ...form }
+      if (!submitData.id) delete submitData.id
+      if (!submitData.phone) delete submitData.phone
+      if (!submitData.password) delete submitData.password
+      if (!submitData.contactPerson) delete submitData.contactPerson
+      if (!submitData.address) delete submitData.address
+      if (!submitData.invoiceName) delete submitData.invoiceName
+      if (!submitData.invoiceAddress) delete submitData.invoiceAddress
+      if (!submitData.invoicePhone) delete submitData.invoicePhone
+      if (!submitData.invoiceBank) delete submitData.invoiceBank
+      // 转换VIP折扣：百分比 -> 小数
+      if (submitData.vipDiscount !== undefined && submitData.vipDiscount !== null) {
+        submitData.vipDiscount = Number(submitData.vipDiscount) / 100
+      }
+
       if (isEdit.value) {
-        await api.put(`/customers/${form.id}`, form)
+        await api.put(`/customers/${submitData.id}`, submitData)
         ElMessage.success(t('messages.updateSuccess'))
       } else {
-        await api.post('/customers', form)
+        await api.post('/customers', submitData)
         ElMessage.success(t('messages.createSuccess'))
       }
       dialogVisible.value = false
