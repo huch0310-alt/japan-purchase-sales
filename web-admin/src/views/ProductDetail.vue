@@ -21,14 +21,14 @@
             <el-descriptions-item :label="t('product.title')">{{ product.name }}</el-descriptions-item>
             <el-descriptions-item :label="t('product.category')">{{ product.category?.name || '-' }}</el-descriptions-item>
             <el-descriptions-item :label="t('product.inventory')">{{ product.quantity }} {{ product.unit }}</el-descriptions-item>
-            <el-descriptions-item :label="t('product.purchasePrice')">¥{{ product.purchasePrice }}</el-descriptions-item>
-            <el-descriptions-item :label="t('product.salePrice')">¥{{ product.salePrice }}</el-descriptions-item>
+            <el-descriptions-item :label="t('product.purchasePrice')">{{ formatCurrency(product.purchasePrice) }}</el-descriptions-item>
+            <el-descriptions-item :label="t('product.salePrice')">{{ formatCurrency(product.salePrice) }}</el-descriptions-item>
             <el-descriptions-item :label="t('common.status')">
               <el-tag :type="getStatusType(product.status)">{{ getStatusText(product.status) }}</el-tag>
             </el-descriptions-item>
             <el-descriptions-item :label="t('product.description')">{{ product.description || '-' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('common.createTime')">{{ product.createdAt }}</el-descriptions-item>
-            <el-descriptions-item :label="t('common.updateTime')">{{ product.updatedAt }}</el-descriptions-item>
+            <el-descriptions-item :label="t('common.createTime')">{{ formatDateTime(product.createdAt) }}</el-descriptions-item>
+            <el-descriptions-item :label="t('common.updateTime')">{{ formatDateTime(product.updatedAt) }}</el-descriptions-item>
           </el-descriptions>
         </el-card>
       </el-col>
@@ -84,6 +84,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+import { formatDateTime } from '../utils/format'
+import { formatCurrency } from '../utils/format'
 
 const { t } = useI18n()
 const route = useRoute()
