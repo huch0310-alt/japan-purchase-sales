@@ -140,7 +140,29 @@ const handleLogout = () => {
 }
 
 .el-aside {
-  background-color: #304156;
+  background-color: var(--color-sidebar-bg) !important;
+}
+
+.el-menu {
+  border-right: none !important;
+  background-color: transparent !important;
+}
+
+.el-menu-item {
+  margin: 4px 8px;
+  border-radius: var(--radius-md);
+  height: 48px;
+  transition: all 0.3s ease;
+}
+
+.el-menu-item:hover {
+  background-color: var(--color-sidebar-active) !important;
+}
+
+.el-menu-item.is-active {
+  background-color: var(--color-sidebar-active) !important;
+  color: var(--color-sidebar-active-text) !important;
+  border-left: 3px solid var(--color-accent);
 }
 
 .logo {
@@ -148,17 +170,18 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #2b3a4a;
+  background-color: #0f0f1a;
 }
 
 .logo h3 {
   color: #fff;
   margin: 0;
   font-size: 16px;
+  font-weight: 500;
 }
 
 .el-header {
-  background-color: #fff;
+  background-color: var(--color-bg-card);
   box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
   display: flex;
   align-items: center;
@@ -173,11 +196,12 @@ const handleLogout = () => {
 }
 
 .username {
-  color: #333;
+  color: var(--color-text-primary);
+  font-weight: 500;
 }
 
 .el-main {
-  background-color: #f0f2f5;
+  background-color: var(--color-bg-page);
   padding: 20px;
 }
 </style>
