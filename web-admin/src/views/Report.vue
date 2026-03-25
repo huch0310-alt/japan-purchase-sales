@@ -56,7 +56,7 @@
             <el-table-column type="index" width="50" />
             <el-table-column prop="companyName" :label="t('report.customerName')" />
             <el-table-column prop="amount" :label="t('dashboard.salesAmount')" width="100">
-              <template #default="{ row }">¥{{ row.amount }}</template>
+              <template #default="{ row }">¥{{ Number(row.amount || 0).toLocaleString() }}</template>
             </el-table-column>
           </el-table>
         </el-card>
@@ -92,55 +92,91 @@ const topCustomers = ref([])
 const procurementStats = ref([])
 
 const loadData = async () => {
-  // 模拟数据加载
-  hotProducts.value = [
-    { name: '新鲜猪肉', sales: 520 },
-    { name: '鸡蛋', sales: 480 },
-    { name: '新鲜蔬菜', sales: 350 },
-    { name: '牛奶', sales: 280 },
-    { name: '面包', sales: 220 }
-  ]
-  topCustomers.value = [
-    { companyName: '株式会社ABC', amount: 156000 },
-    { companyName: 'XYZ商事', amount: 98000 },
-    { companyName: '田中商店', amount: 75000 }
-  ]
-  procurementStats.value = [
-    { name: '佐藤', count: 120 },
-    { name: '田中', count: 95 },
-    { name: '鈴木', count: 88 }
-  ]
+  try {
+    // 获取日期范围
+    const startDate = dateRange.value[0] ? new Date(dateRange.value[0]).toISOString() : undefined
+    const endDate = dateRange.value[1] ? new Date(dateRange.value[1]).toISOString() : undefined
 
-  // 销售趋势图
-  const salesChart = echarts.init(salesChartRef.value)
-  salesChart.setOption({
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: ['1月', '2月', '3月', '4月', '5月', '6月'] },
-    yAxis: { type: 'value' },
-    series: [{ data: [82000, 93200, 90100, 93400, 129000, 133000], type: 'line', smooth: true }]
-  })
+    // 并行加载所有数据
+    const [salesTrendRes, hotProductsRes, topCustomersRes, categoryRatioRes, procurementRes] = await Promise.all([
+      api.get('/stats/sales-trend', { params: { startDate, endDate } }),
+      api.get('/stats/hot-products', { params: { limit: 10 } }),
+      api.get('/stats/top-customers', { params: { limit: 10 } }),
+      api.get('/stats/category-ratio', { params: { startDate, endDate } }),
+      api.get('/stats/procurement-stats')
+    ])
 
-  // 分类占比图
-  const categoryChart = echarts.init(categoryChartRef.value)
-  categoryChart.setOption({
-    tooltip: { trigger: 'item' },
-    series: [{
-      type: 'pie',
-      radius: '50%',
-      data: [
-        { value: 335, name: '肉类' },
-        { value: 234, name: '蛋品' },
-        { value: 154, name: '生鲜蔬果' },
-        { value: 135, name: '酒水饮料' },
-        { value: 148, name: '其他' }
-      ]
-    }]
-  })
+    // 热销商品
+    hotProducts.value = (hotProductsRes.data || []).map(p => ({
+      name: p.name,
+      sales: p.sales || p.salesCount || 0
+    }))
+
+    // 客户排行
+    topCustomers.value = (topCustomersRes.data || []).map(c => ({
+      companyName: c.companyName || c.name,
+      amount: c.amount || c.totalAmount || 0
+    }))
+
+    // 采购统计
+    procurementStats.value = (procurementRes.data || []).map(p => ({
+      name: p.staffId || 'Unknown',
+      count: p.count || 0
+    }))
+
+    // 销售趋势图
+    const salesData = salesTrendRes.data || []
+    const salesChart = echarts.init(salesChartRef.value)
+    salesChart.setOption({
+      tooltip: { trigger: 'axis' },
+      xAxis: { type: 'category', data: salesData.map(d => d.date || d.label || '') },
+      yAxis: {
+  type: 'value',
+  axisLabel: {
+    formatter: (value) => `¥${value.toLocaleString()}`
+  }
+},
+      series: [{ data: salesData.map(d => d.amount || d.value || 0), type: 'line', smooth: true }]
+    })
+
+    // 分类占比图
+    const categoryData = categoryRatioRes.data || []
+    const categoryChart = echarts.init(categoryChartRef.value)
+    categoryChart.setOption({
+      tooltip: { trigger: 'item' },
+      series: [{
+        type: 'pie',
+        radius: '50%',
+        data: categoryData.map(c => ({
+          value: c.amount || c.count || 0,
+          name: c.name || c.categoryName || ''
+        }))
+      }]
+    })
+  } catch (e) {
+    console.error('Failed to load report data:', e)
+  }
 }
 
 const handleExport = async () => {
-  // TODO: 实现Excel导出
-  ElMessage.info(t('report.exporting'))
+  try {
+    ElMessage.info(t('report.exporting'))
+    const startDate = dateRange.value[0] ? new Date(dateRange.value[0]).toISOString() : undefined
+    const endDate = dateRange.value[1] ? new Date(dateRange.value[1]).toISOString() : undefined
+    const res = await api.get('/reports/sales/export', { params: { startDate, endDate }, responseType: 'blob' })
+    // 下载文件
+    const blob = new Blob([res.data])
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `sales_report_${new Date().toISOString().split('T')[0]}.xlsx`
+    a.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success(t('report.exportSuccess'))
+  } catch (e) {
+    console.error('Export failed:', e)
+    ElMessage.error(t('report.exportFailed'))
+  }
 }
 
 onMounted(() => { loadData() })
