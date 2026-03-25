@@ -25,12 +25,6 @@
         </div>
       </template>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item :label="t('login.loginType')">
-          <el-radio-group v-model="form.loginType">
-            <el-radio label="staff">{{ t('login.staffLogin') }}</el-radio>
-            <el-radio label="customer">{{ t('login.customerLogin') }}</el-radio>
-          </el-radio-group>
-        </el-form-item>
         <el-form-item :label="t('customer.username')" prop="username">
           <el-input v-model="form.username" :placeholder="t('validation.enterUsername')" />
         </el-form-item>
@@ -78,8 +72,7 @@ const loading = ref(false)
 
 const form = reactive({
   username: '',
-  password: '',
-  loginType: 'staff'
+  password: ''
 })
 
 const rules = {
@@ -95,7 +88,7 @@ const handleLogin = async () => {
 
     loading.value = true
     try {
-      await userStore.login(form.username, form.password, form.loginType)
+      await userStore.login(form.username, form.password, 'staff')
       ElMessage.success(t('login.loginSuccess'))
       router.push('/')
     } catch (error) {
@@ -114,7 +107,7 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
 }
 
 .language-switch-wrapper {
@@ -124,25 +117,35 @@ const handleLogin = async () => {
 }
 
 .language-switch {
-  color: #fff;
+  color: rgba(255, 255, 255, 0.8);
   cursor: pointer;
   font-size: 14px;
-  padding: 5px 10px;
-  border: 1px solid rgba(255,255,255,0.5);
-  border-radius: 4px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  transition: all 0.3s ease;
 }
 
 .language-switch:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-accent);
+  color: #fff;
 }
 
 .login-card {
   width: 400px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
 }
 
 .card-header h2 {
   text-align: center;
   margin: 0;
-  color: #1e88e5;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 24px;
+  font-weight: 600;
 }
 </style>
