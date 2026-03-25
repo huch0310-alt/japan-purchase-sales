@@ -153,15 +153,18 @@ const handleLogout = () => {
   border-radius: var(--radius-md);
   height: 48px;
   transition: all 0.3s ease;
+  color: var(--color-text-secondary);
+  position: relative;
 }
 
 .el-menu-item:hover {
-  background-color: var(--color-sidebar-active) !important;
+  background-color: var(--color-accent-light) !important;
+  color: var(--color-text-primary);
 }
 
 .el-menu-item.is-active {
-  background-color: var(--color-sidebar-active) !important;
-  color: var(--color-sidebar-active-text) !important;
+  background: linear-gradient(90deg, var(--color-accent-light) 0%, rgba(10, 15, 26, 0.9) 100%) !important;
+  color: var(--color-accent) !important;
   border-left: 3px solid var(--color-accent);
 }
 
@@ -170,19 +173,22 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #0f0f1a;
+  background: linear-gradient(180deg, #050810 0%, #0a0f1a 100%);
+  border-bottom: 1px solid var(--color-divider);
 }
 
 .logo h3 {
-  color: #fff;
+  color: var(--color-accent);
   margin: 0;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 2px;
 }
 
 .el-header {
-  background-color: var(--color-bg-card);
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  background: rgba(10, 15, 26, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-divider);
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -201,7 +207,7 @@ const handleLogout = () => {
 }
 
 .el-main {
-  background-color: var(--color-bg-page);
+  background: transparent;
   padding: 20px;
 }
 </style>
