@@ -11,6 +11,7 @@
               <el-option :label="t('product.inactive')" value="inactive" />
               <el-option :label="t('product.pending')" value="pending" />
             </el-select>
+            <el-button type="success" style="margin-right: 10px" @click="handleAdd">{{ t('product.addProduct') }}</el-button>
             <el-button type="primary" @click="loadData">{{ t('common.refresh') }}</el-button>
           </div>
         </div>
@@ -34,18 +35,20 @@
         <el-table-column prop="categoryName" :label="t('product.category')" width="100" />
         <el-table-column prop="quantity" :label="t('product.inventory')" width="80" />
         <el-table-column prop="unit" :label="t('product.unit')" width="60" />
-        <el-table-column prop="purchasePrice" :label="t('product.purchasePrice')" width="90">
-          <template #default="{ row }">¥{{ row.purchasePrice }}</template>
+        <el-table-column prop="purchasePrice" :label="t('product.purchasePrice')" width="100">
+          <template #default="{ row }">{{ formatCurrency(row.purchasePrice) }}</template>
         </el-table-column>
-        <el-table-column prop="salePrice" :label="t('product.salePrice')" width="90">
-          <template #default="{ row }">¥{{ row.salePrice }}</template>
+        <el-table-column prop="salePrice" :label="t('product.salePrice')" width="100">
+          <template #default="{ row }">{{ formatCurrency(row.salePrice) }}</template>
         </el-table-column>
         <el-table-column prop="status" :label="t('common.status')" width="90">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" :label="t('common.createTime')" width="160" />
+        <el-table-column prop="createdAt" :label="t('common.createTime')" width="160">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column :label="t('common.action')" width="150" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">{{ t('common.edit') }}</el-button>
@@ -67,6 +70,65 @@
         @current-change="loadData"
       />
     </el-card>
+
+    <!-- 添加商品对话框 -->
+    <el-dialog v-model="addDialogVisible" :title="t('product.addProduct')" width="600px">
+      <el-form ref="addFormRef" :model="addForm" label-width="100px">
+        <el-form-item :label="t('product.title')" prop="name">
+          <el-input v-model="addForm.name" :placeholder="t('product.enterProductName')" />
+        </el-form-item>
+        <el-form-item :label="t('product.category')" prop="categoryId">
+          <el-select v-model="addForm.categoryId" :placeholder="t('product.selectCategory')" style="width: 100%">
+            <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
+          </el-select>
+        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item :label="t('product.inventory')" prop="quantity">
+              <el-input-number v-model="addForm.quantity" :min="0" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item :label="t('product.unit')" prop="unit">
+              <el-select v-model="addForm.unit" allow-create filterable style="width: 100%">
+                <el-option v-for="u in units" :key="u" :label="u" :value="u" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item :label="t('product.purchasePrice')" prop="purchasePrice">
+              <el-input-number v-model="addForm.purchasePrice" :min="0" :precision="2" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item :label="t('product.salePrice')" prop="salePrice">
+              <el-input-number v-model="addForm.salePrice" :min="0" :precision="2" style="width: 100%" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item :label="t('product.description')" prop="description">
+          <el-input v-model="addForm.description" type="textarea" :rows="3" :placeholder="t('product.enterDescription')" />
+        </el-form-item>
+        <el-form-item :label="t('product.productImage')" prop="photoUrl">
+          <el-upload
+            :before-upload="beforeImageUpload"
+            :http-request="handleImageUpload"
+            :show-file-list="false"
+            accept="image/*"
+            class="image-uploader"
+          >
+            <img v-if="addForm.photoUrl" :src="addForm.photoUrl" class="uploaded-image" />
+            <el-icon v-else class="image-uploader-icon"><Plus /></el-icon>
+          </el-upload>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="addDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="addLoading" @click="handleAddSubmit">{{ t('common.confirm') }}</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 编辑对话框 -->
     <el-dialog v-model="dialogVisible" :title="t('product.editProduct')" width="600px">
@@ -103,6 +165,18 @@
         <el-form-item :label="t('product.description')">
           <el-input v-model="form.description" type="textarea" :rows="3" />
         </el-form-item>
+        <el-form-item :label="t('product.productImage')">
+          <el-upload
+            :before-upload="beforeImageUpload"
+            :http-request="handleImageUploadEdit"
+            :show-file-list="false"
+            accept="image/*"
+            class="image-uploader"
+          >
+            <img v-if="form.photoUrl" :src="form.photoUrl" class="uploaded-image" />
+            <el-icon v-else class="image-uploader-icon"><Plus /></el-icon>
+          </el-upload>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
@@ -116,14 +190,21 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import api from '../api'
+import { formatDateTime } from '../utils/format'
+import { formatCurrency } from '../utils/format'
 
 const { t } = useI18n()
 
 const tableData = ref([])
 const dialogVisible = ref(false)
+const addDialogVisible = ref(false)
+const addLoading = ref(false)
 const filterStatus = ref('')
 const formRef = ref()
+const addFormRef = ref()
+const categories = ref([])
 const units = ref(['个', '袋', '箱', 'kg', 'g', '本', '盒', 'pack', 'ケース', '枚', 'セット', '瓶', '罐', 'ml', 'L'])
 
 const pagination = reactive({
@@ -139,7 +220,19 @@ const form = reactive({
   unit: '',
   purchasePrice: 0,
   salePrice: 0,
-  description: ''
+  description: '',
+  photoUrl: ''
+})
+
+const addForm = reactive({
+  name: '',
+  categoryId: '',
+  quantity: 0,
+  unit: '个',
+  purchasePrice: 0,
+  salePrice: 0,
+  description: '',
+  photoUrl: ''
 })
 
 const getStatusType = (status) => {
@@ -152,6 +245,15 @@ const getStatusText = (status) => {
   return map[status] || status
 }
 
+const loadCategories = async () => {
+  try {
+    const res = await api.get('/categories')
+    categories.value = res.data || []
+  } catch (e) {
+    console.error('Failed to load categories:', e)
+  }
+}
+
 const loadData = async () => {
   try {
     const params = { page: pagination.page, pageSize: pagination.pageSize }
@@ -161,6 +263,40 @@ const loadData = async () => {
     pagination.total = res.data.length
   } catch (e) {
     ElMessage.error(t('messages.loadFailed'))
+  }
+}
+
+const handleAdd = () => {
+  Object.keys(addForm).forEach(key => {
+    if (key === 'quantity') addForm[key] = 0
+    else if (key === 'purchasePrice' || key === 'salePrice') addForm[key] = 0
+    else if (key === 'unit') addForm[key] = '个'
+    else if (key === 'photoUrl') addForm[key] = ''
+    else addForm[key] = ''
+  })
+  addDialogVisible.value = true
+}
+
+const handleAddSubmit = async () => {
+  if (!addForm.name) {
+    ElMessage.warning(t('product.enterProductName'))
+    return
+  }
+  if (!addForm.categoryId) {
+    ElMessage.warning(t('product.selectCategory'))
+    return
+  }
+
+  addLoading.value = true
+  try {
+    await api.post('/products', addForm)
+    ElMessage.success(t('messages.addSuccess'))
+    addDialogVisible.value = false
+    loadData()
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || t('messages.addFailed'))
+  } finally {
+    addLoading.value = false
   }
 }
 
@@ -195,7 +331,14 @@ const handleDelete = (row) => {
 
 const handleSubmit = async () => {
   try {
-    await api.put(`/products/${form.id}`, form)
+    // 构建提交数据，移除空值字段避免后端UUID验证失败
+    const submitData = { ...form }
+    if (!submitData.id) delete submitData.id
+    if (!submitData.description) delete submitData.description
+    if (!submitData.unit) delete submitData.unit
+    if (!submitData.photoUrl) delete submitData.photoUrl
+
+    await api.put(`/products/${submitData.id}`, submitData)
     ElMessage.success(t('messages.updateSuccess'))
     dialogVisible.value = false
     loadData()
@@ -204,8 +347,53 @@ const handleSubmit = async () => {
   }
 }
 
+const beforeImageUpload = (file) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt5M = file.size / 1024 / 1024 < 5
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!')
+    return false
+  }
+  if (!isLt5M) {
+    ElMessage.error('图片大小不能超过 5MB!')
+    return false
+  }
+  return true
+}
+
+const handleImageUpload = async (options) => {
+  const { file } = options
+  const formData = new FormData()
+  formData.append('file', file)
+  try {
+    const res = await api.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    addForm.photoUrl = res.data.url
+    ElMessage.success('图片上传成功')
+  } catch (e) {
+    ElMessage.error('图片上传失败')
+  }
+}
+
+const handleImageUploadEdit = async (options) => {
+  const { file } = options
+  const formData = new FormData()
+  formData.append('file', file)
+  try {
+    const res = await api.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    form.photoUrl = res.data.url
+    ElMessage.success('图片上传成功')
+  } catch (e) {
+    ElMessage.error('图片上传失败')
+  }
+}
+
 onMounted(() => {
   loadData()
+  loadCategories()
 })
 </script>
 
@@ -214,5 +402,28 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+.image-uploader {
+  width: 100px;
+  height: 100px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.image-uploader:hover {
+  border-color: #409eff;
+}
+.image-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+}
+.uploaded-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
 }
 </style>
