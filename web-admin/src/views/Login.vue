@@ -107,7 +107,7 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(180deg, #F5F6F8 0%, #EBEEF2 100%);
+  background: linear-gradient(160deg, #F7F5F2 0%, #EEEBE6 100%);
   position: relative;
 }
 
