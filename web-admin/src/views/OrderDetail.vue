@@ -20,9 +20,9 @@
             <el-descriptions-item :label="t('order.customer')">{{ order.customer?.companyName }}</el-descriptions-item>
             <el-descriptions-item :label="t('order.receiver')">{{ order.contactPerson }}</el-descriptions-item>
             <el-descriptions-item :label="t('common.phone')">{{ order.contactPhone }}</el-descriptions-item>
-            <el-descriptions-item :label="t('order.orderTime')">{{ order.createdAt }}</el-descriptions-item>
-            <el-descriptions-item :label="t('order.confirmed')" v-if="order.confirmedAt">{{ order.confirmedAt }}</el-descriptions-item>
-            <el-descriptions-item :label="t('order.completed')" v-if="order.completedAt">{{ order.completedAt }}</el-descriptions-item>
+            <el-descriptions-item :label="t('order.orderTime')">{{ formatDateTime(order.createdAt) }}</el-descriptions-item>
+            <el-descriptions-item :label="t('order.confirmed')" v-if="order.confirmedAt">{{ formatDateTime(order.confirmedAt) }}</el-descriptions-item>
+            <el-descriptions-item :label="t('order.completed')" v-if="order.completedAt">{{ formatDateTime(order.completedAt) }}</el-descriptions-item>
             <el-descriptions-item :label="t('customer.deliveryAddress')" :span="2">{{ order.deliveryAddress }}</el-descriptions-item>
             <el-descriptions-item :label="t('common.remark')" :span="2">{{ order.remark || '-' }}</el-descriptions-item>
           </el-descriptions>
@@ -37,7 +37,7 @@
               <template #default="{ row }">¥{{ row.unitPrice }}</template>
             </el-table-column>
             <el-table-column :label="t('order.subtotal')" width="100">
-              <template #default="{ row }">¥{{ (row.unitPrice * row.quantity).toFixed(0) }}</template>
+              <template #default="{ row }">{{ formatCurrency(Number(row.unitPrice || 0) * Number(row.quantity || 0)) }}</template>
             </el-table-column>
           </el-table>
         </el-card>
@@ -49,20 +49,20 @@
           <div class="price-info">
             <div class="price-item">
               <span>{{ t('order.subtotalNoTax') }}:</span>
-              <span>¥{{ order.subtotal }}</span>
+              <span>{{ formatCurrency(order.subtotal) }}</span>
             </div>
             <div class="price-item">
               <span>{{ t('order.discount') }}:</span>
-              <span>-¥{{ order.discountAmount }}</span>
+              <span>-{{ formatCurrency(order.discountAmount) }}</span>
             </div>
             <div class="price-item">
               <span>{{ t('order.taxAmount') }}:</span>
-              <span>¥{{ order.taxAmount }}</span>
+              <span>{{ formatCurrency(order.taxAmount) }}</span>
             </div>
             <el-divider />
             <div class="price-item total">
               <span>{{ t('order.total') }}:</span>
-              <span>¥{{ order.totalAmount }}</span>
+              <span>{{ formatCurrency(order.totalAmount) }}</span>
             </div>
           </div>
         </el-card>
@@ -74,7 +74,7 @@
             <el-descriptions-item :label="t('common.contact')">{{ order.customer.contactPerson }}</el-descriptions-item>
             <el-descriptions-item :label="t('common.phone')">{{ order.customer.phone }}</el-descriptions-item>
             <el-descriptions-item :label="t('common.address')">{{ order.customer.address }}</el-descriptions-item>
-            <el-descriptions-item :label="t('customer.vipDiscount')">{{ order.customer.vipDiscount }}%</el-descriptions-item>
+            <el-descriptions-item :label="t('customer.vipDiscount')">{{ ((order.customer.vipDiscount || 0) * 100).toFixed(0) }}%</el-descriptions-item>
           </el-descriptions>
         </el-card>
       </el-col>
@@ -88,6 +88,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+import { formatDateTime } from '../utils/format'
+import { formatCurrency } from '../utils/format'
 
 const { t } = useI18n()
 const route = useRoute()
