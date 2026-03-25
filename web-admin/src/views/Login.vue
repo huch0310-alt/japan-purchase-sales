@@ -107,31 +107,14 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: radial-gradient(ellipse at center, #1a2744 0%, #0f1c3a 100%);
+  background: linear-gradient(180deg, #F5F6F8 0%, #EBEEF2 100%);
   position: relative;
-  overflow: hidden;
-}
-
-/* 网格纹理 */
-.login-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    linear-gradient(rgba(183, 110, 121, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(183, 110, 121, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
-  pointer-events: none;
 }
 
 .language-switch-wrapper {
   position: absolute;
   top: 20px;
   right: 20px;
-  z-index: 10;
 }
 
 .language-switch {
@@ -142,25 +125,20 @@ const handleLogin = async () => {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   transition: all 0.3s ease;
-  backdrop-filter: blur(4px);
-  background: rgba(10, 15, 26, 0.5);
+  background: var(--color-bg-card);
 }
 
 .language-switch:hover {
-  background: var(--color-accent-light);
-  border-color: var(--color-accent);
+  border-color: var(--color-primary);
   color: var(--color-text-primary);
 }
 
 .login-card {
   width: 400px;
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--color-card-border);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
   box-shadow: var(--shadow-card);
-  position: relative;
-  z-index: 5;
   animation: slideUp 0.5s ease-out;
 }
 
@@ -172,7 +150,7 @@ const handleLogin = async () => {
 .card-header h2 {
   text-align: center;
   margin: 0;
-  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
