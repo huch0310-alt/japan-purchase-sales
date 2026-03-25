@@ -56,7 +56,7 @@
             <el-table-column type="index" width="50" />
             <el-table-column prop="companyName" :label="t('report.customerName')" />
             <el-table-column prop="amount" :label="t('dashboard.salesAmount')" width="100">
-              <template #default="{ row }">¥{{ Number(row.amount || 0).toLocaleString() }}</template>
+              <template #default="{ row }">{{ formatCurrency(row.amount) }}</template>
             </el-table-column>
           </el-table>
         </el-card>
@@ -80,6 +80,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import { formatCurrency } from '../utils/format'
 import api from '../api'
 
 const { t } = useI18n()
