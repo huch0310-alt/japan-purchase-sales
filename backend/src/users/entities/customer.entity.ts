@@ -15,7 +15,7 @@ export class Customer {
   @Column({ unique: true })
   username: string;  // 账号
 
-  @Column()
+  @Column({ name: 'passwordHash' })
   passwordHash: string;  // 密码哈希
 
   @Column()

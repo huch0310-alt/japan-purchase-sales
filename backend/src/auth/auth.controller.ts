@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { IsString, IsNotEmpty } from 'class-validator';
 import { AuthService } from './auth.service';
@@ -44,7 +44,7 @@ export class AuthController {
   async staffLogin(@Body() loginDto: LoginDto) {
     const staff = await this.authService.validateStaff(loginDto.username, loginDto.password);
     if (!staff) {
-      throw new Error('用户名或密码错误');
+      throw new UnauthorizedException('用户名或密码错误');
     }
     return this.authService.loginStaff(staff);
   }
@@ -58,7 +58,7 @@ export class AuthController {
   async customerLogin(@Body() loginDto: LoginDto) {
     const customer = await this.authService.validateCustomer(loginDto.username, loginDto.password);
     if (!customer) {
-      throw new Error('用户名或密码错误');
+      throw new UnauthorizedException('用户名或密码错误');
     }
     return this.authService.loginCustomer(customer);
   }

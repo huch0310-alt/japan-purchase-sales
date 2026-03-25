@@ -11,14 +11,14 @@ export class OrderItem {
   id: string;
 
   @ManyToOne(() => Order, order => order.items, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'order_id' })
+  @JoinColumn({ name: 'orderId' })
   order: Order;
 
   @Column()
   orderId: string;
 
   @ManyToOne(() => Product, product => product.orderItems)
-  @JoinColumn({ name: 'product_id' })
+  @JoinColumn({ name: 'productId' })
   product: Product;
 
   @Column()

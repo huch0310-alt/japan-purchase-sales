@@ -6,17 +6,40 @@ import '../../providers/auth_provider.dart';
  * 商品审核页面（销售端）
  * 审核采购提交的商品
  */
-class ProductAuditPage extends ConsumerWidget {
+class ProductAuditPage extends ConsumerStatefulWidget {
   const ProductAuditPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProductAuditPage> createState() => _ProductAuditPageState();
+}
+
+class _ProductAuditPageState extends ConsumerState<ProductAuditPage> {
+  Future<List<dynamic>>? _futureProducts;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  void _loadProducts() {
+    _futureProducts = ref.read(dioProvider).get('/products/pending').then((res) => res.data);
+  }
+
+  Future<void> _refreshProducts() async {
+    setState(() {
+      _loadProducts();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('商品审核'),
       ),
       body: FutureBuilder(
-        future: ref.read(dioProvider).get('/products/pending'),
+        future: _futureProducts,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -26,7 +49,7 @@ class ProductAuditPage extends ConsumerWidget {
             return Center(child: Text('加载失败: ${snapshot.error}'));
           }
 
-          final products = snapshot.data?.data ?? [];
+          final products = snapshot.data ?? [];
 
           if (products.isEmpty) {
             return const Center(
@@ -41,20 +64,23 @@ class ProductAuditPage extends ConsumerWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              final product = products[index];
-              return _buildAuditCard(context, product, ref);
-            },
+          return RefreshIndicator(
+            onRefresh: _refreshProducts,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: products.length,
+              itemBuilder: (context, index) {
+                final product = products[index];
+                return _buildAuditCard(context, product);
+              },
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildAuditCard(BuildContext context, Map<String, dynamic> product, WidgetRef ref) {
+  Widget _buildAuditCard(BuildContext context, Map<String, dynamic> product) {
     final priceController = TextEditingController();
 
     return Card(
@@ -101,6 +127,7 @@ class ProductAuditPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text('数量: ${product['quantity'] ?? 0} ${product['unit'] ?? ''}'),
+                      Text('采购价: ¥${product['purchasePrice'] ?? '0'}'),
                       if (product['description'] != null)
                         Text(
                           product['description'],
@@ -145,7 +172,9 @@ class ProductAuditPage extends ConsumerWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('已拒绝')),
                         );
-                        // 刷新列表
+                        // 延迟刷新列表
+                        await Future.delayed(const Duration(milliseconds: 500));
+                        _refreshProducts();
                       }
                     } catch (e) {
                       if (context.mounted) {
@@ -177,6 +206,9 @@ class ProductAuditPage extends ConsumerWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('审核通过')),
                         );
+                        // 延迟刷新列表
+                        await Future.delayed(const Duration(milliseconds: 500));
+                        _refreshProducts();
                       }
                     } catch (e) {
                       if (context.mounted) {

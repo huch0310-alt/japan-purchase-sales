@@ -32,7 +32,7 @@ class ProfilePage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  user?['companyName'] ?? user?['name'] ?? '',
+                  user?.user?['companyName'] ?? user?.user?['name'] ?? '',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,

@@ -22,7 +22,7 @@ __decorate([
 ], OrderItem.prototype, "id", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => order_entity_1.Order, order => order.items, { onDelete: 'CASCADE' }),
-    (0, typeorm_1.JoinColumn)({ name: 'order_id' }),
+    (0, typeorm_1.JoinColumn)({ name: 'orderId' }),
     __metadata("design:type", order_entity_1.Order)
 ], OrderItem.prototype, "order", void 0);
 __decorate([
@@ -31,7 +31,7 @@ __decorate([
 ], OrderItem.prototype, "orderId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => product_entity_1.Product, product => product.orderItems),
-    (0, typeorm_1.JoinColumn)({ name: 'product_id' }),
+    (0, typeorm_1.JoinColumn)({ name: 'productId' }),
     __metadata("design:type", product_entity_1.Product)
 ], OrderItem.prototype, "product", void 0);
 __decorate([

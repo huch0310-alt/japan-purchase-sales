@@ -1,11 +1,13 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
+import '../../config/app_config.dart';
 
 // Dio实例
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
-    baseUrl: 'http://localhost:3001/api',
+    baseUrl: AppConfig.apiBaseUrl,
     connectTimeout: const Duration(seconds: 10),
     receiveTimeout: const Duration(seconds: 10),
     headers: {
@@ -48,19 +50,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
         _ref.read(dioProvider).options.headers['Authorization'] = 'Bearer $token';
         state = AsyncValue.data(AuthState(
           token: token,
-          user: await _parseUser(userJson),
+          user: _parseUser(userJson),
         ));
       } else {
-        state = const AsyncValue.data(AuthState());
+        state = AsyncValue.data(AuthState());
       }
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
 
-  Future<Map<String, dynamic>> _parseUser(String userJson) async {
-    // 简单解析，实际应该用json.decode
-    return {};
+  Map<String, dynamic> _parseUser(String userJson) {
+    try {
+      return json.decode(userJson) as Map<String, dynamic>;
+    } catch (e) {
+      return {};
+    }
   }
 
   Future<void> login(String username, String password, String loginType) async {
@@ -69,6 +74,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       final dio = _ref.read(dioProvider);
       final endpoint = loginType == 'staff' ? '/auth/staff/login' : '/auth/customer/login';
 
+      print('Login attempt: $endpoint with username: $username');
+      print('API Base URL: ${dio.options.baseUrl}');
+
       final response = await dio.post(endpoint, data: {
         'username': username,
         'password': password,
@@ -76,19 +84,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
 
       final data = response.data;
       final token = data['access_token'];
-      final user = data['user'];
+      final user = data['user'] as Map<String, dynamic>;
 
-      // 保存到本地存储
+      // 保存到本地存储 - 使用json.encode正确序列化
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', token);
-      await prefs.setString('user', user.toString());
+      await prefs.setString('user', json.encode(user));
 
       // 设置Dio的Authorization头
       dio.options.headers['Authorization'] = 'Bearer $token';
 
       state = AsyncValue.data(AuthState(token: token, user: user));
-    } catch (e) {
-      state = AsyncValue.error(e, StackTrace.current);
+      print('Login success!');
+    } catch (e, st) {
+      print('Login error: $e');
+      print('Stack trace: $st');
+      state = AsyncValue.error(e, st);
       rethrow;
     }
   }
@@ -98,6 +109,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     await prefs.remove('token');
     await prefs.remove('user');
     _ref.read(dioProvider).options.headers.remove('Authorization');
-    state = const AsyncValue.data(AuthState());
+    state = AsyncValue.data(AuthState());
   }
 }

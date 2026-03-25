@@ -21,6 +21,7 @@ class _ProductCollectPageState extends ConsumerState<ProductCollectPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _quantityController = TextEditingController(text: '1');
+  final _purchasePriceController = TextEditingController();
   final _descriptionController = TextEditingController();
   String? _selectedUnit;
   String? _selectedCategoryId;
@@ -47,6 +48,7 @@ class _ProductCollectPageState extends ConsumerState<ProductCollectPage> {
   void dispose() {
     _nameController.dispose();
     _quantityController.dispose();
+    _purchasePriceController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -72,16 +74,29 @@ class _ProductCollectPageState extends ConsumerState<ProductCollectPage> {
 
     try {
       final dio = ref.read(dioProvider);
-      final formData = FormData.fromMap({
+
+      // 先上传图片
+      String? photoUrl;
+      if (_photo != null) {
+        final formData = FormData.fromMap({
+          'file': await MultipartFile.fromFile(_photo!.path),
+        });
+        final uploadRes = await dio.post('/upload', data: formData);
+        photoUrl = uploadRes.data['url'];
+      }
+
+      // 再提交商品数据
+      final productData = {
         'name': _nameController.text,
         'quantity': int.tryParse(_quantityController.text) ?? 1,
-        'unit': _selectedUnit,
+        'unit': _selectedUnit ?? '个',
         'categoryId': _selectedCategoryId,
         'description': _descriptionController.text,
-        'photo': await MultipartFile.fromFile(_photo!.path),
-      });
+        'purchasePrice': double.tryParse(_purchasePriceController.text) ?? 0,
+        if (photoUrl != null) 'photoUrl': photoUrl,
+      };
 
-      await dio.post('/products', data: formData);
+      await dio.post('/products', data: productData);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,8 +106,15 @@ class _ProductCollectPageState extends ConsumerState<ProductCollectPage> {
       }
     } catch (e) {
       if (mounted) {
+        String errorMsg = '提交失败';
+        if (e is DioException && e.response != null) {
+          final data = e.response?.data;
+          if (data is Map) {
+            errorMsg = data['message'] ?? data['error'] ?? errorMsg;
+          }
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('提交失败: ${e.toString()}')),
+          SnackBar(content: Text(errorMsg)),
         );
       }
     } finally {
@@ -202,6 +224,17 @@ class _ProductCollectPageState extends ConsumerState<ProductCollectPage> {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+            // 采购价
+            TextFormField(
+              controller: _purchasePriceController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: '采购价 (¥)',
+                border: OutlineInputBorder(),
+                prefixText: '¥ ',
+              ),
             ),
             const SizedBox(height: 16),
             // 说明

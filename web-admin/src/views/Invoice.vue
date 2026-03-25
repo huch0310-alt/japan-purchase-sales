@@ -29,10 +29,12 @@
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="issueDate" :label="t('invoice.issueDate')" width="120" />
+        <el-table-column prop="issueDate" :label="t('invoice.issueDate')" width="120">
+          <template #default="{ row }">{{ formatDate(row.issueDate) }}</template>
+        </el-table-column>
         <el-table-column prop="dueDate" :label="t('invoice.dueDate')" width="120">
           <template #default="{ row }">
-            <span :class="{ 'overdue': isOverdue(row) }">{{ row.dueDate }}</span>
+            <span :class="{ 'overdue': isOverdue(row) }">{{ formatDate(row.dueDate) }}</span>
           </template>
         </el-table-column>
         <el-table-column :label="t('common.action')" width="180" fixed="right">
@@ -60,7 +62,9 @@
             <el-table-column prop="totalAmount" :label="t('order.amount')">
               <template #default="{ row }">¥{{ row.totalAmount }}</template>
             </el-table-column>
-            <el-table-column prop="createdAt" :label="t('order.orderTime')" />
+            <el-table-column prop="createdAt" :label="t('order.orderTime')">
+              <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+            </el-table-column>
           </el-table>
         </el-form-item>
       </el-form>
@@ -77,6 +81,7 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+import { formatDateTime, formatDate } from '../utils/format'
 
 const { t } = useI18n()
 
@@ -131,7 +136,8 @@ watch(() => createForm.customerId, async (customerId) => {
     return
   }
   try {
-    const res = await api.get('/orders', { params: { customerId, status: 'confirmed' } })
+    // 获取已完成但未生成請求书的订单
+    const res = await api.get('/orders/available-for-invoice', { params: { customerId } })
     customerOrders.value = res.data
   } catch (e) {
     ElMessage.error(t('messages.loadFailed'))
@@ -165,8 +171,21 @@ const handleView = (row) => {
 }
 
 const handleDownloadPdf = async (row) => {
-  // TODO: 实现PDF下载
-  ElMessage.info(t('invoice.downloadPdf') + ' - ' + t('report.exporting'))
+  try {
+    ElMessage.info(t('invoice.downloadingPdf'))
+    const response = await api.get(`/invoices/${row.id}/pdf`, { responseType: 'blob' })
+    const blob = new Blob([response.data], { type: 'application/pdf' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `invoice_${row.invoiceNo}.pdf`
+    link.click()
+    window.URL.revokeObjectURL(url)
+    ElMessage.success(t('invoice.downloadSuccess'))
+  } catch (e) {
+    console.error('PDF download failed:', e)
+    ElMessage.error(t('invoice.downloadFailed'))
+  }
 }
 
 const handleMarkPaid = async (row) => {

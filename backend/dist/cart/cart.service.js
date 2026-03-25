@@ -59,7 +59,9 @@ let CartService = class CartService {
         const items = await this.findByCustomer(customerId);
         let subtotal = 0;
         for (const item of items) {
-            subtotal += Number(item.product.salePrice) * item.quantity;
+            if (item.product) {
+                subtotal += Number(item.product.salePrice) * item.quantity;
+            }
         }
         const taxAmount = Math.round(subtotal * 0.1);
         const total = subtotal + taxAmount;

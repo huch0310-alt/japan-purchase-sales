@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Order = void 0;
 const typeorm_1 = require("typeorm");
 const customer_entity_1 = require("../../users/entities/customer.entity");
-const staff_entity_1 = require("../../users/entities/staff.entity");
+const invoice_entity_1 = require("../../invoices/entities/invoice.entity");
 const order_item_entity_1 = require("./order-item.entity");
 let Order = class Order {
 };
@@ -31,7 +31,7 @@ __decorate([
     __metadata("design:type", customer_entity_1.Customer)
 ], Order.prototype, "customer", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'customer_id' }),
     __metadata("design:type", String)
 ], Order.prototype, "customerId", void 0);
 __decorate([
@@ -75,14 +75,17 @@ __decorate([
     __metadata("design:type", String)
 ], Order.prototype, "remark", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => staff_entity_1.Staff, staff => staff.confirmedOrders),
-    (0, typeorm_1.JoinColumn)({ name: 'confirmed_by' }),
-    __metadata("design:type", staff_entity_1.Staff)
-], Order.prototype, "confirmedBy", void 0);
-__decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], Order.prototype, "confirmedById", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => invoice_entity_1.Invoice, { nullable: true }),
+    __metadata("design:type", invoice_entity_1.Invoice)
+], Order.prototype, "invoice", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'invoice_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], Order.prototype, "invoiceId", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => order_item_entity_1.OrderItem, item => item.order, { cascade: true }),
     __metadata("design:type", Array)

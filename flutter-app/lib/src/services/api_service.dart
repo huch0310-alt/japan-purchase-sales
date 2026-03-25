@@ -1,42 +1,15 @@
 import 'package:dio/dio.dart';
-import '../config/app_config.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/auth_provider.dart';
 
-/**
- * API服务
- * 封装网络请求
- */
+// 使用auth_provider的Dio实例
+final apiServiceProvider = Provider<ApiService>((ref) {
+  return ApiService(ref.watch(dioProvider));
+});
+
 class ApiService {
-  late final Dio _dio;
-
-  ApiService() {
-    _dio = Dio(BaseOptions(
-      baseUrl: AppConfig.apiBaseUrl,
-      connectTimeout: Duration(milliseconds: AppConfig.connectTimeout),
-      receiveTimeout: Duration(milliseconds: AppConfig.receiveTimeout),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    ));
-
-    // 请求拦截器
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) {
-        // 添加Token
-        // final token = StorageService.getToken();
-        // if (token != null) {
-        //   options.headers['Authorization'] = 'Bearer $token';
-        // }
-        return handler.next(options);
-      },
-      onResponse: (response, handler) {
-        return handler.next(response);
-      },
-      onError: (error, handler) {
-        // 处理错误
-        return handler.next(error);
-      },
-    ));
-  }
+  final Dio _dio;
+  ApiService(this._dio);
 
   // GET请求
   Future<Response> get(

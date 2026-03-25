@@ -1,5 +1,4 @@
 import { Category } from '../../categories/entities/category.entity';
-import { Staff } from '../../users/entities/staff.entity';
 import { OrderItem } from '../../orders/entities/order-item.entity';
 import { CartItem } from '../../cart/entities/cart-item.entity';
 export declare class Product {
@@ -14,7 +13,6 @@ export declare class Product {
     photoUrl: string;
     description: string;
     status: string;
-    createdByStaff: Staff;
     createdBy: string;
     salesCount: number;
     orderItems: OrderItem[];

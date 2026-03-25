@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Product = void 0;
 const typeorm_1 = require("typeorm");
 const category_entity_1 = require("../../categories/entities/category.entity");
-const staff_entity_1 = require("../../users/entities/staff.entity");
 const order_item_entity_1 = require("../../orders/entities/order-item.entity");
 const cart_item_entity_1 = require("../../cart/entities/cart-item.entity");
 let Product = class Product {
@@ -67,11 +66,6 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], Product.prototype, "status", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => staff_entity_1.Staff, staff => staff.products),
-    (0, typeorm_1.JoinColumn)({ name: 'created_by' }),
-    __metadata("design:type", staff_entity_1.Staff)
-], Product.prototype, "createdByStaff", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)

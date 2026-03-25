@@ -14,14 +14,15 @@ export declare class OrdersController {
     }): Promise<import("./entities/order.entity").Order>;
     findMyOrders(req: any): Promise<import("./entities/order.entity").Order[]>;
     findAll(status?: string, customerId?: string, startDate?: string, endDate?: string, minAmount?: number, maxAmount?: number): Promise<import("./entities/order.entity").Order[]>;
-    findOne(id: string): Promise<import("./entities/order.entity").Order>;
-    confirm(id: string, req: any): Promise<import("./entities/order.entity").Order>;
     batchConfirm(body: {
         ids: string[];
     }, req: any): Promise<{
         message: string;
     }>;
+    findAvailableForInvoice(customerId?: string): Promise<import("./entities/order.entity").Order[]>;
+    getSalesReport(startDate: string, endDate: string): Promise<any>;
+    findOne(id: string): Promise<import("./entities/order.entity").Order>;
+    confirm(id: string, req: any): Promise<import("./entities/order.entity").Order>;
     complete(id: string): Promise<import("./entities/order.entity").Order>;
     cancel(id: string, req: any): Promise<import("./entities/order.entity").Order>;
-    getSalesReport(startDate: string, endDate: string): Promise<any>;
 }

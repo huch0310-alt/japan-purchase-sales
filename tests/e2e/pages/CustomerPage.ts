@@ -1,51 +1,92 @@
 import { Page } from '@playwright/test';
 
+const BASE_URL = 'http://43.153.155.76:3000';
+
 export class CustomerPage {
   constructor(private page: Page) {}
 
   async goto() {
-    await this.page.goto('/customer');
+    await this.page.goto(`${BASE_URL}/customer`);
     await this.page.waitForLoadState('networkidle');
   }
 
-  async clickAddButton() {
+  async clickCreate() {
     await this.page.click('button:has-text("新增客户")');
     await this.page.waitForSelector('.el-dialog');
   }
 
   async fillCustomerForm(data: {
-    username: string;
+    username?: string;
     companyName: string;
+    invoiceName?: string;
     contactPerson: string;
     phone: string;
+    invoicePhone?: string;
     address?: string;
-    vipDiscount?: string;
+    invoiceAddress?: string;
   }) {
-    await this.page.fill('input[name="username"]', data.username);
-    await this.page.fill('input[name="companyName"]', data.companyName);
-    await this.page.fill('input[name="contactPerson"]', data.contactPerson);
-    await this.page.fill('input[name="phone"]', data.phone);
-    if (data.address) {
-      await this.page.fill('input[name="address"]', data.address);
+    const formItems = this.page.locator('.el-dialog .el-form-item');
+
+    // Fill username if provided (required for create)
+    if (data.username) {
+      const usernameItem = formItems.filter({ hasText: '账号' });
+      const usernameInput = usernameItem.locator('.el-input__inner').first();
+      if (await usernameInput.isVisible()) {
+        await usernameInput.fill(data.username);
+      }
     }
-    if (data.vipDiscount) {
-      await this.page.fill('input[name="vipDiscount"]', data.vipDiscount);
+
+    // Fill company name
+    const companyNameItem = formItems.filter({ hasText: '公司名称' });
+    const companyInput = companyNameItem.locator('.el-input__inner').first();
+    if (await companyInput.isVisible()) {
+      await companyInput.fill(data.companyName);
+    }
+
+    // Fill contact person
+    const contactItem = formItems.filter({ hasText: '联系人' });
+    const contactInput = contactItem.locator('.el-input__inner').first();
+    if (await contactInput.isVisible()) {
+      await contactInput.fill(data.contactPerson);
+    }
+
+    // Fill phone
+    const phoneItem = formItems.filter({ hasText: '电话' }).first();
+    const phoneInput = phoneItem.locator('.el-input__inner').first();
+    if (await phoneInput.isVisible()) {
+      await phoneInput.fill(data.phone);
     }
   }
 
-  async submit() {
-    await this.page.click('.el-dialog button:has-text("保存")');
-    await this.page.waitForSelector('.el-dialog', { state: 'hidden' });
+  async save() {
+    await this.page.locator('.el-dialog__footer button:has-text("确认")').click();
+    await Promise.race([
+      this.page.waitForSelector('.el-dialog', { state: 'hidden', timeout: 10000 }),
+      this.page.waitForSelector('.el-message--error', { timeout: 10000 }),
+    ]).catch(() => {});
   }
 
-  async getTableRowCount(): Promise<number> {
-    return this.page.locator('.el-table__row').count();
+  async editCustomer(companyName: string) {
+    const row = this.page.locator(`.el-table__row:has-text("${companyName}")`);
+    await row.hover();
+    await row.locator('button:has-text("编辑")').click();
+    await this.page.waitForSelector('.el-dialog');
   }
 
   async deleteCustomer(companyName: string) {
     const row = this.page.locator(`.el-table__row:has-text("${companyName}")`);
     await row.hover();
     await row.locator('button:has-text("删除")').click();
-    await this.page.click('button:has-text("确定")');
+    await this.page.waitForTimeout(500);
+    const confirmButton = this.page.locator('button:has-text("确定")').last();
+    if (await confirmButton.isVisible({ timeout: 2000 })) {
+      await confirmButton.click();
+    }
+  }
+
+  async searchByName(name: string) {
+    const searchInput = this.page.locator('.el-input__inner').first();
+    await searchInput.fill(name);
+    await this.page.waitForTimeout(500);
   }
 }

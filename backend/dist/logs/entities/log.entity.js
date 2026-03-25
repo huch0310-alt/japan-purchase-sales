@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OperationLog = void 0;
 const typeorm_1 = require("typeorm");
-const staff_entity_1 = require("../../users/entities/staff.entity");
 let OperationLog = class OperationLog {
 };
 exports.OperationLog = OperationLog;
@@ -19,11 +18,6 @@ __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)('uuid'),
     __metadata("design:type", String)
 ], OperationLog.prototype, "id", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => staff_entity_1.Staff, staff => staff.operationLogs, { nullable: true }),
-    (0, typeorm_1.JoinColumn)({ name: 'user_id' }),
-    __metadata("design:type", staff_entity_1.Staff)
-], OperationLog.prototype, "user", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)

@@ -74,6 +74,7 @@ export class ProductsController {
     unit?: string;
     description?: string;
     categoryId?: string;
+    purchasePrice?: number;
   }) {
     const userId = req.user.id;
     return this.productsService.create({

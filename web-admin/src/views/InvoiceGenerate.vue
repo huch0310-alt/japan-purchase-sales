@@ -23,7 +23,11 @@
             ¥{{ row.totalAmount }} <!-- TODO: i18n currency symbol when available -->
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" :label="t('order.orderTime')" width="160" />
+        <el-table-column prop="createdAt" :label="t('order.orderTime')" width="160">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createdAt) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="invoiceId" :label="t('invoice.status')" width="120">
           <template #default="{ row }">
             <el-tag v-if="row.invoiceId" type="success">{{ t('invoice.alreadyInvoiced') }}</el-tag>
@@ -60,6 +64,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '../api'
 import { ElMessage } from 'element-plus'
+import { formatDateTime } from '../utils/format'
 
 const { t } = useI18n()
 

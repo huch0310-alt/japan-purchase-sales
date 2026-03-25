@@ -24,7 +24,9 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" :label="t('common.createTime')" width="180" />
+        <el-table-column prop="createdAt" :label="t('common.createTime')" width="180">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
         <el-table-column :label="t('common.action')" width="180" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="handleEdit(row)">{{ t('common.edit') }}</el-button>
@@ -71,6 +73,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api'
+import { formatDateTime } from '../utils/format'
 
 const { t } = useI18n()
 
@@ -148,11 +151,17 @@ const handleSubmit = async () => {
   await formRef.value.validate(async (valid) => {
     if (!valid) return
     try {
+      // 构建提交数据，移除空值字段避免后端UUID验证失败
+      const submitData = { ...form }
+      if (!submitData.id) delete submitData.id
+      if (!submitData.phone) delete submitData.phone
+      if (!submitData.password) delete submitData.password
+
       if (isEdit.value) {
-        await api.put(`/staff/${form.id}`, form)
+        await api.put(`/staff/${submitData.id}`, submitData)
         ElMessage.success(t('messages.updateSuccess'))
       } else {
-        await api.post('/staff', form)
+        await api.post('/staff', submitData)
         ElMessage.success(t('messages.createSuccess'))
       }
       dialogVisible.value = false

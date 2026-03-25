@@ -100,9 +100,10 @@ export class OrdersService {
       const taxRateNum = parseInt(taxRate) / 100;
 
       // 计算VIP折扣 (vipDiscount是0-1之间的小数，如0.10表示10%折扣)
+      // vipDiscount 表示客户享受的折扣比例（0.90=9折，客户应付90%，即享受10%折扣）
       const vipDiscountNum = parseFloat(String(customer.vipDiscount));
-      const discountAmount = subtotal * vipDiscountNum;
-      const afterDiscount = subtotal - discountAmount;
+      const afterDiscount = Math.round(subtotal * vipDiscountNum * 100) / 100; // 折后价
+      const discountAmount = Math.round((subtotal - afterDiscount) * 100) / 100; // 折扣金额
 
       // 计算消费税
       const taxAmount = Math.round(afterDiscount * taxRateNum);
@@ -130,8 +131,8 @@ export class OrdersService {
       // 创建订单明细
       for (const itemData of orderItemsData) {
         const orderItem = queryRunner.manager.create(OrderItem, {
-          orderId: savedOrder.id,
-          productId: itemData.product.id,
+          order: savedOrder,
+          product: itemData.product,
           productName: itemData.product.name,
           quantity: itemData.quantity,
           unitPrice: itemData.unitPrice,

@@ -49,7 +49,7 @@ exports.StaffService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
-const bcrypt = __importStar(require("bcrypt"));
+const bcrypt = __importStar(require("bcryptjs"));
 const staff_entity_1 = require("./entities/staff.entity");
 let StaffService = class StaffService {
     constructor(staffRepository) {
@@ -76,6 +76,7 @@ let StaffService = class StaffService {
     async findAll() {
         return this.staffRepository.find({
             order: { createdAt: 'DESC' },
+            loadRelationIds: false,
         });
     }
     async update(id, data) {

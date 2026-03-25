@@ -77,7 +77,9 @@ export class CartService {
     const items = await this.findByCustomer(customerId);
     let subtotal = 0;
     for (const item of items) {
-      subtotal += Number(item.product.salePrice) * item.quantity;
+      if (item.product) {
+        subtotal += Number(item.product.salePrice) * item.quantity;
+      }
     }
     // 消费税10%
     const taxAmount = Math.round(subtotal * 0.1);

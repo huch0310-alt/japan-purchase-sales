@@ -1,5 +1,5 @@
 import { Customer } from '../../users/entities/customer.entity';
-import { Staff } from '../../users/entities/staff.entity';
+import { Invoice } from '../../invoices/entities/invoice.entity';
 import { OrderItem } from './order-item.entity';
 export declare class Order {
     id: string;
@@ -15,8 +15,9 @@ export declare class Order {
     contactPerson: string;
     contactPhone: string;
     remark: string;
-    confirmedBy: Staff;
     confirmedById: string;
+    invoice: Invoice;
+    invoiceId: string;
     items: OrderItem[];
     createdAt: Date;
     confirmedAt: Date;

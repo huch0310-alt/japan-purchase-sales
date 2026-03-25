@@ -42,15 +42,21 @@ let OrdersController = class OrdersController {
             maxAmount,
         });
     }
+    async batchConfirm(body, req) {
+        await this.ordersService.batchConfirm(body.ids, req.user.id);
+        return { message: '批量确认成功' };
+    }
+    async findAvailableForInvoice(customerId) {
+        return this.ordersService.findCompletedWithoutInvoice(customerId);
+    }
+    async getSalesReport(startDate, endDate) {
+        return this.ordersService.getSalesReport(new Date(startDate), new Date(endDate));
+    }
     async findOne(id) {
         return this.ordersService.findById(id);
     }
     async confirm(id, req) {
         return this.ordersService.confirm(id, req.user.id);
-    }
-    async batchConfirm(body, req) {
-        await this.ordersService.batchConfirm(body.ids, req.user.id);
-        return { message: '批量确认成功' };
     }
     async complete(id) {
         return this.ordersService.complete(id);
@@ -70,9 +76,6 @@ let OrdersController = class OrdersController {
             throw new Error('订单已无法取消');
         }
         return this.ordersService.cancel(id);
-    }
-    async getSalesReport(startDate, endDate) {
-        return this.ordersService.getSalesReport(new Date(startDate), new Date(endDate));
     }
 };
 exports.OrdersController = OrdersController;
@@ -114,6 +117,41 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "findAll", null);
 __decorate([
+    (0, common_1.Put)('batch/confirm'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: '批量确认订单' }),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "batchConfirm", null);
+__decorate([
+    (0, common_1.Get)('available-for-invoice'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: '获取可生成请求书的订单列表' }),
+    __param(0, (0, common_1.Query)('customerId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "findAvailableForInvoice", null);
+__decorate([
+    (0, common_1.Get)('reports/sales'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: '获取销售报表' }),
+    __param(0, (0, common_1.Query)('startDate')),
+    __param(1, (0, common_1.Query)('endDate')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "getSalesReport", null);
+__decorate([
     (0, common_1.Get)(':id'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)(),
@@ -136,18 +174,6 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "confirm", null);
 __decorate([
-    (0, common_1.Put)('batch/confirm'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
-    (0, swagger_1.ApiBearerAuth)(),
-    (0, swagger_1.ApiOperation)({ summary: '批量确认订单' }),
-    __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Request)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object]),
-    __metadata("design:returntype", Promise)
-], OrdersController.prototype, "batchConfirm", null);
-__decorate([
     (0, common_1.Put)(':id/complete'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
@@ -169,18 +195,6 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "cancel", null);
-__decorate([
-    (0, common_1.Get)('reports/sales'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
-    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
-    (0, swagger_1.ApiBearerAuth)(),
-    (0, swagger_1.ApiOperation)({ summary: '获取销售报表' }),
-    __param(0, (0, common_1.Query)('startDate')),
-    __param(1, (0, common_1.Query)('endDate')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
-    __metadata("design:returntype", Promise)
-], OrdersController.prototype, "getSalesReport", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, swagger_1.ApiTags)('订单管理'),
     (0, common_1.Controller)('orders'),

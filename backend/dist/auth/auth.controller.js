@@ -15,10 +15,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
+const class_validator_1 = require("class-validator");
 const auth_service_1 = require("./auth.service");
 const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
 class LoginDto {
 }
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], LoginDto.prototype, "username", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], LoginDto.prototype, "password", void 0);
 class ChangePasswordDto {
 }
 let AuthController = class AuthController {
@@ -28,14 +39,14 @@ let AuthController = class AuthController {
     async staffLogin(loginDto) {
         const staff = await this.authService.validateStaff(loginDto.username, loginDto.password);
         if (!staff) {
-            throw new Error('用户名或密码错误');
+            throw new common_1.UnauthorizedException('用户名或密码错误');
         }
         return this.authService.loginStaff(staff);
     }
     async customerLogin(loginDto) {
         const customer = await this.authService.validateCustomer(loginDto.username, loginDto.password);
         if (!customer) {
-            throw new Error('用户名或密码错误');
+            throw new common_1.UnauthorizedException('用户名或密码错误');
         }
         return this.authService.loginCustomer(customer);
     }

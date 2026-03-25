@@ -11,8 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Staff = void 0;
 const typeorm_1 = require("typeorm");
-const product_entity_1 = require("../../products/entities/product.entity");
-const order_entity_1 = require("../../orders/entities/order.entity");
 let Staff = class Staff {
 };
 exports.Staff = Staff;
@@ -25,7 +23,7 @@ __decorate([
     __metadata("design:type", String)
 ], Staff.prototype, "username", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'passwordHash' }),
     __metadata("design:type", String)
 ], Staff.prototype, "passwordHash", void 0);
 __decorate([
@@ -48,14 +46,6 @@ __decorate([
     (0, typeorm_1.Column)({ default: true }),
     __metadata("design:type", Boolean)
 ], Staff.prototype, "isActive", void 0);
-__decorate([
-    (0, typeorm_1.OneToMany)(() => product_entity_1.Product, product => product.createdByStaff),
-    __metadata("design:type", Array)
-], Staff.prototype, "products", void 0);
-__decorate([
-    (0, typeorm_1.OneToMany)(() => order_entity_1.Order, order => order.confirmedBy),
-    __metadata("design:type", Array)
-], Staff.prototype, "confirmedOrders", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

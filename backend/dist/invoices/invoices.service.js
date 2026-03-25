@@ -50,16 +50,19 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const invoice_entity_1 = require("./entities/invoice.entity");
+const order_entity_1 = require("../orders/entities/order.entity");
 const orders_service_1 = require("../orders/orders.service");
 const settings_service_1 = require("../settings/settings.service");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const pdf_lib_1 = require("pdf-lib");
 let InvoicesService = class InvoicesService {
-    constructor(invoiceRepository, ordersService, settingService) {
+    constructor(invoiceRepository, orderRepository, ordersService, settingService, dataSource) {
         this.invoiceRepository = invoiceRepository;
+        this.orderRepository = orderRepository;
         this.ordersService = ordersService;
         this.settingService = settingService;
+        this.dataSource = dataSource;
     }
     generateInvoiceNo() {
         const date = new Date();
@@ -69,37 +72,63 @@ let InvoicesService = class InvoicesService {
         return `INV${year}${month}${random}`;
     }
     async create(data) {
-        let subtotal = 0;
-        for (const orderId of data.orderIds) {
-            const order = await this.ordersService.findById(orderId);
-            if (!order) {
-                throw new Error(`订单 ${orderId} 不存在`);
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        try {
+            let subtotal = 0;
+            for (const orderId of data.orderIds) {
+                const order = await this.ordersService.findById(orderId);
+                if (!order) {
+                    throw new Error(`订单 ${orderId} 不存在`);
+                }
+                if (order.customerId !== data.customerId) {
+                    throw new Error('订单与客户不匹配');
+                }
+                if (order.status !== 'completed') {
+                    throw new common_1.BadRequestException(`订单 ${order.orderNo} 状态不是已完成，无法生成请求书`);
+                }
+                if (order.invoiceId) {
+                    throw new common_1.BadRequestException(`订单 ${order.orderNo} 已生成过请求书`);
+                }
+                subtotal += Number(order.subtotal);
             }
-            if (order.customerId !== data.customerId) {
-                throw new Error('订单与客户不匹配');
-            }
-            subtotal += Number(order.subtotal);
+            const taxRate = await this.settingService.getValue('tax_rate') || '10';
+            const taxRateNum = parseInt(taxRate) / 100;
+            const taxAmount = Math.round(subtotal * taxRateNum);
+            const totalAmount = subtotal + taxAmount;
+            const defaultPaymentDays = parseInt(await this.settingService.getValue('default_payment_days') || '30');
+            const issueDate = new Date();
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + defaultPaymentDays);
+            const invoice = queryRunner.manager.create(invoice_entity_1.Invoice, {
+                invoiceNo: this.generateInvoiceNo(),
+                customerId: data.customerId,
+                orderIds: data.orderIds,
+                subtotal,
+                taxAmount,
+                totalAmount,
+                issueDate,
+                dueDate,
+                status: 'unpaid',
+            });
+            const savedInvoice = await queryRunner.manager.save(invoice_entity_1.Invoice, invoice);
+            await queryRunner.manager
+                .createQueryBuilder()
+                .update(order_entity_1.Order)
+                .set({ invoiceId: savedInvoice.id })
+                .where('id IN (:...orderIds)', { orderIds: data.orderIds })
+                .execute();
+            await queryRunner.commitTransaction();
+            return savedInvoice;
         }
-        const taxRate = await this.settingService.getValue('tax_rate') || '10';
-        const taxRateNum = parseInt(taxRate) / 100;
-        const taxAmount = Math.round(subtotal * taxRateNum);
-        const totalAmount = subtotal + taxAmount;
-        const defaultPaymentDays = parseInt(await this.settingService.getValue('default_payment_days') || '30');
-        const issueDate = new Date();
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + defaultPaymentDays);
-        const invoice = this.invoiceRepository.create({
-            invoiceNo: this.generateInvoiceNo(),
-            customerId: data.customerId,
-            orderIds: data.orderIds,
-            subtotal,
-            taxAmount,
-            totalAmount,
-            issueDate,
-            dueDate,
-            status: 'unpaid',
-        });
-        return this.invoiceRepository.save(invoice);
+        catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
+        }
+        finally {
+            await queryRunner.release();
+        }
     }
     async findById(id) {
         return this.invoiceRepository.findOne({
@@ -150,7 +179,7 @@ let InvoicesService = class InvoicesService {
             .update(invoice_entity_1.Invoice)
             .set({ status: 'overdue' })
             .where('status = :status', { status: 'unpaid' })
-            .andWhere('due_date < :now', { now })
+            .andWhere('dueDate < :now', { now })
             .execute();
     }
     async generatePdf(invoiceId) {
@@ -337,8 +366,8 @@ let InvoicesService = class InvoicesService {
             .createQueryBuilder('invoice')
             .leftJoinAndSelect('invoice.customer', 'customer')
             .where('invoice.status = :status', { status: 'unpaid' })
-            .andWhere('invoice.due_date <= :reminderDate', { reminderDate })
-            .andWhere('invoice.due_date >= :today', { today })
+            .andWhere('invoice.dueDate <= :reminderDate', { reminderDate })
+            .andWhere('invoice.dueDate >= :today', { today })
             .getMany();
     }
 };
@@ -346,9 +375,12 @@ exports.InvoicesService = InvoicesService;
 exports.InvoicesService = InvoicesService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(invoice_entity_1.Invoice)),
-    __param(1, (0, common_1.Inject)((0, common_1.forwardRef)(() => orders_service_1.OrdersService))),
+    __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),
+    __param(2, (0, common_1.Inject)((0, common_1.forwardRef)(() => orders_service_1.OrdersService))),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         orders_service_1.OrdersService,
-        settings_service_1.SettingService])
+        settings_service_1.SettingService,
+        typeorm_2.DataSource])
 ], InvoicesService);
 //# sourceMappingURL=invoices.service.js.map

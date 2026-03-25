@@ -79,8 +79,12 @@ const handleSubmit = async () => {
   await formRef.value.validate(async (valid) => {
     if (!valid) return
     try {
-      if (isEdit.value) { await api.put(`/categories/${form.id}`, form); ElMessage.success(t('messages.updateSuccess')) }
-      else { await api.post('/categories', form); ElMessage.success(t('messages.createSuccess')) }
+      // 构建提交数据，移除空值字段避免后端UUID验证失败
+      const submitData = { ...form }
+      if (!submitData.id) delete submitData.id
+
+      if (isEdit.value) { await api.put(`/categories/${submitData.id}`, submitData); ElMessage.success(t('messages.updateSuccess')) }
+      else { await api.post('/categories', submitData); ElMessage.success(t('messages.createSuccess')) }
       dialogVisible.value = false; loadData()
     } catch (e) { ElMessage.error(t('messages.operationFailed')) }
   })

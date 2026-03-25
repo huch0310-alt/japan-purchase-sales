@@ -12,6 +12,7 @@ export declare class ProductsController {
         unit?: string;
         description?: string;
         categoryId?: string;
+        purchasePrice?: number;
     }): Promise<import("./entities/product.entity").Product>;
     approve(id: string, body: {
         salePrice: number;

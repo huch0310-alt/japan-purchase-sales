@@ -35,7 +35,7 @@ export declare class StatsService {
     }>;
     getTopCustomers(limit?: number): Promise<any[]>;
     getCategorySalesRatio(): Promise<{
-        category: string;
+        categoryName: string;
         amount: number;
         ratio: number;
     }[]>;

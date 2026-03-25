@@ -1,12 +1,15 @@
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Invoice } from './entities/invoice.entity';
+import { Order } from '../orders/entities/order.entity';
 import { OrdersService } from '../orders/orders.service';
 import { SettingService } from '../settings/settings.service';
 export declare class InvoicesService {
     private invoiceRepository;
+    private orderRepository;
     private ordersService;
     private settingService;
-    constructor(invoiceRepository: Repository<Invoice>, ordersService: OrdersService, settingService: SettingService);
+    private dataSource;
+    constructor(invoiceRepository: Repository<Invoice>, orderRepository: Repository<Order>, ordersService: OrdersService, settingService: SettingService, dataSource: DataSource);
     private generateInvoiceNo;
     create(data: {
         customerId: string;

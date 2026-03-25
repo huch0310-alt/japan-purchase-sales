@@ -26,7 +26,7 @@ __decorate([
     __metadata("design:type", String)
 ], Customer.prototype, "username", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'passwordHash' }),
     __metadata("design:type", String)
 ], Customer.prototype, "passwordHash", void 0);
 __decorate([

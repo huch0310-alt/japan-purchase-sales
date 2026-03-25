@@ -34,9 +34,9 @@ let StatsService = class StatsService {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayOrders = await this.orderRepository
-            .createQueryBuilder('order')
-            .where('order.created_at >= :today', { today })
-            .andWhere('order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+            .createQueryBuilder('o')
+            .where('o.createdAt >= :today', { today })
+            .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
             .getMany();
         const todaySales = todayOrders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
         const pendingOrders = await this.orderRepository.count({ where: { status: 'pending' } });
@@ -61,10 +61,10 @@ let StatsService = class StatsService {
             const nextDate = new Date(date);
             nextDate.setDate(nextDate.getDate() + 1);
             const orders = await this.orderRepository
-                .createQueryBuilder('order')
-                .where('order.created_at >= :date', { date })
-                .andWhere('order.created_at < :nextDate', { nextDate })
-                .andWhere('order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+                .createQueryBuilder('o')
+                .where('o.createdAt >= :date', { date })
+                .andWhere('o.createdAt < :nextDate', { nextDate })
+                .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
                 .getMany();
             const amount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
             result.push({
@@ -77,7 +77,7 @@ let StatsService = class StatsService {
     async getHotProducts(limit = 10) {
         const products = await this.productRepository.find({
             where: { status: 'active' },
-            order: { createdAt: 'DESC' },
+            order: { salesCount: 'DESC' },
             take: limit,
         });
         return products.map(p => ({
@@ -86,14 +86,15 @@ let StatsService = class StatsService {
             salePrice: p.salePrice,
             photoUrl: p.photoUrl,
             quantity: p.quantity,
+            salesCount: p.salesCount || 0,
         }));
     }
     async getSalesReport(startDate, endDate) {
         const orders = await this.orderRepository
-            .createQueryBuilder('order')
-            .where('order.created_at >= :startDate', { startDate })
-            .andWhere('order.created_at <= :endDate', { endDate })
-            .andWhere('order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+            .createQueryBuilder('o')
+            .where('o.createdAt >= :startDate', { startDate })
+            .andWhere('o.createdAt <= :endDate', { endDate })
+            .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
             .getMany();
         const totalAmount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
         const orderCount = orders.length;
@@ -123,9 +124,9 @@ let StatsService = class StatsService {
         const customerStats = [];
         for (const customer of customers) {
             const orders = await this.orderRepository
-                .createQueryBuilder('order')
-                .where('order.customer_id = :customerId', { customerId: customer.id })
-                .andWhere('order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+                .createQueryBuilder('o')
+                .where('o.customer_id = :customerId', { customerId: customer.id })
+                .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
                 .getMany();
             const totalAmount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
             if (totalAmount > 0) {
@@ -142,26 +143,52 @@ let StatsService = class StatsService {
         return customerStats.slice(0, limit);
     }
     async getCategorySalesRatio() {
-        const categories = [
-            { category: '肉类', amount: 156000 },
-            { category: '蛋品', amount: 89000 },
-            { category: '生鲜蔬果', amount: 134000 },
-            { category: '酒水饮料', amount: 67000 },
-            { category: '零食点心', amount: 45000 },
-        ];
-        const totalAmount = categories.reduce((sum, c) => sum + c.amount, 0);
-        return categories.map(c => ({
-            category: c.category,
-            amount: c.amount,
-            ratio: totalAmount > 0 ? (c.amount / totalAmount) * 100 : 0,
-        }));
+        const result = await this.orderRepository
+            .createQueryBuilder('o')
+            .leftJoinAndSelect('o.items', 'item')
+            .leftJoinAndSelect('item.product', 'product')
+            .leftJoinAndSelect('product.category', 'category')
+            .where('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+            .getMany();
+        const categoryMap = new Map();
+        for (const order of result) {
+            const items = order.items || [];
+            for (const item of items) {
+                const categoryName = item.product?.category?.name || '未分类';
+                const amount = Number(item.unitPrice) * Number(item.quantity);
+                categoryMap.set(categoryName, (categoryMap.get(categoryName) || 0) + amount);
+            }
+        }
+        const totalAmount = Array.from(categoryMap.values()).reduce((sum, a) => sum + a, 0);
+        return Array.from(categoryMap.entries())
+            .map(([categoryName, amount]) => ({
+            categoryName,
+            amount,
+            ratio: totalAmount > 0 ? (amount / totalAmount) * 100 : 0,
+        }))
+            .sort((a, b) => b.amount - a.amount);
     }
     async getProcurementStats() {
-        return [
-            { name: '佐藤', count: 120, amount: 850000 },
-            { name: '田中', count: 95, amount: 720000 },
-            { name: '鈴木', count: 88, amount: 680000 },
-        ];
+        const result = await this.productRepository
+            .createQueryBuilder('product')
+            .where('product.createdBy IS NOT NULL')
+            .getMany();
+        const staffMap = new Map();
+        for (const product of result) {
+            if (product.createdBy) {
+                const existing = staffMap.get(product.createdBy) || { staffId: product.createdBy, count: 0, amount: 0 };
+                existing.count += 1;
+                existing.amount += Number(product.purchasePrice) * Number(product.quantity);
+                staffMap.set(product.createdBy, existing);
+            }
+        }
+        return Array.from(staffMap.entries())
+            .map(([staffId, data]) => ({
+            staffId: data.staffId,
+            count: data.count,
+            amount: data.amount,
+        }))
+            .sort((a, b) => b.count - a.count);
     }
 };
 exports.StatsService = StatsService;

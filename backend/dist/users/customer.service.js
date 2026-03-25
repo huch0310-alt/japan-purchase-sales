@@ -49,7 +49,7 @@ exports.CustomerService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
-const bcrypt = __importStar(require("bcrypt"));
+const bcrypt = __importStar(require("bcryptjs"));
 const customer_entity_1 = require("./entities/customer.entity");
 let CustomerService = class CustomerService {
     constructor(customerRepository) {

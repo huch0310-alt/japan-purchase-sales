@@ -1,41 +1,38 @@
 :root {
-  /* 背景 */
-  --color-bg-page: #F5F6F8;
+  /* 背景层次 */
+  --color-bg-page: #F7F5F2;
   --color-bg-card: #FFFFFF;
-  --color-bg-sidebar: #E8EAED;
+  --color-bg-sidebar: #2C2C2C;
+  --color-bg-header: #FFFFFF;
 
-  /* 灰蓝色系 - 主色调 */
-  --color-primary: #8B9A9F;
-  --color-primary-hover: #7A8990;
-  --color-primary-light: rgba(139, 154, 159, 0.1);
+  /* 琥珀色系 */
+  --color-primary: #D4A574;
+  --color-primary-hover: #C4956A;
+  --color-primary-light: rgba(212, 165, 116, 0.12);
 
-  /* 暖米色 - 强调色 */
-  --color-accent: #D4C5B0;
-  --color-accent-hover: #C9B896;
-  --color-accent-light: rgba(212, 197, 176, 0.15);
-
-  /* 文字 */
-  --color-text-primary: #4A5568;
-  --color-text-secondary: #8B9A9F;
-  --color-text-muted: #A0AEC0;
+  /* 炭灰色系 */
+  --color-text-primary: #2C2C2C;
+  --color-text-secondary: #6B6B6B;
+  --color-text-muted: #9A9A9A;
+  --color-text-inverse: #FFFFFF;
 
   /* 边框 */
-  --color-border: #E2E8F0;
-  --color-divider: #EDF2F7;
+  --color-border: #E5E2DD;
+  --color-divider: #EEEEEA;
 
   /* 功能色 */
-  --color-success: #7DB89E;
-  --color-warning: #C4A86B;
-  --color-danger: #C08080;
+  --color-success: #5D9B6B;
+  --color-warning: #C49A4B;
+  --color-danger: #B86B6B;
 
   /* 表格 */
-  --color-table-header-bg: #F8FAFC;
-  --color-table-row-hover: rgba(139, 154, 159, 0.05);
+  --color-table-header-bg: #FAFAF8;
+  --color-table-row-hover: rgba(212, 165, 116, 0.06);
 
   /* 阴影 */
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-hover: 0 4px 12px rgba(139, 154, 159, 0.12);
-  --shadow-accent: 0 2px 8px rgba(212, 197, 176, 0.3);
+  --shadow-card: 0 2px 12px rgba(44, 44, 44, 0.06);
+  --shadow-hover: 0 6px 20px rgba(44, 44, 44, 0.1);
+  --shadow-accent: 0 3px 10px rgba(212, 165, 116, 0.25);
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -82,28 +79,38 @@ body {
 }
 
 .el-button--primary {
-  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
   border: none;
-  color: var(--color-text-primary);
+  color: #fff;
   box-shadow: var(--shadow-accent);
 }
 
 .el-button--primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(212, 197, 176, 0.4);
+  box-shadow: 0 5px 15px rgba(212, 165, 116, 0.35);
 }
 
-.el-button {
-  border-radius: var(--radius-md);
+.el-input__wrapper {
+  background: #FAFAF8 !important;
+  border: 1px solid var(--color-border);
+  box-shadow: none !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.el-input__wrapper:hover {
+  border-color: var(--color-primary);
+}
+
+.el-input__wrapper.is-focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px var(--color-primary-light) !important;
 }
 
 .el-tag {
   border-radius: var(--radius-sm);
   border: none;
-  padding: 0 10px;
-  height: 24px;
-  line-height: 24px;
-  font-weight: 500;
+  background: var(--color-primary-light);
+  color: var(--color-primary-hover);
 }
 
 /* 自定义工具类 */

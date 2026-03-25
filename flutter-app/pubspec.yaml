@@ -30,7 +30,7 @@ dependencies:
   pull_to_refresh: ^2.0.0
 
   # 多语言
-  intl: ^0.18.1
+  intl: ^0.20.2
 
   # PDF生成
   pdf: ^3.10.8

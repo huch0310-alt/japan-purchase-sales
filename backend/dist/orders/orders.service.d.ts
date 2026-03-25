@@ -41,5 +41,6 @@ export declare class OrdersService {
     batchConfirm(ids: string[], confirmedById: string): Promise<void>;
     complete(id: string): Promise<Order>;
     cancel(id: string): Promise<Order>;
+    findCompletedWithoutInvoice(customerId?: string): Promise<Order[]>;
     getSalesReport(startDate: Date, endDate: Date): Promise<any>;
 }

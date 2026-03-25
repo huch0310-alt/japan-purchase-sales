@@ -76,8 +76,9 @@ let OrdersService = class OrdersService {
             }
             const taxRate = await this.settingService.getValue('tax_rate') || '10';
             const taxRateNum = parseInt(taxRate) / 100;
-            const discountAmount = subtotal * (1 - customer.vipDiscount / 100);
-            const afterDiscount = subtotal - discountAmount;
+            const vipDiscountNum = parseFloat(String(customer.vipDiscount));
+            const afterDiscount = Math.round(subtotal * vipDiscountNum * 100) / 100;
+            const discountAmount = Math.round((subtotal - afterDiscount) * 100) / 100;
             const taxAmount = Math.round(afterDiscount * taxRateNum);
             const totalAmount = afterDiscount + taxAmount;
             const order = queryRunner.manager.create(order_entity_1.Order, {
@@ -96,8 +97,8 @@ let OrdersService = class OrdersService {
             const savedOrder = await queryRunner.manager.save(order_entity_1.Order, order);
             for (const itemData of orderItemsData) {
                 const orderItem = queryRunner.manager.create(order_item_entity_1.OrderItem, {
-                    orderId: savedOrder.id,
-                    productId: itemData.product.id,
+                    order: savedOrder,
+                    product: itemData.product,
                     productName: itemData.product.name,
                     quantity: itemData.quantity,
                     unitPrice: itemData.unitPrice,
@@ -126,7 +127,7 @@ let OrdersService = class OrdersService {
     async findById(id) {
         return this.orderRepository.findOne({
             where: { id },
-            relations: ['customer', 'items', 'items.product', 'confirmedBy'],
+            relations: ['customer', 'items', 'items.product'],
         });
     }
     async findByOrderNo(orderNo) {
@@ -245,11 +246,25 @@ let OrdersService = class OrdersService {
             await queryRunner.release();
         }
     }
+    async findCompletedWithoutInvoice(customerId) {
+        const queryBuilder = this.orderRepository
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.customer', 'customer')
+            .leftJoinAndSelect('order.items', 'items')
+            .where('order.status = :status', { status: 'completed' })
+            .andWhere('order.invoiceId IS NULL');
+        if (customerId) {
+            queryBuilder.andWhere('order.customerId = :customerId', { customerId });
+        }
+        return queryBuilder
+            .orderBy('order.createdAt', 'DESC')
+            .getMany();
+    }
     async getSalesReport(startDate, endDate) {
         const orders = await this.orderRepository
             .createQueryBuilder('order')
-            .where('order.created_at >= :startDate', { startDate })
-            .andWhere('order.created_at <= :endDate', { endDate })
+            .where('order.createdAt >= :startDate', { startDate })
+            .andWhere('order.createdAt <= :endDate', { endDate })
             .andWhere('order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
             .getMany();
         const totalAmount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);

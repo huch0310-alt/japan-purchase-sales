@@ -72,6 +72,51 @@ export class OrdersController {
   }
 
   /**
+   * 批量确认订单
+   */
+  @Put('batch/confirm')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'admin', 'sales')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '批量确认订单' })
+  async batchConfirm(@Body() body: { ids: string[] }, @Request() req) {
+    await this.ordersService.batchConfirm(body.ids, req.user.id);
+    return { message: '批量确认成功' };
+  }
+
+  /**
+   * 获取可生成请求书的订单列表（已完成但未开单）
+   */
+  @Get('available-for-invoice')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'admin', 'sales')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取可生成请求书的订单列表' })
+  async findAvailableForInvoice(
+    @Query('customerId') customerId?: string,
+  ) {
+    return this.ordersService.findCompletedWithoutInvoice(customerId);
+  }
+
+  /**
+   * 获取销售报表
+   */
+  @Get('reports/sales')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('super_admin', 'admin', 'sales')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '获取销售报表' })
+  async getSalesReport(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    return this.ordersService.getSalesReport(
+      new Date(startDate),
+      new Date(endDate),
+    );
+  }
+
+  /**
    * 获取订单详情
    */
   @Get(':id')
@@ -92,19 +137,6 @@ export class OrdersController {
   @ApiOperation({ summary: '确认订单' })
   async confirm(@Param('id') id: string, @Request() req) {
     return this.ordersService.confirm(id, req.user.id);
-  }
-
-  /**
-   * 批量确认订单
-   */
-  @Put('batch/confirm')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin', 'admin', 'sales')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: '批量确认订单' })
-  async batchConfirm(@Body() body: { ids: string[] }, @Request() req) {
-    await this.ordersService.batchConfirm(body.ids, req.user.id);
-    return { message: '批量确认成功' };
   }
 
   /**
@@ -143,37 +175,5 @@ export class OrdersController {
       throw new Error('订单已无法取消');
     }
     return this.ordersService.cancel(id);
-  }
-
-  /**
-   * 获取可生成请求书的订单列表（已完成但未开单）
-   */
-  @Get('available-for-invoice')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin', 'admin', 'sales')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: '获取可生成请求书的订单列表' })
-  async findAvailableForInvoice(
-    @Query('customerId') customerId?: string,
-  ) {
-    return this.ordersService.findCompletedWithoutInvoice(customerId);
-  }
-
-  /**
-   * 获取销售报表
-   */
-  @Get('reports/sales')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('super_admin', 'admin', 'sales')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: '获取销售报表' })
-  async getSalesReport(
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-  ) {
-    return this.ordersService.getSalesReport(
-      new Date(startDate),
-      new Date(endDate),
-    );
   }
 }

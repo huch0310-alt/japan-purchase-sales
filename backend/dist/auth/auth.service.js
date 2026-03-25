@@ -45,7 +45,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
-const bcrypt = __importStar(require("bcrypt"));
+const bcrypt = __importStar(require("bcryptjs"));
 const staff_service_1 = require("../users/staff.service");
 const customer_service_1 = require("../users/customer.service");
 let AuthService = class AuthService {
@@ -136,12 +136,11 @@ let AuthService = class AuthService {
         if (!isPasswordValid) {
             throw new common_1.UnauthorizedException('原密码错误');
         }
-        const newPasswordHash = await bcrypt.hash(newPassword, 10);
         if (userType === 'staff') {
-            await this.staffService.updatePassword(userId, newPasswordHash);
+            await this.staffService.updatePassword(userId, newPassword);
         }
         else {
-            await this.customerService.updatePassword(userId, newPasswordHash);
+            await this.customerService.updatePassword(userId, newPassword);
         }
         return { message: '密码修改成功' };
     }

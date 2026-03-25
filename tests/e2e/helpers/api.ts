@@ -14,7 +14,7 @@ export function getApi(token?: string): AxiosInstance {
 
 export async function login(username: string, password: string): Promise<{ token: string; userId: string }> {
   const api = getApi();
-  const response = await api.post('/auth/login', { username, password });
+  const response = await api.post('/auth/staff/login', { username, password });
   return {
     token: response.data.access_token,
     userId: response.data.user?.id || '',
@@ -26,7 +26,7 @@ export async function apiGet(path: string, token: string) {
   return api.get(path);
 }
 
-export async function apiPost(path: string, data: any, token: string) {
+export async function apiPost(path: string, data: any, token?: string) {
   const api = getApi(token);
   return api.post(path, data);
 }

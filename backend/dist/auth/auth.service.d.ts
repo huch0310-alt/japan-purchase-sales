@@ -37,9 +37,6 @@ export declare class AuthService {
         phone: string;
         role: string;
         isActive: boolean;
-        products: import("../products/entities/product.entity").Product[];
-        confirmedOrders: import("../orders/entities/order.entity").Order[];
-        operationLogs: any[];
         createdAt: Date;
         updatedAt: Date;
     } | {

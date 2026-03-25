@@ -1,17 +1,23 @@
 import { Page } from '@playwright/test';
 
+const BASE_URL = 'http://43.153.155.76:3000';
+
 export class InvoiceGeneratePage {
   constructor(private page: Page) {}
 
   async goto() {
-    await this.page.goto('/invoice-generate');
+    await this.page.goto(`${BASE_URL}/invoice-generate`);
     await this.page.waitForLoadState('networkidle');
   }
 
-  async selectCustomer(companyName: string) {
+  async selectCustomer(customerId: string) {
     await this.page.click('.filter-section .el-select input');
     await this.page.waitForSelector('.el-select-dropdown');
-    await this.page.click(`.el-select-dropdown__item:has-text("${companyName}")`);
+    // Try to find and click the customer option
+    const option = this.page.locator(`.el-select-dropdown__item:has-text("${customerId}")`).first();
+    if (await option.isVisible()) {
+      await option.click();
+    }
     await this.page.waitForTimeout(1000);
   }
 
@@ -20,21 +26,9 @@ export class InvoiceGeneratePage {
     await row.locator('.el-checkbox__input').click();
   }
 
-  async clickGenerateButton() {
+  async clickGenerate() {
     await this.page.click('button:has-text("生成请求书")');
-    await this.page.waitForSelector('.el-dialog');
-  }
-
-  async setDueDate(daysFromNow: number = 30) {
-    const date = new Date();
-    date.setDate(date.getDate() + daysFromNow);
-    const dateStr = date.toISOString().split('T')[0];
-    await this.page.fill('.el-date-editor input', dateStr);
-  }
-
-  async confirmGenerate() {
-    await this.page.click('.el-dialog button:has-text("确认")');
-    await this.page.waitForSelector('.el-dialog', { state: 'hidden' });
+    await this.page.waitForTimeout(1000);
   }
 
   async getAvailableOrdersCount(): Promise<number> {

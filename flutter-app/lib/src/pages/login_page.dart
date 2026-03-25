@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../providers/auth_provider.dart';
 
 /**
@@ -41,8 +42,28 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       );
     } catch (e) {
       if (mounted) {
+        String errorMsg = '登录失败';
+        if (e is DioException) {
+          if (e.response != null) {
+            // 服务器返回了错误响应
+            final data = e.response?.data;
+            if (data is Map) {
+              errorMsg = data['message'] ?? data['error'] ?? '登录失败';
+            } else {
+              errorMsg = '服务器错误: ${e.response?.statusCode}';
+            }
+          } else if (e.type == DioExceptionType.connectionTimeout) {
+            errorMsg = '连接超时，请检查网络';
+          } else if (e.type == DioExceptionType.receiveTimeout) {
+            errorMsg = '服务器响应超时';
+          } else {
+            errorMsg = '网络错误: ${e.message}';
+          }
+        } else {
+          errorMsg = '登录失败: ${e.toString()}';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('登录失败: ${e.toString()}')),
+          SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
         );
       }
     } finally {

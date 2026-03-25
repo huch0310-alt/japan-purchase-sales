@@ -2,30 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 /**
- * 应用本地化代理
- */
-class AppLocalizations {
-  static const LocalizationsDelegate<dynamic> delegate = _AppLocalizationsDelegate();
-}
-
-class _AppLocalizationsDelegate extends LocalizationsDelegate<dynamic> {
-  const _AppLocalizationsDelegate();
-
-  @override
-  bool isSupported(Locale locale) {
-    return ['ja', 'zh'].contains(locale.languageCode);
-  }
-
-  @override
-  dynamic load(Locale locale) {
-    return AppLocalizations();
-  }
-
-  @override
-  bool shouldReload(_AppLocalizationsDelegate old) => false;
-}
-
-/**
  * 本地化字符串映射
  */
 class AppLocalizations {
@@ -135,3 +111,27 @@ class AppLocalizations {
     return _localizedValues[locale]?[key] ?? _localizedValues['ja']?[key] ?? key;
   }
 }
+
+/**
+ * 应用本地化代理
+ */
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+  const _AppLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) {
+    return ['ja', 'zh'].contains(locale.languageCode);
+  }
+
+  @override
+  Future<AppLocalizations> load(Locale locale) async {
+    return AppLocalizations();
+  }
+
+  @override
+  bool shouldReload(_AppLocalizationsDelegate old) => false;
+}
+
+// 导出 delegate 给 MaterialApp 使用
+const LocalizationsDelegate<AppLocalizations> appLocalizationsDelegate =
+    _AppLocalizationsDelegate();

@@ -15,9 +15,6 @@ export declare class JwtStrategy extends JwtStrategy_base {
         phone: string;
         role: string;
         isActive: boolean;
-        products: import("../../products/entities/product.entity").Product[];
-        confirmedOrders: import("../../orders/entities/order.entity").Order[];
-        operationLogs: any[];
         createdAt: Date;
         updatedAt: Date;
     } | {

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'src/pages/splash_page.dart';
-import 'src/pages/login_page.dart';
-import 'src/pages/home_page.dart';
-import 'src/pages/customer/home_page.dart';
-import 'src/providers/auth_provider.dart';
-import 'i18n/app_localizations.dart';
+import 'pages/splash_page.dart';
+import 'pages/login_page.dart';
+import 'pages/home_page.dart';
+import 'pages/customer/home_page.dart';
+import 'providers/auth_provider.dart';
+import '../../i18n/app_localizations.dart';
 
 /**
  * 应用主组件
@@ -24,7 +24,7 @@ class JapanPurchaseSalesApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       locale: const Locale('ja', 'JP'),
       localizationsDelegates: const [
-        AppLocalizations.delegate,
+        appLocalizationsDelegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
@@ -48,7 +48,8 @@ class JapanPurchaseSalesApp extends ConsumerWidget {
         ),
       ),
       home: authState.when(
-        data: (user) {
+        data: (authState) {
+          final user = authState.user;
           if (user == null) {
             return const LoginPage();
           }

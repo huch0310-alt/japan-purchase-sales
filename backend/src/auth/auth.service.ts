@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { StaffService } from '../users/staff.service';
 import { CustomerService } from '../users/customer.service';
 
@@ -129,14 +129,11 @@ export class AuthService {
       throw new UnauthorizedException('原密码错误');
     }
 
-    // 加密新密码
-    const newPasswordHash = await bcrypt.hash(newPassword, 10);
-
-    // 更新密码
+    // 更新密码 (直接传明文, service内部会哈希)
     if (userType === 'staff') {
-      await this.staffService.updatePassword(userId, newPasswordHash);
+      await this.staffService.updatePassword(userId, newPassword);
     } else {
-      await this.customerService.updatePassword(userId, newPasswordHash);
+      await this.customerService.updatePassword(userId, newPassword);
     }
 
     return { message: '密码修改成功' };

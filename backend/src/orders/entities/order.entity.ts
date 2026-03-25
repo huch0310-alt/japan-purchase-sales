@@ -18,7 +18,7 @@ export class Order {
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
-  @Column()
+  @Column({ name: 'customer_id' })
   customerId: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })

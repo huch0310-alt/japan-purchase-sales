@@ -2,7 +2,7 @@
 class AppConfig {
   /// API基础URL
   /// 开发环境使用本地地址，生产环境使用实际服务器地址
-  static const String apiBaseUrl = 'http://localhost:3001/api';
+  static const String apiBaseUrl = 'http://43.153.155.76:3001/api';
 
   /// 应用名称
   static const String appName = '日本采销管理系统';

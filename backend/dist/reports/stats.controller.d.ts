@@ -28,7 +28,7 @@ export declare class StatsController {
     }>;
     getTopCustomers(limit: string): Promise<any[]>;
     getCategorySalesRatio(): Promise<{
-        category: string;
+        categoryName: string;
         amount: number;
         ratio: number;
     }[]>;

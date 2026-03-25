@@ -36,7 +36,9 @@
         <el-table-column prop="action" :label="t('logs.action')" width="100" />
         <el-table-column prop="detail" :label="t('logs.detail')" min-width="200" show-overflow-tooltip />
         <el-table-column prop="ip" :label="t('logs.ip')" width="130" />
-        <el-table-column prop="createdAt" :label="t('logs.operationTime')" width="180" />
+        <el-table-column prop="createdAt" :label="t('logs.operationTime')" width="180">
+          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        </el-table-column>
       </el-table>
 
       <el-pagination
@@ -57,6 +59,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
+import { formatDateTime } from '../utils/format'
 
 const { t } = useI18n()
 

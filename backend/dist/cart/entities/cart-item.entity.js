@@ -22,20 +22,20 @@ __decorate([
 ], CartItem.prototype, "id", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => customer_entity_1.Customer, customer => customer.cartItems),
-    (0, typeorm_1.JoinColumn)({ name: 'customer_id' }),
+    (0, typeorm_1.JoinColumn)({ name: 'customerId' }),
     __metadata("design:type", customer_entity_1.Customer)
 ], CartItem.prototype, "customer", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'customerId' }),
     __metadata("design:type", String)
 ], CartItem.prototype, "customerId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => product_entity_1.Product, product => product.cartItems),
-    (0, typeorm_1.JoinColumn)({ name: 'product_id' }),
+    (0, typeorm_1.JoinColumn)({ name: 'productId' }),
     __metadata("design:type", product_entity_1.Product)
 ], CartItem.prototype, "product", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'productId' }),
     __metadata("design:type", String)
 ], CartItem.prototype, "productId", void 0);
 __decorate([
