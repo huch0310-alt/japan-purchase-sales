@@ -8,9 +8,9 @@
       <el-menu
         :default-active="activeMenu"
         router
-        background-color="#304156"
+        background-color="transparent"
         text-color="#bfcbd9"
-        active-text-color="#409eff"
+        active-text-color="#ffffff"
       >
         <el-menu-item index="/dashboard">
           <el-icon><DataLine /></el-icon>
