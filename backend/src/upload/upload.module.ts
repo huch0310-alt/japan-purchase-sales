@@ -25,6 +25,22 @@ import { UploadService } from './upload.service';
         limits: {
           fileSize: 10 * 1024 * 1024, // 10MB
         },
+        fileFilter: (req, file, cb) => {
+          // 只允许图片文件
+          const allowedMimes = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'image/svg+xml',
+          ];
+          if (allowedMimes.includes(file.mimetype)) {
+            cb(null, true);
+          } else {
+            cb(new Error('只允许上传图片文件 (JPEG, PNG, GIF, WebP, SVG)'), false);
+          }
+        },
       }),
       inject: [ConfigService],
     }),

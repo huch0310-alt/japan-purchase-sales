@@ -62,9 +62,9 @@ export class CustomerController {
     username: string;
     password: string;
     companyName: string;
-    address?: string;
-    contactPerson?: string;
-    phone?: string;
+    address: string;
+    contactPerson: string;
+    phone: string;
     vipDiscount?: number;
     invoiceName?: string;
     invoiceAddress?: string;

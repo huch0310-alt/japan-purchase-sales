@@ -106,11 +106,11 @@ export class InvoicesService {
       // 1. 保存发票获取id
       const savedInvoice = await queryRunner.manager.save(Invoice, invoice);
 
-      // 2. 更新所有订单的 invoice_id 字段
+      // 2. 更新所有订单的 invoice_id 和 invoiced_at 字段
       await queryRunner.manager
         .createQueryBuilder()
         .update(Order)
-        .set({ invoiceId: savedInvoice.id })
+        .set({ invoiceId: savedInvoice.id, invoicedAt: new Date() })
         .where('id IN (:...orderIds)', { orderIds: data.orderIds })
         .execute();
 
@@ -191,6 +191,58 @@ export class InvoicesService {
       paidAt: new Date(),
     });
     return this.findById(id);
+  }
+
+  /**
+   * 撤销請求書（仅限未付款状态）
+   * 撤销后关联订单的 invoice_id 和 invoiced_at 字段置空
+   */
+  async cancel(id: string, cancelledById: string, reason: string): Promise<Invoice> {
+    const invoice = await this.findById(id);
+
+    if (!invoice) {
+      throw new BadRequestException('請求書不存在');
+    }
+
+    if (invoice.status === 'paid') {
+      throw new BadRequestException('已付款的請求書不能撤销');
+    }
+
+    if (invoice.isCancelled) {
+      throw new BadRequestException('請求書已被撤销');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1. 更新請求書状态
+      await queryRunner.manager.update(Invoice, id, {
+        isCancelled: true,
+        cancelledAt: new Date(),
+        cancelledById,
+        cancelReason: reason,
+        status: 'cancelled',
+      });
+
+      // 2. 清空关联订单的 invoice_id 和 invoiced_at
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(Order)
+        .set({ invoiceId: null, invoicedAt: null })
+        .where('invoice_id = :id', { id })
+        .execute();
+
+      await queryRunner.commitTransaction();
+
+      return this.findById(id);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**

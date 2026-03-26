@@ -11,29 +11,29 @@ export class OrderItem {
   id: string;
 
   @ManyToOne(() => Order, order => order.items, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'orderId' })
+  @JoinColumn({ name: 'order_id' })
   order: Order;
 
-  @Column({ name: 'orderId' })
+  @Column({ name: 'order_id' })
   orderId: string;
 
   @ManyToOne(() => Product, product => product.orderItems)
-  @JoinColumn({ name: 'productId' })
+  @JoinColumn({ name: 'product_id' })
   product: Product;
 
-  @Column({ name: 'productId' })
+  @Column({ name: 'product_id' })
   productId: string;
 
-  @Column()
+  @Column({ name: 'productName' })
   productName: string;  // 商品名称（冗余）
 
-  @Column({ type: 'int', default: 1 })
+  @Column({ type: 'int', default: 1, name: 'quantity' })
   quantity: number;  // 数量
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'unitPrice' })
   unitPrice: number;  // 单价（税拔）
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, name: 'discount' })
   discount: number;  // 折扣
 
   @CreateDateColumn()

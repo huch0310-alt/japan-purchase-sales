@@ -15,38 +15,38 @@ export class Customer {
   @Column({ unique: true })
   username: string;  // 账号
 
-  @Column({ name: 'passwordHash' })
+  @Column({ name: 'password_hash' })
   passwordHash: string;  // 密码哈希
 
-  @Column()
+  @Column({ name: 'company_name' })
   companyName: string;  // 公司名称
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', name: 'address' })
   address: string;  // 送货地址（必填）
 
-  @Column()
+  @Column({ name: 'contact_person' })
   contactPerson: string;  // 联系人（必填）
 
-  @Column()
+  @Column({ name: 'phone' })
   phone: string;  // 联系电话（必填）
 
-  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0, name: 'vip_discount' })
   vipDiscount: number;  // VIP折扣率(0=无折扣, 10=9折)。计算公式: 应付金额 = 原价 × (1 - vipDiscount / 100)
 
   // 請求書信息
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'invoice_name' })
   invoiceName: string;  // 請求書抬头
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'invoice_address' })
   invoiceAddress: string;  // 公司地址
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'invoice_phone' })
   invoicePhone: string;  // 电话
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'invoice_bank' })
   invoiceBank: string;  // 银行账户
 
-  @Column({ default: true })
+  @Column({ default: true, name: 'is_active' })
   isActive: boolean;  // 是否激活
 
   @OneToMany(() => Order, order => order.customer)

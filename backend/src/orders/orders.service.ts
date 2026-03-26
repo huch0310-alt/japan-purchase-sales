@@ -174,7 +174,7 @@ export class OrdersService {
   async findById(id: string): Promise<Order | null> {
     return this.orderRepository.findOne({
       where: { id },
-      relations: ['customer', 'items', 'items.product'],
+      relations: ['customer', 'items', 'items.product', 'invoice'],
     });
   }
 
@@ -213,7 +213,8 @@ export class OrdersService {
     const query = this.orderRepository.createQueryBuilder('order')
       .leftJoinAndSelect('order.customer', 'customer')
       .leftJoinAndSelect('order.items', 'items')
-      .leftJoinAndSelect('items.product', 'product');
+      .leftJoinAndSelect('items.product', 'product')
+      .leftJoinAndSelect('order.invoice', 'invoice');
 
     if (filters?.status) {
       query.andWhere('order.status = :status', { status: filters.status });
@@ -243,7 +244,6 @@ export class OrdersService {
   async confirm(id: string, confirmedById: string): Promise<Order> {
     await this.orderRepository.update(id, {
       status: 'confirmed',
-      confirmedById,
       confirmedAt: new Date(),
     });
     const order = await this.findById(id);
@@ -260,7 +260,6 @@ export class OrdersService {
   async batchConfirm(ids: string[], confirmedById: string): Promise<void> {
     await this.orderRepository.update(ids, {
       status: 'confirmed',
-      confirmedById,
       confirmedAt: new Date(),
     });
   }

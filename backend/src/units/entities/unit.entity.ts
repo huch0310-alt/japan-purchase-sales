@@ -9,15 +9,15 @@ export class Unit {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ name: 'name' })
   name: string;  // 单位名称
 
-  @Column({ default: 0 })
+  @Column({ default: 0, name: 'sortOrder' })
   sortOrder: number;  // 排序
 
-  @Column({ default: true })
+  @Column({ default: true, name: 'isActive' })
   isActive: boolean;  // 是否启用
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
 }

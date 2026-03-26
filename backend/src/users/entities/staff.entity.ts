@@ -12,23 +12,24 @@ export class Staff {
   @Column({ unique: true })
   username: string;  // 账号
 
-  @Column({ name: 'passwordHash' })
+  @Column({ name: 'password_hash' })
   passwordHash: string;  // 密码哈希
 
-  @Column()
+  @Column({ name: 'name' })
   name: string;  // 姓名
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'phone' })
   phone: string;  // 电话
 
   @Column({
     type: 'enum',
     enum: ['super_admin', 'admin', 'procurement', 'sales'],
-    default: 'sales'
+    default: 'sales',
+    name: 'role'
   })
   role: string;  // 角色：super_admin-超级管理员, admin-管理员, procurement-采购, sales-销售
 
-  @Column({ default: true })
+  @Column({ default: true, name: 'is_active' })
   isActive: boolean;  // 是否激活
 
   @CreateDateColumn()

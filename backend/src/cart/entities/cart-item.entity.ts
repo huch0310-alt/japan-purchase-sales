@@ -11,17 +11,17 @@ export class CartItem {
   id: string;
 
   @ManyToOne(() => Customer, customer => customer.cartItems)
-  @JoinColumn({ name: 'customerId' })
+  @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
-  @Column({ name: 'customerId' })
+  @Column({ name: 'customer_id' })
   customerId: string;
 
   @ManyToOne(() => Product, product => product.cartItems)
-  @JoinColumn({ name: 'productId' })
+  @JoinColumn({ name: 'product_id' })
   product: Product;
 
-  @Column({ name: 'productId' })
+  @Column({ name: 'product_id' })
   productId: string;
 
   @Column({ type: 'int', default: 1 })

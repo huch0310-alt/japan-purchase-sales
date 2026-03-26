@@ -15,43 +15,44 @@ export class Product {
   @JoinColumn({ name: 'category_id' })
   category: Category;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'category_id' })
   categoryId: string;
 
-  @Column()
+  @Column({ name: 'name' })
   name: string;  // 商品名称
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'int', default: 0, name: 'quantity' })
   quantity: number;  // 库存数量
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'unit' })
   unit: string;  // 单位
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, name: 'purchase_price' })
   purchasePrice: number;  // 采购价（税拔）
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, name: 'sale_price' })
   salePrice: number;  // 销售价（税拔）
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'photo_url' })
   photoUrl: string;  // 照片URL
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true, name: 'description' })
   description: string;  // 说明
 
   @Column({
     type: 'enum',
     enum: ['pending', 'approved', 'rejected', 'active', 'inactive'],
-    default: 'pending'
+    default: 'pending',
+    name: 'status'
   })
   status: string;  // 状态：pending-待审核, approved-已通过, rejected-已拒绝, active-上架, inactive-下架
 
   // createdByStaff relation removed to avoid circular dependency
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, name: 'created_by' })
   createdBy: string;  // 采集人ID
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'int', default: 0, name: 'sales_count' })
   salesCount: number;  // 销售数量（用于热销排行）
 
   @OneToMany(() => OrderItem, item => item.product)
@@ -60,9 +61,9 @@ export class Product {
   @OneToMany(() => CartItem, cartItem => cartItem.product)
   cartItems: CartItem[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

@@ -221,7 +221,7 @@ export class StatsService {
     for (const order of result) {
       const items = order.items || [];
       for (const item of items) {
-        const categoryName = item.product?.category?.name || '未分类';
+        const categoryName = item.product?.category?.nameZh || '未分类';
         const amount = Number(item.unitPrice) * Number(item.quantity);
         categoryMap.set(categoryName, (categoryMap.get(categoryName) || 0) + amount);
       }

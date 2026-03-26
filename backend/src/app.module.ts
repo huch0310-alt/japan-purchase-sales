@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
@@ -42,6 +43,7 @@ import { GatewaysModule } from './gateways/gateways.module';
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', false),
+        namingStrategy: new SnakeNamingStrategy(),
       }),
       inject: [ConfigService],
     }),

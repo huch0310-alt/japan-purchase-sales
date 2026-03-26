@@ -121,6 +121,20 @@ export class InvoicesController {
   }
 
   /**
+   * 撤销請求書（仅限未付款状态）
+   */
+  @Put(':id/cancel')
+  @Roles('super_admin', 'admin')
+  @ApiOperation({ summary: '撤销請求書（仅限未付款状态）' })
+  async cancel(
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+    @Request() req,
+  ) {
+    return this.invoicesService.cancel(id, req.user.id, body.reason);
+  }
+
+  /**
    * 获取到期提醒列表
    */
   @Get('reminders/due')
