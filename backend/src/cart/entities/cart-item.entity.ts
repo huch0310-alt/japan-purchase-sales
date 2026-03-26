@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, Index } from 'typeorm';
 import { Customer } from '../../users/entities/customer.entity';
 import { Product } from '../../products/entities/product.entity';
 
@@ -6,6 +6,7 @@ import { Product } from '../../products/entities/product.entity';
  * 购物车条目实体
  */
 @Entity('cart_items')
+@Index('idx_cart_items_customer_id', ['customerId'])
 export class CartItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;

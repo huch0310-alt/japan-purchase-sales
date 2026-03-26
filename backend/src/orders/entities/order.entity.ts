@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn, UpdateDateColumn, Index } from 'typeorm';
 import { Customer } from '../../users/entities/customer.entity';
 import { Invoice } from '../../invoices/entities/invoice.entity';
 import { OrderItem } from './order-item.entity';
@@ -7,6 +7,9 @@ import { OrderItem } from './order-item.entity';
  * 订单实体
  */
 @Entity('orders')
+@Index('idx_orders_customer_id', ['customerId'])
+@Index('idx_orders_status', ['status'])
+@Index('idx_orders_created_at', ['createdAt'])
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;

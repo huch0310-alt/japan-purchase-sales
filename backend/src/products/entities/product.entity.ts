@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn, Index } from 'typeorm';
 import { Category } from '../../categories/entities/category.entity';
 import { OrderItem } from '../../orders/entities/order-item.entity';
 import { CartItem } from '../../cart/entities/cart-item.entity';
@@ -7,6 +7,9 @@ import { CartItem } from '../../cart/entities/cart-item.entity';
  * 商品实体
  */
 @Entity('products')
+@Index('idx_products_category_id', ['categoryId'])
+@Index('idx_products_status', ['status'])
+@Index('idx_products_created_by', ['createdBy'])
 export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;

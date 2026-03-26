@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
 
 /**
  * 积分变动类型
@@ -15,6 +15,7 @@ export enum PointsType {
  * 积分记录实体
  */
 @Entity('points_logs')
+@Index('idx_points_logs_customer_id', ['customerId'])
 export class PointsLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;

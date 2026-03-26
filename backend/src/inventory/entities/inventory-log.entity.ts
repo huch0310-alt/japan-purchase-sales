@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, Index } from 'typeorm';
 import { Product } from '../../products/entities/product.entity';
 
 /**
@@ -16,6 +16,7 @@ export enum InventoryType {
  * 记录商品库存的入库、出库、调整等变动
  */
 @Entity('inventory_logs')
+@Index('idx_inventory_logs_product_id', ['productId'])
 export class InventoryLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;

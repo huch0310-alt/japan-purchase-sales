@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, UpdateDateColumn, Index } from 'typeorm';
 import { Customer } from '../../users/entities/customer.entity';
 
 /**
@@ -6,6 +6,8 @@ import { Customer } from '../../users/entities/customer.entity';
  * 合并订单生成的請求書
  */
 @Entity('invoices')
+@Index('idx_invoices_customer_id', ['customerId'])
+@Index('idx_invoices_status', ['status'])
 export class Invoice {
   @PrimaryGeneratedColumn('uuid')
   id: string;

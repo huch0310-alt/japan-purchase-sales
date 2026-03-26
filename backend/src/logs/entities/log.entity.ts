@@ -1,10 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
 
 /**
  * 操作日志实体
  * 记录所有系统操作
  */
 @Entity('operation_logs')
+@Index('idx_operation_logs_user_id', ['userId'])
+@Index('idx_operation_logs_created_at', ['createdAt'])
 export class OperationLog {
   @PrimaryGeneratedColumn('uuid')
   id: string;
