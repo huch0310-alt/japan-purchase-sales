@@ -12,9 +12,9 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // 启用CORS - 允许所有来源进行测试
+  // 启用CORS - 仅允许同源请求（通过nginx反向代理）
   app.enableCors({
-    origin: true,
+    origin: /http:\/\/localhost(:[0-9]+)?$/,
     credentials: true,
   });
 

@@ -40,7 +40,7 @@ import { GatewaysModule } from './gateways/gateways.module';
         password: configService.get('DB_PASSWORD', 'postgres'),
         database: configService.get('DB_DATABASE', 'japan_purchase_sales'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('DB_SYNCHRONIZE', false),
+        synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
         logging: configService.get('DB_LOGGING', false),
       }),
       inject: [ConfigService],
