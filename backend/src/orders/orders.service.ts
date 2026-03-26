@@ -141,10 +141,20 @@ export class OrdersService {
         });
         await queryRunner.manager.save(OrderItem, orderItem);
 
-        // 扣减库存
-        await queryRunner.manager.update(Product, itemData.product.id, {
-          quantity: itemData.product.quantity - itemData.quantity,
-        });
+        // 原子扣减库存：只有库存足够时才扣减，防止并发超卖
+        const result = await queryRunner.manager
+          .createQueryBuilder()
+          .update(Product)
+          .set({ quantity: () => `quantity - ${itemData.quantity}` })
+          .where('id = :id AND quantity >= :quantity', {
+            id: itemData.product.id,
+            quantity: itemData.quantity,
+          })
+          .execute();
+
+        if (result.affected === 0) {
+          throw new Error(`商品库存不足: ${itemData.product.name}`);
+        }
       }
 
       // 提交事务
@@ -340,15 +350,15 @@ export class OrdersService {
         throw new Error(`订单状态不是待确认或已确认，无法取消。当前状态：${order.status}`);
       }
 
-      // 恢复库存
+      // 恢复库存（原子操作）
       for (const item of order.items || []) {
         if (item.product) {
-          const product = await this.productsService.findById(item.productId);
-          if (product) {
-            await queryRunner.manager.update(Product, item.productId, {
-              quantity: product.quantity + item.quantity,
-            });
-          }
+          await queryRunner.manager
+            .createQueryBuilder()
+            .update(Product)
+            .set({ quantity: () => `quantity + ${item.quantity}` })
+            .where('id = :id', { id: item.productId })
+            .execute();
         }
       }
 

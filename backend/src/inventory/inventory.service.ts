@@ -24,6 +24,7 @@ export class InventoryService {
 
   /**
    * 记录库存变动
+   * 使用原子更新防止并发问题
    */
   async recordInventory(data: {
     productId: string;
@@ -39,6 +40,7 @@ export class InventoryService {
 
     const beforeQuantity = product.quantity || 0;
     let afterQuantity = beforeQuantity;
+    let actualQuantity = data.quantity;
 
     // 根据类型计算库存变动
     switch (data.type) {
@@ -47,11 +49,15 @@ export class InventoryService {
         afterQuantity = beforeQuantity + data.quantity;
         break;
       case InventoryType.OUT:
+        // 原子扣减，只有库存足够时才扣减
+        if (beforeQuantity < data.quantity) {
+          throw new Error(`库存不足，当前库存: ${beforeQuantity}，需要: ${data.quantity}`);
+        }
         afterQuantity = beforeQuantity - data.quantity;
         break;
       case InventoryType.ADJUST:
         afterQuantity = data.quantity; // 调整为指定数量
-        data.quantity = data.quantity - beforeQuantity;
+        actualQuantity = data.quantity - beforeQuantity;
         break;
     }
 
@@ -59,7 +65,7 @@ export class InventoryService {
     const log = this.logRepository.create({
       productId: data.productId,
       type: data.type,
-      quantity: data.quantity,
+      quantity: actualQuantity,
       beforeQuantity,
       afterQuantity,
       operatorId: data.operatorId,
@@ -67,8 +73,22 @@ export class InventoryService {
     });
     await this.logRepository.save(log);
 
-    // 更新商品库存
-    await this.productRepository.update(data.productId, { quantity: afterQuantity });
+    // 原子更新商品库存
+    const queryBuilder = this.productRepository
+      .createQueryBuilder()
+      .update(Product)
+      .set({ quantity: afterQuantity })
+      .where('id = :id', { id: data.productId });
+
+    // 对于OUT类型，额外校验库存防止超卖
+    if (data.type === InventoryType.OUT) {
+      queryBuilder.andWhere('quantity >= :qty', { qty: data.quantity });
+    }
+
+    const result = await queryBuilder.execute();
+    if (result.affected === 0 && data.type === InventoryType.OUT) {
+      throw new Error(`库存不足，无法扣减: ${product.name}`);
+    }
 
     // 检查库存预警
     await this.checkInventoryAlert(data.productId);
