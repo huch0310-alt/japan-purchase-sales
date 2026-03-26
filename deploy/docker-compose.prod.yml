@@ -16,10 +16,10 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USERNAME=postgres
-      - DB_PASSWORD=${DB_PASSWORD:-japan2024SecurePass}
+      - DB_PASSWORD=${DB_PASSWORD}
       - DB_DATABASE=japan_purchase_sales
-      - DB_SYNCHRONIZE=true
-      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this}
+      - DB_SYNCHRONIZE=false
+      - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=7d
       - PORT=3001
     expose:
@@ -72,7 +72,7 @@ services:
     restart: always
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-japan2024SecurePass}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=japan_purchase_sales
     volumes:
       - postgres_data:/var/lib/postgresql/data
