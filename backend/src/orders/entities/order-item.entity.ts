@@ -14,14 +14,14 @@ export class OrderItem {
   @JoinColumn({ name: 'orderId' })
   order: Order;
 
-  @Column()
+  @Column({ name: 'orderId' })
   orderId: string;
 
   @ManyToOne(() => Product, product => product.orderItems)
   @JoinColumn({ name: 'productId' })
   product: Product;
 
-  @Column()
+  @Column({ name: 'productId' })
   productId: string;
 
   @Column()

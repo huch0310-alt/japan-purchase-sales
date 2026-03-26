@@ -347,7 +347,7 @@ export class OrdersService {
       .andWhere('order.invoiceId IS NULL');
 
     if (customerId) {
-      queryBuilder.andWhere('order.customerId = :customerId', { customerId });
+      queryBuilder.andWhere('order.customer_id = :customerId', { customerId });
     }
 
     return queryBuilder
