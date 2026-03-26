@@ -52,6 +52,7 @@ export class InvoicesService {
     try {
       // 获取订单信息
       let subtotal = 0;
+      let taxBasis = 0; // 税前金额（折扣后）
       for (const orderId of data.orderIds) {
         const order = await this.ordersService.findById(orderId);
         if (!order) {
@@ -67,17 +68,19 @@ export class InvoicesService {
           throw new BadRequestException(`订单 ${order.orderNo} 已生成过请求书`);
         }
         subtotal += Number(order.subtotal);
+        // 税前金额 = 订单合计 - 消费税
+        taxBasis += Number(order.totalAmount) - Number(order.taxAmount);
       }
 
       // 获取消费税率
       const taxRate = await this.settingService.getValue('tax_rate') || '10';
       const taxRateNum = parseInt(taxRate) / 100;
 
-      // 计算消费税
-      const taxAmount = Math.round(subtotal * taxRateNum);
+      // 计算消费税（按税前金额）
+      const taxAmount = Math.round(taxBasis * taxRateNum);
 
       // 税込合计
-      const totalAmount = subtotal + taxAmount;
+      const totalAmount = taxBasis + taxAmount;
 
       // 获取账期天数
       const defaultPaymentDays = parseInt(
