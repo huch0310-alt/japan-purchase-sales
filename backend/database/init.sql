@@ -23,10 +23,10 @@ CREATE TABLE IF NOT EXISTS customers (
     username VARCHAR(50) UNIQUE NOT NULL,
     "passwordHash" VARCHAR(255) NOT NULL,
     "companyName" VARCHAR(200) NOT NULL,
-    address TEXT,
-    "contactPerson" VARCHAR(100),
-    phone VARCHAR(20),
-    "vipDiscount" DECIMAL(5,2) DEFAULT 100,
+    address TEXT NOT NULL,
+    "contactPerson" VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    "vipDiscount" DECIMAL(5,2) DEFAULT 0,
     "invoiceName" VARCHAR(200),
     "invoiceAddress" TEXT,
     "invoicePhone" VARCHAR(20),
@@ -36,11 +36,14 @@ CREATE TABLE IF NOT EXISTS customers (
     "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 商品分类表
+-- 商品分类表（支持三语）
 CREATE TABLE IF NOT EXISTS categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(100) NOT NULL,
+    name_zh VARCHAR(100) NOT NULL,
+    name_ja VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL,
     "sortOrder" INTEGER DEFAULT 0,
+    "isSystem" BOOLEAN DEFAULT FALSE,
     "isActive" BOOLEAN DEFAULT true,
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -81,11 +84,12 @@ CREATE TABLE IF NOT EXISTS orders (
     "taxAmount" DECIMAL(12,2) DEFAULT 0,
     "totalAmount" DECIMAL(12,2) DEFAULT 0,
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
-    "deliveryAddress" TEXT,
-    "contactPerson" VARCHAR(100),
-    "contactPhone" VARCHAR(20),
+    "deliveryAddress" TEXT NOT NULL,
+    "contactPerson" VARCHAR(100) NOT NULL,
+    "contactPhone" VARCHAR(20) NOT NULL,
     remark TEXT,
-    "confirmedBy" UUID REFERENCES staff(id),
+    "confirmedById" UUID REFERENCES staff(id),
+    "invoiceId" UUID REFERENCES invoices(id),
     "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     "confirmedAt" TIMESTAMP,
     "completedAt" TIMESTAMP,
@@ -160,16 +164,16 @@ INSERT INTO staff (username, "passwordHash", name, phone, role)
 VALUES ('admin', '$2b$10$WFNAPPBSb4MERYchocfby./bBo9cIpmmvI5BfrjcC8ONY8DCdQQkG', '管理员', '090-1234-5678', 'super_admin')
 ON CONFLICT (username) DO NOTHING;
 
--- 插入默认分类
-INSERT INTO categories (name, "sortOrder") VALUES
-('肉类', 1),
-('蛋品', 2),
-('生鲜蔬果', 3),
-('酒水饮料', 4),
-('零食点心', 5),
-('调味品', 6),
-('冷冻食品', 7),
-('日用品', 8)
+-- 插入默认分类（八大固定分类，三语版本）
+INSERT INTO categories (name_zh, name_ja, name_en, "sortOrder", "isSystem") VALUES
+('肉类', '肉類', 'Meat', 1, TRUE),
+('蛋品', '卵類', 'Eggs', 2, TRUE),
+('生鲜蔬果', '生鮮野菜', 'Fresh Produce', 3, TRUE),
+('海鲜', '海鮮', 'Seafood', 4, TRUE),
+('调料', '調味料', 'Condiments', 5, TRUE),
+('饮料', '飲料', 'Beverages', 6, TRUE),
+('粮油', '穀物油', 'Grains & Oils', 7, TRUE),
+('日配', '日配', 'Daily Products', 8, TRUE)
 ON CONFLICT DO NOTHING;
 
 -- 插入默认单位

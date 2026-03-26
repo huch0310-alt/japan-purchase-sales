@@ -40,14 +40,14 @@ export class Order {
   })
   status: string;  // 状态：pending-待确认, confirmed-已确认, completed-已完成, cancelled-已取消
 
-  @Column({ nullable: true })
-  deliveryAddress: string;  // 配送地址
+  @Column({ type: 'text' })
+  deliveryAddress: string;  // 配送地址（必填）
 
-  @Column({ nullable: true })
-  contactPerson: string;  // 收货人
+  @Column()
+  contactPerson: string;  // 收货人（必填）
 
-  @Column({ nullable: true })
-  contactPhone: string;  // 联系电话
+  @Column()
+  contactPhone: string;  // 联系电话（必填）
 
   @Column({ type: 'text', nullable: true })
   remark: string;  // 备注

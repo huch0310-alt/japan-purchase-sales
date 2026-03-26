@@ -235,10 +235,21 @@ export class InvoicesService {
     // 创建PDF
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 842]); // A4尺寸
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    const { width, height } = page.getSize();
+    // 嵌入日文字体
+    let font, boldFont;
+    const fontPath = path.join(__dirname, '..', 'assets', 'fonts', 'NotoSansJP-Regular.ttf');
+    try {
+      const fontBytes = fs.readFileSync(fontPath);
+      font = await pdfDoc.embedFont(fontBytes);
+      boldFont = font; // 使用同一字体（日文不支持粗体）
+    } catch {
+      // 如果字体文件不存在，使用Helvetica（但不支持日文）
+      font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    }
+
+    const { height } = page.getSize();
 
     // 标题
     page.drawText('請求書', {
@@ -375,11 +386,6 @@ export class InvoicesService {
     page.drawRectangle({ x: 340, y: yPos - 5, width: 200, height: 25, color: rgb(0.95, 0.95, 0.95) });
     page.drawText('合計金額（税込）:', { x: 345, y: yPos, size: 11, font: boldFont });
     page.drawText(`¥${Number(invoice.totalAmount).toLocaleString()}`, { x: 450, y: yPos, size: 11, font: boldFont });
-
-    // 印章（可选）
-    // 如果有印章图片，可以在这里添加
-    // const stampImage = await pdfDoc.embedPng(fs.readFileSync('./stamp.png'));
-    // page.drawImage(stampImage, { x: 450, y: 100, width: 80, height: 80 });
 
     // 页脚
     page.drawText('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', {

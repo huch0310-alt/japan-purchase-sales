@@ -99,9 +99,12 @@ export class OrdersService {
       const taxRate = await this.settingService.getValue('tax_rate') || '10';
       const taxRateNum = parseInt(taxRate) / 100;
 
-      // 计算VIP折扣 (vipDiscount是百分比整数，如90表示9折，客户应付90%)
-      const vipDiscountNum = parseFloat(String(customer.vipDiscount)) / 100; // 90 -> 0.90
-      const afterDiscount = Math.round(subtotal * vipDiscountNum * 100) / 100; // 折后价
+      // 计算VIP折扣
+      // vipDiscount=0 表示不打折（应付100%）
+      // vipDiscount=10 表示打9折（应付90%，即减去10%）
+      // 计算公式: 应付金额 = 原价 × (1 - vipDiscount / 100)
+      const vipDiscountNum = parseFloat(String(customer.vipDiscount)) / 100; // 10 -> 0.10
+      const afterDiscount = Math.round(subtotal * (1 - vipDiscountNum) * 100) / 100; // 折后价
       const discountAmount = Math.round((subtotal - afterDiscount) * 100) / 100; // 折扣金额
 
       // 计算消费税

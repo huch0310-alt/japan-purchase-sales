@@ -29,8 +29,8 @@ export class CategoriesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('super_admin', 'admin')
   @ApiBearerAuth()
-  @ApiOperation({ summary: '创建分类' })
-  async create(@Body() createCategoryDto: { name: string; sortOrder?: number }) {
+  @ApiOperation({ summary: '创建分类（三语版本）' })
+  async create(@Body() createCategoryDto: { nameZh: string; nameJa: string; nameEn: string; sortOrder?: number }) {
     return this.categoriesService.create(createCategoryDto);
   }
 

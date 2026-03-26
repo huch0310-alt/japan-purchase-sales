@@ -21,17 +21,17 @@ export class Customer {
   @Column()
   companyName: string;  // 公司名称
 
-  @Column({ nullable: true })
-  address: string;  // 送货地址
+  @Column({ type: 'text' })
+  address: string;  // 送货地址（必填）
 
-  @Column({ nullable: true })
-  contactPerson: string;  // 联系人
+  @Column()
+  contactPerson: string;  // 联系人（必填）
 
-  @Column({ nullable: true })
-  phone: string;  // 联系电话
+  @Column()
+  phone: string;  // 联系电话（必填）
 
-  @Column({ type: 'decimal', precision: 5, scale: 2, default: 100 })
-  vipDiscount: number;  // VIP折扣率(100=无折扣, 90=9折)
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  vipDiscount: number;  // VIP折扣率(0=无折扣, 10=9折)。计算公式: 应付金额 = 原价 × (1 - vipDiscount / 100)
 
   // 請求書信息
   @Column({ nullable: true })
