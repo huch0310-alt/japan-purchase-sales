@@ -93,45 +93,77 @@ export class ProductsService {
 
   /**
    * 审核商品（销售端审核）
+   * 状态校验：只能审核待审核状态的商品
    */
   async approve(id: string, salePrice: number): Promise<Product> {
+    const product = await this.findById(id);
+    if (!product) {
+      throw new Error('商品不存在');
+    }
+    if (product.status !== 'pending') {
+      throw new Error(`商品状态不是待审核，无法审核。当前状态：${product.status}`);
+    }
     await this.productRepository.update(id, {
       status: 'approved',
       salePrice,
     });
-    const product = await this.findById(id);
+    const updatedProduct = await this.findById(id);
     // 发送商品审核通过通知
-    if (product) {
-      this.eventService.notifyProductApproved(product);
+    if (updatedProduct) {
+      this.eventService.notifyProductApproved(updatedProduct);
     }
-    return product;
+    return updatedProduct;
   }
 
   /**
    * 拒绝商品
+   * 状态校验：只能拒绝待审核状态的商品
    */
   async reject(id: string): Promise<Product> {
-    await this.productRepository.update(id, { status: 'rejected' });
     const product = await this.findById(id);
-    // 发送商品审核拒绝通知
-    if (product) {
-      this.eventService.notifyProductRejected(product);
+    if (!product) {
+      throw new Error('商品不存在');
     }
-    return product;
+    if (product.status !== 'pending') {
+      throw new Error(`商品状态不是待审核，无法拒绝。当前状态：${product.status}`);
+    }
+    await this.productRepository.update(id, { status: 'rejected' });
+    const rejectedProduct = await this.findById(id);
+    // 发送商品审核拒绝通知
+    if (rejectedProduct) {
+      this.eventService.notifyProductRejected(rejectedProduct);
+    }
+    return rejectedProduct;
   }
 
   /**
    * 上架商品
+   * 状态校验：只能上架已审核状态的商品
    */
   async activate(id: string): Promise<Product> {
+    const product = await this.findById(id);
+    if (!product) {
+      throw new Error('商品不存在');
+    }
+    if (product.status !== 'approved') {
+      throw new Error(`商品状态不是已审核，无法上架。当前状态：${product.status}`);
+    }
     await this.productRepository.update(id, { status: 'active' });
     return this.findById(id);
   }
 
   /**
    * 下架商品
+   * 状态校验：只能下架上架状态的商品
    */
   async deactivate(id: string): Promise<Product> {
+    const product = await this.findById(id);
+    if (!product) {
+      throw new Error('商品不存在');
+    }
+    if (product.status !== 'active') {
+      throw new Error(`商品状态不是上架，无法下架。当前状态：${product.status}`);
+    }
     await this.productRepository.update(id, { status: 'inactive' });
     return this.findById(id);
   }

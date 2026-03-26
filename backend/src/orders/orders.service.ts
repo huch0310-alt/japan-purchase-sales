@@ -240,24 +240,43 @@ export class OrdersService {
 
   /**
    * 确认订单（销售端）
+   * 状态校验：只能确认待确认状态的订单
    */
   async confirm(id: string, confirmedById: string): Promise<Order> {
+    const order = await this.findById(id);
+    if (!order) {
+      throw new Error('订单不存在');
+    }
+    if (order.status !== 'pending') {
+      throw new Error(`订单状态不是待确认，无法确认。当前状态：${order.status}`);
+    }
     await this.orderRepository.update(id, {
       status: 'confirmed',
       confirmedAt: new Date(),
     });
-    const order = await this.findById(id);
+    const updatedOrder = await this.findById(id);
     // 发送订单状态变更通知
-    if (order) {
-      this.eventService.notifyOrderStatusChanged(order);
+    if (updatedOrder) {
+      this.eventService.notifyOrderStatusChanged(updatedOrder);
     }
-    return order;
+    return updatedOrder;
   }
 
   /**
    * 批量确认订单
+   * 状态校验：只能确认待确认状态的订单
    */
   async batchConfirm(ids: string[], confirmedById: string): Promise<void> {
+    // 校验所有订单都是待确认状态
+    for (const id of ids) {
+      const order = await this.findById(id);
+      if (!order) {
+        throw new Error(`订单不存在: ${id}`);
+      }
+      if (order.status !== 'pending') {
+        throw new Error(`订单${order.orderNo}状态不是待确认，无法确认。当前状态：${order.status}`);
+      }
+    }
     await this.orderRepository.update(ids, {
       status: 'confirmed',
       confirmedAt: new Date(),
@@ -266,6 +285,7 @@ export class OrdersService {
 
   /**
    * 完成订单（使用事务）
+   * 状态校验：只能完成已确认状态的订单
    */
   async complete(id: string): Promise<Order> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -273,17 +293,26 @@ export class OrdersService {
     await queryRunner.startTransaction();
 
     try {
+      // 先查询订单状态
+      const order = await queryRunner.manager.findOne(Order, { where: { id } });
+      if (!order) {
+        throw new Error('订单不存在');
+      }
+      if (order.status !== 'confirmed') {
+        throw new Error(`订单状态不是已确认，无法完成。当前状态：${order.status}`);
+      }
+
       await queryRunner.manager.update(Order, id, {
         status: 'completed',
         completedAt: new Date(),
       });
       await queryRunner.commitTransaction();
 
-      const order = await this.findById(id);
-      if (order) {
-        this.eventService.notifyOrderStatusChanged(order);
+      const completedOrder = await this.findById(id);
+      if (completedOrder) {
+        this.eventService.notifyOrderStatusChanged(completedOrder);
       }
-      return order;
+      return completedOrder;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -294,6 +323,7 @@ export class OrdersService {
 
   /**
    * 取消订单（使用事务，并恢复库存）
+   * 状态校验：只能取消待确认或已确认状态的订单
    */
   async cancel(id: string): Promise<Order> {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -305,6 +335,9 @@ export class OrdersService {
       const order = await this.findById(id);
       if (!order) {
         throw new Error('订单不存在');
+      }
+      if (order.status !== 'pending' && order.status !== 'confirmed') {
+        throw new Error(`订单状态不是待确认或已确认，无法取消。当前状态：${order.status}`);
       }
 
       // 恢复库存
