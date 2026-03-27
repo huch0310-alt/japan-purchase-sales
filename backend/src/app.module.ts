@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -47,6 +48,11 @@ import { GatewaysModule } from './gateways/gateways.module';
       }),
       inject: [ConfigService],
     }),
+    // 速率限制配置 - 全局限流
+    ThrottlerModule.forRoot([{
+      ttl: 60000,   // 60秒
+      limit: 100,   // 60秒内最多100个请求
+    }]),
     // WebSocket网关（全局）
     GatewaysModule,
     // 业务模块

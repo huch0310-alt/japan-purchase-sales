@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, DeleteDateColumn } from 'typeorm';
 import { Order } from '../../orders/entities/order.entity';
 import { CartItem } from '../../cart/entities/cart-item.entity';
 import { Invoice } from '../../invoices/entities/invoice.entity';
@@ -63,4 +63,7 @@ export class Customer {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
 }

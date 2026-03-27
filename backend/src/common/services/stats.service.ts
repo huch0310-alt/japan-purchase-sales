@@ -76,34 +76,43 @@ export class StatsService {
 
   /**
    * 获取销售趋势数据
+   * 使用单次SQL查询按日期分组，解决N+1问题
    */
   async getSalesTrend(days: number = 7): Promise<{ date: string; amount: number }[]> {
-    const result: { date: string; amount: number }[] = [];
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days + 1);
+    startDate.setHours(0, 0, 0, 0);
 
+    // 使用 GROUP BY DATE 单次查询获取所有日期的数据
+    const result = await this.orderRepository
+      .createQueryBuilder('o')
+      .select('DATE(o.created_at)', 'date')
+      .addSelect('SUM(o.total_amount)', 'amount')
+      .where('o.createdAt >= :startDate', { startDate })
+      .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+      .groupBy('DATE(o.created_at)')
+      .orderBy('date', 'ASC')
+      .getRawMany();
+
+    // 创建日期到金额的映射
+    const amountMap = new Map<string, number>();
+    for (const row of result) {
+      amountMap.set(row.date, parseFloat(row.amount) || 0);
+    }
+
+    // 生成完整的日期范围，包含没有销售的日期
+    const trendResult: { date: string; amount: number }[] = [];
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
-      date.setHours(0, 0, 0, 0);
-
-      const nextDate = new Date(date);
-      nextDate.setDate(nextDate.getDate() + 1);
-
-      const orders = await this.orderRepository
-        .createQueryBuilder('o')
-        .where('o.createdAt >= :date', { date })
-        .andWhere('o.createdAt < :nextDate', { nextDate })
-        .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
-        .getMany();
-
-      const amount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
-
-      result.push({
-        date: date.toISOString().split('T')[0],
-        amount,
+      const dateStr = date.toISOString().split('T')[0];
+      trendResult.push({
+        date: dateStr,
+        amount: amountMap.get(dateStr) || 0,
       });
     }
 
-    return result;
+    return trendResult;
   }
 
   /**
@@ -173,34 +182,33 @@ export class StatsService {
 
   /**
    * 获取客户购买排行
+   * 使用SQL聚合查询解决N+1问题
    */
   async getTopCustomers(limit: number = 10): Promise<any[]> {
-    const customers = await this.customerRepository.find();
+    // 使用 JOIN 和 GROUP BY 一次查询获取所有客户的订单统计
+    const result = await this.orderRepository
+      .createQueryBuilder('o')
+      .leftJoin('o.customer', 'c')
+      .select('o.customerId', 'customerId')
+      .addSelect('c.companyName', 'companyName')
+      .addSelect('c.contactPerson', 'contactPerson')
+      .addSelect('COUNT(o.id)', 'orderCount')
+      .addSelect('COALESCE(SUM(o.totalAmount), 0)', 'totalAmount')
+      .where('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+      .groupBy('o.customerId')
+      .addGroupBy('c.companyName')
+      .addGroupBy('c.contactPerson')
+      .orderBy('totalAmount', 'DESC')
+      .limit(limit)
+      .getRawMany();
 
-    const customerStats = [];
-    for (const customer of customers) {
-      const orders = await this.orderRepository
-        .createQueryBuilder('o')
-        .where('o.customer_id = :customerId', { customerId: customer.id })
-        .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
-        .getMany();
-
-      const totalAmount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
-
-      if (totalAmount > 0) {
-        customerStats.push({
-          id: customer.id,
-          companyName: customer.companyName,
-          contactPerson: customer.contactPerson,
-          orderCount: orders.length,
-          totalAmount,
-        });
-      }
-    }
-
-    // 按消费金额排序
-    customerStats.sort((a, b) => b.totalAmount - a.totalAmount);
-    return customerStats.slice(0, limit);
+    return result.map(row => ({
+      id: row.customerId,
+      companyName: row.companyName,
+      contactPerson: row.contactPerson,
+      orderCount: parseInt(row.orderCount) || 0,
+      totalAmount: parseFloat(row.totalAmount) || 0,
+    }));
   }
 
   /**

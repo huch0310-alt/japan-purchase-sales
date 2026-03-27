@@ -12,6 +12,10 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // 安全中间件 - 使用helmet设置安全HTTP头
+  const helmet = (await import('helmet')).default;
+  app.use(helmet());
+
   // 启用CORS - 仅允许同源请求（通过nginx反向代理）
   app.enableCors({
     origin: /http:\/\/localhost(:[0-9]+)?$/,
@@ -38,6 +42,11 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+
+  // 健康检查端点（在全局前缀之前）
+  app.use('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
 
   // 设置全局前缀
   app.setGlobalPrefix('api');

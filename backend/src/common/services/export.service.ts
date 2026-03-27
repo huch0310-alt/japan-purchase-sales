@@ -152,32 +152,34 @@ export class ExportService {
 
   /**
    * 导出客户报表
+   * 使用SQL聚合查询解决N+1问题
    */
   async exportCustomerReport(): Promise<Buffer> {
-    const customers = await this.customerRepository.find();
+    // 使用 LEFT JOIN 和 GROUP BY 一次查询获取所有客户及其订单统计
+    const result = await this.customerRepository
+      .createQueryBuilder('customer')
+      .leftJoin('customer.orders', 'order')
+      .select('customer.id', 'id')
+      .addSelect('customer.companyName', 'companyName')
+      .addSelect('customer.contactPerson', 'contactPerson')
+      .addSelect('customer.phone', 'phone')
+      .addSelect('customer.vipDiscount', 'vipDiscount')
+      .addSelect('COUNT(order.id)', 'orderCount')
+      .addSelect('COALESCE(SUM(order.totalAmount), 0)', 'totalAmount')
+      .where('customer.isActive = :isActive', { isActive: true })
+      .andWhere('order.status IS NULL OR order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+      .groupBy('customer.id')
+      .orderBy('totalAmount', 'DESC')
+      .getRawMany();
 
-    // 计算每个客户的订单总额
-    const customerStats = [];
-    for (const customer of customers) {
-      const orders = await this.orderRepository
-        .createQueryBuilder('order')
-        .where('order.customer_id = :customerId', { customerId: customer.id })
-        .andWhere('order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
-        .getMany();
-
-      const totalAmount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
-      customerStats.push({
-        companyName: customer.companyName,
-        contactPerson: customer.contactPerson,
-        phone: customer.phone,
-        orderCount: orders.length,
-        totalAmount,
-        vipDiscount: customer.vipDiscount,
-      });
-    }
-
-    // 按销售额排序
-    customerStats.sort((a, b) => b.totalAmount - a.totalAmount);
+    const customerStats = result.map(row => ({
+      companyName: row.companyName,
+      contactPerson: row.contactPerson,
+      phone: row.phone,
+      orderCount: parseInt(row.orderCount) || 0,
+      totalAmount: parseFloat(row.totalAmount) || 0,
+      vipDiscount: row.vipDiscount,
+    }));
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = '日本采销管理系统';

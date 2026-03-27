@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { InventoryLog, InventoryType } from './entities/inventory-log.entity';
 import { InventoryAlert } from './entities/inventory-alert.entity';
 import { Product } from '../products/entities/product.entity';
@@ -20,11 +20,12 @@ export class InventoryService {
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
     private messagesService: MessagesService,
+    private dataSource: DataSource,
   ) {}
 
   /**
    * 记录库存变动
-   * 使用原子更新防止并发问题
+   * 使用事务确保库存记录和库存更新原子性
    */
   async recordInventory(data: {
     productId: string;
@@ -33,67 +34,80 @@ export class InventoryService {
     operatorId: string;
     remark?: string;
   }) {
-    const product = await this.productRepository.findOne({ where: { id: data.productId } });
-    if (!product) {
-      throw new Error('商品不存在');
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const product = await queryRunner.manager.findOne(Product, { where: { id: data.productId } });
+      if (!product) {
+        throw new Error('商品不存在');
+      }
+
+      const beforeQuantity = product.quantity || 0;
+      let afterQuantity = beforeQuantity;
+      let actualQuantity = data.quantity;
+
+      // 根据类型计算库存变动
+      switch (data.type) {
+        case InventoryType.IN:
+        case InventoryType.RETURN:
+          afterQuantity = beforeQuantity + data.quantity;
+          break;
+        case InventoryType.OUT:
+          // 原子扣减，只有库存足够时才扣减
+          if (beforeQuantity < data.quantity) {
+            throw new Error(`库存不足，当前库存: ${beforeQuantity}，需要: ${data.quantity}`);
+          }
+          afterQuantity = beforeQuantity - data.quantity;
+          break;
+        case InventoryType.ADJUST:
+          afterQuantity = data.quantity; // 调整为指定数量
+          actualQuantity = data.quantity - beforeQuantity;
+          break;
+      }
+
+      // 创建库存记录
+      const log = queryRunner.manager.create(InventoryLog, {
+        productId: data.productId,
+        type: data.type,
+        quantity: actualQuantity,
+        beforeQuantity,
+        afterQuantity,
+        operatorId: data.operatorId,
+        remark: data.remark,
+      });
+      await queryRunner.manager.save(InventoryLog, log);
+
+      // 原子更新商品库存
+      const queryBuilder = queryRunner.manager
+        .createQueryBuilder()
+        .update(Product)
+        .set({ quantity: afterQuantity })
+        .where('id = :id', { id: data.productId });
+
+      // 对于OUT类型，额外校验库存防止超卖
+      if (data.type === InventoryType.OUT) {
+        queryBuilder.andWhere('quantity >= :qty', { qty: data.quantity });
+      }
+
+      const result = await queryBuilder.execute();
+      if (result.affected === 0 && data.type === InventoryType.OUT) {
+        throw new Error(`库存不足，无法扣减: ${product.name}`);
+      }
+
+      await queryRunner.commitTransaction();
+
+      // 检查库存预警（在事务外执行，避免锁定）
+      await this.checkInventoryAlert(data.productId);
+
+      return log;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    const beforeQuantity = product.quantity || 0;
-    let afterQuantity = beforeQuantity;
-    let actualQuantity = data.quantity;
-
-    // 根据类型计算库存变动
-    switch (data.type) {
-      case InventoryType.IN:
-      case InventoryType.RETURN:
-        afterQuantity = beforeQuantity + data.quantity;
-        break;
-      case InventoryType.OUT:
-        // 原子扣减，只有库存足够时才扣减
-        if (beforeQuantity < data.quantity) {
-          throw new Error(`库存不足，当前库存: ${beforeQuantity}，需要: ${data.quantity}`);
-        }
-        afterQuantity = beforeQuantity - data.quantity;
-        break;
-      case InventoryType.ADJUST:
-        afterQuantity = data.quantity; // 调整为指定数量
-        actualQuantity = data.quantity - beforeQuantity;
-        break;
-    }
-
-    // 创建库存记录
-    const log = this.logRepository.create({
-      productId: data.productId,
-      type: data.type,
-      quantity: actualQuantity,
-      beforeQuantity,
-      afterQuantity,
-      operatorId: data.operatorId,
-      remark: data.remark,
-    });
-    await this.logRepository.save(log);
-
-    // 原子更新商品库存
-    const queryBuilder = this.productRepository
-      .createQueryBuilder()
-      .update(Product)
-      .set({ quantity: afterQuantity })
-      .where('id = :id', { id: data.productId });
-
-    // 对于OUT类型，额外校验库存防止超卖
-    if (data.type === InventoryType.OUT) {
-      queryBuilder.andWhere('quantity >= :qty', { qty: data.quantity });
-    }
-
-    const result = await queryBuilder.execute();
-    if (result.affected === 0 && data.type === InventoryType.OUT) {
-      throw new Error(`库存不足，无法扣减: ${product.name}`);
-    }
-
-    // 检查库存预警
-    await this.checkInventoryAlert(data.productId);
-
-    return log;
   }
 
   /**

@@ -1,7 +1,8 @@
 /// 应用配置
 class AppConfig {
   /// API基础URL
-  /// 开发环境使用本地地址，生产环境使用实际服务器地址
+  /// TODO: 生产环境必须配置HTTPS证书后改为 https://43.153.155.76/api
+  /// 当前临时使用HTTP，生产部署时必须启用HTTPS
   static const String apiBaseUrl = 'http://43.153.155.76:3001/api';
 
   /// 应用名称
