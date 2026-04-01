@@ -361,39 +361,53 @@ export class OrdersService {
   }
 
   /**
-   * 确认订单（销售端）
+   * 确认订单（销售端，使用事务保证一致性）
    * 状态校验：只能确认待确认状态的订单
    */
   async confirm(id: string, audit?: OperationAuditContext): Promise<Order> {
-    const order = await this.findById(id);
-    if (!order) {
-      throw new NotFoundException('订单不存在');
-    }
-    if (order.status !== 'pending') {
-      throw new BadRequestException(`订单状态不是待确认，无法确认。当前状态：${order.status}`);
-    }
-    await this.orderRepository.update(id, {
-      status: 'confirmed',
-      confirmedAt: new Date(),
-    });
-    const updatedOrder = await this.findById(id);
-    // 发送订单状态变更通知
-    if (updatedOrder) {
-      this.eventService.notifyOrderStatusChanged(updatedOrder);
-    }
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (audit && updatedOrder) {
-      await this.logsService.recordOperation({
-        userId: audit.userId,
-        userRole: audit.userRole,
-        ip: audit.ip,
-        module: 'orders',
-        action: 'confirm',
-        detail: { orderId: updatedOrder.id, orderNo: updatedOrder.orderNo },
+    try {
+      const order = await this.findById(id);
+      if (!order) {
+        throw new NotFoundException('订单不存在');
+      }
+      if (order.status !== 'pending') {
+        throw new BadRequestException(`订单状态不是待确认，无法确认。当前状态：${order.status}`);
+      }
+
+      await queryRunner.manager.update(Order, id, {
+        status: 'confirmed',
+        confirmedAt: new Date(),
       });
-    }
 
-    return updatedOrder!;
+      const updatedOrder = await this.findById(id);
+      // 发送订单状态变更通知
+      if (updatedOrder) {
+        this.eventService.notifyOrderStatusChanged(updatedOrder);
+      }
+
+      if (audit && updatedOrder) {
+        await this.logsService.recordOperation({
+          userId: audit.userId,
+          userRole: audit.userRole,
+          ip: audit.ip,
+          module: 'orders',
+          action: 'confirm',
+          detail: { orderId: updatedOrder.id, orderNo: updatedOrder.orderNo },
+        });
+      }
+
+      await queryRunner.commitTransaction();
+      return updatedOrder!;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   /**

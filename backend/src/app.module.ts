@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -38,18 +38,32 @@ import { ReturnsModule } from './returns/returns.module';
     // TypeORM配置
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST', 'localhost'),
-        port: configService.get('DB_PORT', 5432),
-        username: configService.get('DB_USERNAME', 'postgres'),
-        password: configService.get('DB_PASSWORD', 'postgres'),
-        database: configService.get('DB_DATABASE', 'japan_purchase_sales'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
-        logging: configService.get('DB_LOGGING', false),
-        namingStrategy: new SnakeNamingStrategy(),
-      }),
+      useFactory: (configService: ConfigService) => {
+        const isProduction = process.env.NODE_ENV === 'production';
+        const shouldSync = configService.get('DB_SYNCHRONIZE', 'false') === 'true';
+
+        // 生产环境禁止使用 synchronize
+        if (isProduction && shouldSync) {
+          const logger = new Logger('AppModule');
+          logger.error('🚨 安全错误: DB_SYNCHRONIZE 在生产环境必须为 false！这可能导致数据丢失！');
+          logger.error('请修改 .env 文件: DB_SYNCHRONIZE=false');
+          // 在生产环境强制禁用 synchronize
+          throw new Error('DB_SYNCHRONIZE is not allowed in production environment');
+        }
+
+        return {
+          type: 'postgres',
+          host: configService.get('DB_HOST', 'localhost'),
+          port: configService.get('DB_PORT', 5432),
+          username: configService.get('DB_USERNAME', 'postgres'),
+          password: configService.get('DB_PASSWORD', 'postgres'),
+          database: configService.get('DB_DATABASE', 'japan_purchase_sales'),
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: shouldSync,
+          logging: configService.get('DB_LOGGING', false),
+          namingStrategy: new SnakeNamingStrategy(),
+        };
+      },
       inject: [ConfigService],
     }),
     // 速率限制配置 - 全局限流

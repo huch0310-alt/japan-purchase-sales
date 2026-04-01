@@ -16,6 +16,26 @@ final dioProvider = Provider<Dio>((ref) {
       'Content-Type': 'application/json',
     },
   ));
+
+  // 添加拦截器：自动处理 Token
+  dio.interceptors.add(InterceptorsWrapper(
+    onRequest: (options, handler) async {
+      // 从安全存储读取 Token
+      final token = await _secureStorage.read(key: 'auth_token');
+      if (token != null) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+      return handler.next(options);
+    },
+    onError: (error, handler) {
+      // 401 错误时清除认证信息
+      if (error.response?.statusCode == 401) {
+        _secureStorage.delete(key: 'auth_token');
+      }
+      return handler.next(error);
+    },
+  ));
+
   return dio;
 });
 
@@ -60,8 +80,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       final userJson = prefs.getString('user');
 
       if (token != null && userJson != null) {
-        // 设置Dio的Authorization头
-        _ref.read(dioProvider).options.headers['Authorization'] = 'Bearer $token';
+        // Token 由拦截器自动处理
         state = AsyncValue.data(AuthState(
           token: token,
           user: _parseUser(userJson),
@@ -105,9 +124,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user', json.encode(user));
 
-      // 设置Dio的Authorization头
-      dio.options.headers['Authorization'] = 'Bearer $token';
-
+      // Token 由拦截器自动处理
       state = AsyncValue.data(AuthState(token: token, user: user));
     } catch (e, st) {
       debugPrint('Login error: $e');
@@ -122,7 +139,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     // 清除 SharedPreferences 中的用户信息
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user');
-    _ref.read(dioProvider).options.headers.remove('Authorization');
     state = AsyncValue.data(AuthState());
   }
 }

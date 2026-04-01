@@ -517,20 +517,34 @@ export class InvoicesService {
 
     // 订单明细
     let yPos = tableTop - 20;
-    let itemCount = 0;
+    const allItems: { productName: string; quantity: number; unitPrice: number }[] = [];
+
+    // 收集所有订单明细
     for (const order of validOrders) {
       const items = order.items || [];
       for (const item of items) {
-        page.drawText(item.productName?.substring(0, 25) || '', { x: 55, y: yPos, size: 8, font });
-        page.drawText(String(item.quantity), { x: 310, y: yPos, size: 8, font });
-        page.drawText(`¥${Number(item.unitPrice).toLocaleString()}`, { x: 360, y: yPos, size: 8, font });
-        page.drawText(`¥${(Number(item.unitPrice) * item.quantity).toLocaleString()}`, { x: 450, y: yPos, size: 8, font });
-        yPos -= 15;
-        itemCount++;
-        if (itemCount > 20) break;
+        allItems.push({
+          productName: item.productName || '',
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        });
       }
-      if (itemCount > 20) break;
     }
+
+    // 计算每项高度，确保所有商品都能显示
+    // A4 高度约 842pt，减去页头、标题、汇总等约 400pt，可用约 400pt
+    const itemHeight = Math.min(15, 400 / Math.max(allItems.length, 1));
+    let lastYPos = yPos;
+
+    for (const item of allItems) {
+      page.drawText(item.productName.substring(0, 25), { x: 55, y: lastYPos, size: 8, font });
+      page.drawText(String(item.quantity), { x: 310, y: lastYPos, size: 8, font });
+      page.drawText(`¥${Number(item.unitPrice).toLocaleString()}`, { x: 360, y: lastYPos, size: 8, font });
+      page.drawText(`¥${(Number(item.unitPrice) * item.quantity).toLocaleString()}`, { x: 450, y: lastYPos, size: 8, font });
+      lastYPos -= itemHeight;
+    }
+
+    yPos = lastYPos;
 
     // 金额汇总
     yPos -= 30;
