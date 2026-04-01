@@ -32,23 +32,64 @@ __decorate([
 ], LoginDto.prototype, "password", void 0);
 class ChangePasswordDto {
 }
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], ChangePasswordDto.prototype, "oldPassword", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], ChangePasswordDto.prototype, "newPassword", void 0);
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
-    async staffLogin(loginDto) {
+    getCookieSecure() {
+        return (process.env.COOKIE_SECURE || (process.env.NODE_ENV === 'production' ? 'true' : 'false')) === 'true';
+    }
+    getCookieSameSite() {
+        const sameSite = (process.env.COOKIE_SAMESITE || 'lax').toLowerCase();
+        if (sameSite === 'none')
+            return 'none';
+        if (sameSite === 'strict')
+            return 'strict';
+        return 'lax';
+    }
+    getAuthCookieMaxAgeMs() {
+        const maxAge = Number(process.env.AUTH_COOKIE_MAX_AGE_MS || 7 * 24 * 60 * 60 * 1000);
+        return Number.isFinite(maxAge) ? maxAge : 7 * 24 * 60 * 60 * 1000;
+    }
+    async staffLogin(loginDto, res) {
         const staff = await this.authService.validateStaff(loginDto.username, loginDto.password);
         if (!staff) {
             throw new common_1.UnauthorizedException('用户名或密码错误');
         }
-        return this.authService.loginStaff(staff);
+        const result = await this.authService.loginStaff(staff);
+        res.cookie('access_token', result.access_token, {
+            httpOnly: true,
+            secure: this.getCookieSecure(),
+            sameSite: this.getCookieSameSite(),
+            path: '/',
+            maxAge: this.getAuthCookieMaxAgeMs(),
+        });
+        return result;
     }
-    async customerLogin(loginDto) {
+    async customerLogin(loginDto, res) {
         const customer = await this.authService.validateCustomer(loginDto.username, loginDto.password);
         if (!customer) {
             throw new common_1.UnauthorizedException('用户名或密码错误');
         }
-        return this.authService.loginCustomer(customer);
+        const result = await this.authService.loginCustomer(customer);
+        res.cookie('access_token', result.access_token, {
+            httpOnly: true,
+            secure: this.getCookieSecure(),
+            sameSite: this.getCookieSameSite(),
+            path: '/',
+            maxAge: this.getAuthCookieMaxAgeMs(),
+        });
+        return result;
     }
     async verifyToken(req) {
         return req.user;
@@ -65,8 +106,9 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: '员工账号密码登录' }),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [LoginDto]),
+    __metadata("design:paramtypes", [LoginDto, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "staffLogin", null);
 __decorate([
@@ -74,8 +116,9 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({ summary: '客户账号密码登录' }),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Res)({ passthrough: true })),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [LoginDto]),
+    __metadata("design:paramtypes", [LoginDto, Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "customerLogin", null);
 __decorate([

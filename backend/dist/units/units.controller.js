@@ -19,6 +19,7 @@ const units_service_1 = require("./units.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const unit_dto_1 = require("./dto/unit.dto");
 let UnitsController = class UnitsController {
     constructor(unitsService) {
         this.unitsService = unitsService;
@@ -76,7 +77,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, unit_dto_1.UpdateUnitDto]),
     __metadata("design:returntype", Promise)
 ], UnitsController.prototype, "update", null);
 __decorate([

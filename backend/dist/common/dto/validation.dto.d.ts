@@ -43,6 +43,13 @@ export declare class PaginationQueryDto {
     page?: number;
     pageSize?: number;
 }
+export declare class PaginatedResponse<T> {
+    data: T[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+}
 export declare class DateRangeQueryDto {
     startDate?: string;
     endDate?: string;

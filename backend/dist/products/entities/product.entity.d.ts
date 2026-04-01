@@ -3,6 +3,8 @@ import { OrderItem } from '../../orders/entities/order-item.entity';
 import { CartItem } from '../../cart/entities/cart-item.entity';
 export declare class Product {
     id: string;
+    categoryName: string | null;
+    updateCategoryName(): void;
     category: Category;
     categoryId: string;
     name: string;
@@ -19,4 +21,5 @@ export declare class Product {
     cartItems: CartItem[];
     createdAt: Date;
     updatedAt: Date;
+    deletedAt: Date;
 }

@@ -19,6 +19,7 @@ const staff_service_1 = require("./staff.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const staff_dto_1 = require("./dto/staff.dto");
 let StaffController = class StaffController {
     constructor(staffService) {
         this.staffService = staffService;
@@ -33,7 +34,7 @@ let StaffController = class StaffController {
     async findOne(id) {
         const staff = await this.staffService.findById(id);
         if (!staff) {
-            throw new Error('员工不存在');
+            throw new common_1.NotFoundException('员工不存在');
         }
         const { passwordHash, ...result } = staff;
         return result;
@@ -82,7 +83,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, staff_dto_1.UpdateStaffDto]),
     __metadata("design:returntype", Promise)
 ], StaffController.prototype, "update", null);
 __decorate([

@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { MemberLevel } from './entities/member-level.entity';
 import { CustomerMember } from './entities/customer-member.entity';
 import { PointsLog, PointsType } from './entities/points-log.entity';
@@ -11,6 +11,8 @@ import { MessagesService } from '../messages/messages.service';
  */
 @Injectable()
 export class MembersService {
+  private readonly logger = new Logger(MembersService.name);
+
   constructor(
     @InjectRepository(MemberLevel)
     private levelRepository: Repository<MemberLevel>,
@@ -19,6 +21,7 @@ export class MembersService {
     @InjectRepository(PointsLog)
     private pointsLogRepository: Repository<PointsLog>,
     private messagesService: MessagesService,
+    private dataSource: DataSource,
   ) {}
 
   // ==================== 会员等级 ====================
@@ -70,57 +73,115 @@ export class MembersService {
   }
 
   /**
-   * 添加积分
+   * 添加积分（使用原子更新防止竞态条件）
    */
   async addPoints(customerId: string, points: number, type: PointsType, relatedId?: string, remark?: string) {
-    let member = await this.getCustomerMember(customerId);
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (!member) {
-      member = await this.createCustomerMember(customerId);
+    try {
+      // 原子增加积分：使用 INSERT ... ON CONFLICT 防止竞态条件
+      // 先获取默认等级
+      const defaultLevel = await queryRunner.manager.findOne(MemberLevel, { where: { name: 'Bronze' } });
+
+      // 使用原生SQL进行原子性"插入或更新"操作
+      // PostgreSQL: INSERT ... ON CONFLICT DO UPDATE
+      await queryRunner.manager.query(
+        `INSERT INTO customer_members (customer_id, level_id, points, total_points, created_at, updated_at)
+         VALUES ($1, $2, 0, 0, NOW(), NOW())
+         ON CONFLICT (customer_id) DO UPDATE SET updated_at = NOW()
+         RETURNING id`,
+        [customerId, defaultLevel?.id],
+      );
+
+      // 获取会员ID用于后续更新
+      const member = await queryRunner.manager.findOne(CustomerMember, { where: { customerId } });
+      if (!member) {
+        throw new Error('会员创建失败');
+      }
+
+      // 原子更新积分
+      await queryRunner.manager
+        .createQueryBuilder()
+        .update(CustomerMember)
+        .set({
+          points: () => `points + ${points}`,
+          totalPoints: () => `totalPoints + ${points}`,
+        })
+        .where('id = :id', { id: member.id })
+        .execute();
+
+      // 记录积分变动
+      await queryRunner.manager.save(PointsLog, {
+        customerId,
+        type,
+        points,
+        relatedId,
+        remark,
+      });
+
+      await queryRunner.commitTransaction();
+
+      // 检查是否需要升级（独立事务外）
+      await this.checkLevelUpgrade(customerId);
+
+      return this.getCustomerMember(customerId);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    // 更新积分
-    member.points += points;
-    member.totalPoints += points;
-    await this.memberRepository.save(member);
-
-    // 记录积分变动
-    await this.pointsLogRepository.save({
-      customerId,
-      type,
-      points,
-      relatedId,
-      remark,
-    });
-
-    // 检查是否需要升级
-    await this.checkLevelUpgrade(customerId);
-
-    return member;
   }
 
   /**
-   * 使用积分
+   * 使用积分（使用原子更新防止竞态条件和超扣）
    */
   async usePoints(customerId: string, points: number, relatedId?: string, remark?: string) {
-    const member = await this.getCustomerMember(customerId);
-    if (!member || member.points < points) {
-      throw new Error('积分不足');
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 先检查积分是否足够
+      const member = await queryRunner.manager.findOne(CustomerMember, { where: { customerId } });
+      if (!member) {
+        throw new BadRequestException('会员不存在');
+      }
+      if (member.points < points) {
+        throw new BadRequestException('积分不足');
+      }
+
+      // 原子扣减积分（带条件防止超扣）
+      const result = await queryRunner.manager
+        .createQueryBuilder()
+        .update(CustomerMember)
+        .set({ points: () => `points - ${points}` })
+        .where('id = :id AND points >= :points', { id: member.id, points })
+        .execute();
+
+      if (result.affected === 0) {
+        throw new BadRequestException('积分不足');
+      }
+
+      // 记录积分变动
+      await queryRunner.manager.save(PointsLog, {
+        customerId,
+        type: PointsType.ORDERUse,
+        points: -points,
+        relatedId,
+        remark,
+      });
+
+      await queryRunner.commitTransaction();
+      return this.getCustomerMember(customerId);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    member.points -= points;
-    await this.memberRepository.save(member);
-
-    // 记录积分变动
-    await this.pointsLogRepository.save({
-      customerId,
-      type: PointsType.ORDERUse,
-      points: -points,
-      relatedId,
-      remark,
-    });
-
-    return member;
   }
 
   /**
@@ -144,7 +205,7 @@ export class MembersService {
         content: `恭喜！您的会员等级已从 ${oldLevelId} 升级为 ${newLevel.name}，享受更多优惠！`,
         type: 'member_upgrade',
       });
-      console.log(`会员升级: ${customerId} 升级为 ${newLevel.name}`);
+      this.logger.log(`会员升级: ${customerId} 升级为 ${newLevel.name}`);
     }
   }
 

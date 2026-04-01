@@ -4,6 +4,9 @@ import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { AuthenticatedRequest } from '../common/types';
+import { PaginationQueryDto } from '../common/dto/validation.dto';
+import { UpdateProductDto } from './dto/product.dto';
 
 /**
  * 商品控制器
@@ -44,11 +47,12 @@ export class ProductsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: '获取所有商品列表（管理后台）' })
   async findAll(
+    @Query() pagination: PaginationQueryDto,
     @Query('categoryId') categoryId?: string,
     @Query('status') status?: string,
     @Query('keyword') keyword?: string,
   ) {
-    return this.productsService.findAll({ categoryId, status, keyword });
+    return this.productsService.findAll({ categoryId, status, keyword, page: pagination.page, pageSize: pagination.pageSize });
   }
 
   /**
@@ -68,7 +72,7 @@ export class ProductsController {
   @Roles('super_admin', 'admin', 'procurement')
   @ApiBearerAuth()
   @ApiOperation({ summary: '采购端采集商品' })
-  async create(@Request() req, @Body() createProductDto: {
+  async create(@Request() req: AuthenticatedRequest, @Body() createProductDto: {
     name: string;
     quantity?: number;
     unit?: string;
@@ -152,7 +156,7 @@ export class ProductsController {
   @Roles('super_admin', 'admin', 'sales')
   @ApiBearerAuth()
   @ApiOperation({ summary: '更新商品信息' })
-  async update(@Param('id') id: string, @Body() updateProductDto: any) {
+  async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     return this.productsService.update(id, updateProductDto);
   }
 

@@ -79,7 +79,10 @@ export default {
     maxLength: '{field}最多{max}个字符',
     enterUsername: '请输入账号',
     enterPassword: '请输入密码',
-    enterName: '请输入名称'
+    enterName: '请输入名称',
+    enterNameZh: '请输入中文名称',
+    enterNameJa: '请输入日语名称',
+    enterNameEn: 'Please enter English name'
   },
   messages: {
     loadSuccess: '加载成功',
@@ -167,7 +170,11 @@ export default {
     title: '分类管理',
     addCategory: '新增分类',
     editCategory: '编辑分类',
-    categoryName: '分类名称'
+    categoryName: '分类名称',
+    nameZh: '中文名称',
+    nameJa: '日本語名',
+    nameEn: 'English Name',
+    systemCategory: '系统分类'
   },
   unit: {
     title: '单位管理',
@@ -216,6 +223,7 @@ export default {
     unpaid: '未払い',
     paid: '支払済',
     overdue: '期限超過',
+    cancelled: '已撤销',
     view: '查看',
     downloadPdf: '下载PDF',
     markPaid: '标记付款',
@@ -231,7 +239,18 @@ export default {
     selectDueDate: '选择到期日',
     mustSameCustomer: '只能选择同一客户的订单',
     generateSuccess: '请求书生成成功',
-    generateFailed: '请求书生成失败'
+    generateFailed: '请求书生成失败',
+    alreadyInvoiced: '已生成',
+    available: '可生成',
+    status: '状态',
+    cancel: '撤销',
+    cancelInvoice: '撤销請求書',
+    cancelReason: '撤销原因',
+    enterCancelReason: '请输入撤销原因',
+    confirmCancel: '确认撤销',
+    cancelSuccess: '請求書已撤销',
+    cancelReasonRequired: '请输入撤销原因',
+    alreadyCancelled: '請求書已被撤销，不能再次撤销'
   },
   report: {
     title: '报表统计',
@@ -300,5 +319,12 @@ export default {
     unitSettings: '单位设置',
     productUnits: '商品单位',
     saveSettings: '保存设置'
+  },
+  error: {
+    title: '页面出错了',
+    defaultMessage: '抱歉，页面遇到了一些问题',
+    retry: '重试',
+    goHome: '返回首页',
+    details: '错误详情'
   }
 }

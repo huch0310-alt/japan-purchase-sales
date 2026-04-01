@@ -2,6 +2,7 @@ import { Controller, Get, Put, Delete, Param, Query, UseGuards, Request } from '
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthenticatedRequest } from '../common/types';
 
 /**
  * 消息控制器
@@ -18,7 +19,7 @@ export class MessagesController {
    */
   @Get()
   @ApiOperation({ summary: '获取消息列表' })
-  async findAll(@Request() req) {
+  async findAll(@Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
     const userType = req.user.type || 'staff';
     const messages = await this.messagesService.findByUser(userId, userType);
@@ -35,7 +36,7 @@ export class MessagesController {
    */
   @Get('unread-count')
   @ApiOperation({ summary: '获取未读消息数量' })
-  async getUnreadCount(@Request() req) {
+  async getUnreadCount(@Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
     const userType = req.user.type || 'staff';
     const count = await this.messagesService.getUnreadCount(userId, userType);
@@ -57,7 +58,7 @@ export class MessagesController {
    */
   @Put('read-all')
   @ApiOperation({ summary: '标记所有消息为已读' })
-  async markAllAsRead(@Request() req) {
+  async markAllAsRead(@Request() req: AuthenticatedRequest) {
     const userId = req.user.id;
     const userType = req.user.type || 'staff';
     await this.messagesService.markAllAsRead(userId, userType);

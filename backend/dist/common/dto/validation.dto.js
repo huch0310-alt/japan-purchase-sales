@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DateRangeQueryDto = exports.PaginationQueryDto = exports.CreateInvoiceDto = exports.CreateOrderDto = exports.OrderItemDto = exports.ApproveProductDto = exports.CreateProductDto = exports.CreateCustomerDto = exports.CreateStaffDto = void 0;
+exports.DateRangeQueryDto = exports.PaginatedResponse = exports.PaginationQueryDto = exports.CreateInvoiceDto = exports.CreateOrderDto = exports.OrderItemDto = exports.ApproveProductDto = exports.CreateProductDto = exports.CreateCustomerDto = exports.CreateStaffDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 class CreateStaffDto {
@@ -182,10 +182,6 @@ __decorate([
     __metadata("design:type", Array)
 ], CreateInvoiceDto.prototype, "orderIds", void 0);
 class PaginationQueryDto {
-    constructor() {
-        this.page = 1;
-        this.pageSize = 20;
-    }
 }
 exports.PaginationQueryDto = PaginationQueryDto;
 __decorate([
@@ -200,6 +196,9 @@ __decorate([
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], PaginationQueryDto.prototype, "pageSize", void 0);
+class PaginatedResponse {
+}
+exports.PaginatedResponse = PaginatedResponse;
 class DateRangeQueryDto {
 }
 exports.DateRangeQueryDto = DateRangeQueryDto;

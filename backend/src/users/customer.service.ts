@@ -1,8 +1,28 @@
-import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { Customer } from './entities/customer.entity';
+import { PaginatedResponse } from '../common/dto/validation.dto';
+
+/**
+ * 验证密码强度
+ * 要求：最少8位，包含大小写字母和数字
+ */
+function validatePasswordStrength(password: string): void {
+  if (!password || password.length < 8) {
+    throw new BadRequestException('密码长度不能少于8位');
+  }
+  if (!/[A-Z]/.test(password)) {
+    throw new BadRequestException('密码必须包含大写字母');
+  }
+  if (!/[a-z]/.test(password)) {
+    throw new BadRequestException('密码必须包含小写字母');
+  }
+  if (!/[0-9]/.test(password)) {
+    throw new BadRequestException('密码必须包含数字');
+  }
+}
 
 /**
  * 客户服务
@@ -22,14 +42,14 @@ export class CustomerService {
    * 根据用户名查找客户
    */
   async findByUsername(username: string): Promise<Customer | null> {
-    return this.customerRepository.findOne({ where: { username } });
+    return this.customerRepository.findOne({ where: { username, deletedAt: IsNull() } });
   }
 
   /**
    * 根据ID查找客户
    */
   async findById(id: string): Promise<Customer | null> {
-    return this.customerRepository.findOne({ where: { id } });
+    return this.customerRepository.findOne({ where: { id, deletedAt: IsNull() } });
   }
 
   /**
@@ -55,6 +75,9 @@ export class CustomerService {
       throw new BadRequestException('用户名、密码、公司名称、联系人、电话、送货地址为必填项');
     }
 
+    // 验证密码强度
+    validatePasswordStrength(data.password);
+
     const existing = await this.findByUsername(data.username);
     if (existing) {
       throw new ConflictException('用户名已存在');
@@ -72,18 +95,45 @@ export class CustomerService {
   /**
    * 查询所有客户
    */
-  async findAll(): Promise<Customer[]> {
-    return this.customerRepository.find({
+  async findAll(filters?: {
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<Customer>> {
+    const page = filters?.page || 1;
+    const pageSize = filters?.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+
+    const [data, total] = await this.customerRepository.findAndCount({
+      where: { deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
+      skip,
+      take: pageSize,
     });
+
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
   }
 
   /**
    * 根据ID更新客户信息
    */
   async update(id: string, data: Partial<Customer>): Promise<Customer> {
+    // VIP折扣范围验证：0-100
+    if (data.vipDiscount !== undefined && (data.vipDiscount < 0 || data.vipDiscount > 100)) {
+      throw new BadRequestException('VIP折扣必须在0-100之间');
+    }
+
+    const customer = await this.findById(id);
+    if (!customer) {
+      throw new NotFoundException('客户不存在');
+    }
     await this.customerRepository.update(id, data);
-    return this.findById(id);
+    return customer;
   }
 
   /**
@@ -97,6 +147,8 @@ export class CustomerService {
    * 修改密码
    */
   async updatePassword(id: string, newPassword: string): Promise<void> {
+    // 验证密码强度
+    validatePasswordStrength(newPassword);
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await this.customerRepository.update(id, { passwordHash });
   }
@@ -108,6 +160,7 @@ export class CustomerService {
     return this.customerRepository
       .createQueryBuilder('customer')
       .where('customer.company_name LIKE :keyword', { keyword: `%${keyword}%` })
+      .andWhere('customer.deleted_at IS NULL')
       .getMany();
   }
 }

@@ -23,8 +23,8 @@ let InventoryController = class InventoryController {
     constructor(inventoryService) {
         this.inventoryService = inventoryService;
     }
-    async recordInventory(body) {
-        const operatorId = 'current-user-id';
+    async recordInventory(req, body) {
+        const operatorId = req.user.id;
         return this.inventoryService.recordInventory({
             ...body,
             operatorId,
@@ -51,9 +51,10 @@ __decorate([
     (0, common_1.Post)('record'),
     (0, swagger_1.ApiOperation)({ summary: '记录库存变动' }),
     (0, roles_decorator_1.Roles)('super_admin', 'admin', 'procurement'),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], InventoryController.prototype, "recordInventory", null);
 __decorate([

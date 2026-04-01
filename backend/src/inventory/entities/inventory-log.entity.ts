@@ -48,6 +48,9 @@ export class InventoryLog {
   @Column({ type: 'text', nullable: true })
   remark: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  relatedId: string;
+
   @CreateDateColumn()
   createdAt: Date;
 }

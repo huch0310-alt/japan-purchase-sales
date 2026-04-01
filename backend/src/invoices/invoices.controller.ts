@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ConfigService } from '@nestjs/config';
+import { AuthenticatedRequest } from '../common/types';
 
 /**
  * 請求書控制器
@@ -27,11 +28,19 @@ export class InvoicesController {
   @Post()
   @Roles('super_admin', 'admin', 'sales')
   @ApiOperation({ summary: '创建請求書（合并订单）' })
-  async create(@Body() createInvoiceDto: {
-    customerId: string;
-    orderIds: string[];
-  }) {
-    return this.invoicesService.create(createInvoiceDto);
+  async create(
+    @Request() req: AuthenticatedRequest,
+    @Body() createInvoiceDto: {
+      customerId: string;
+      orderIds: string[];
+    },
+  ) {
+    const audit = {
+      userId: req.user.id,
+      userRole: req.user.role,
+      ip: req.ip,
+    };
+    return this.invoicesService.create(createInvoiceDto, audit);
   }
 
   /**
@@ -39,7 +48,7 @@ export class InvoicesController {
    */
   @Get('my')
   @ApiOperation({ summary: '获取当前客户的請求書列表' })
-  async findMyInvoices(@Request() req) {
+  async findMyInvoices(@Request() req: AuthenticatedRequest) {
     const user = req.user;
     const userId = user.id;
     const userType = user.type;
@@ -74,6 +83,16 @@ export class InvoicesController {
   }
 
   /**
+   * 获取到期提醒列表（须置于 :id 之前，避免被动态路由抢占）
+   */
+  @Get('reminders/due')
+  @Roles('super_admin', 'admin', 'sales')
+  @ApiOperation({ summary: '获取到期提醒列表（提前3天）' })
+  async getDueReminders() {
+    return this.invoicesService.getDueReminders();
+  }
+
+  /**
    * 获取請求書详情
    */
   @Get(':id')
@@ -105,8 +124,9 @@ export class InvoicesController {
 
       const fileStream = fs.createReadStream(fullPath);
       fileStream.pipe(res);
-    } catch (error) {
-      res.status(500).json({ message: 'PDF生成失败', error: error.message });
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      res.status(500).json({ message: 'PDF生成失败', error: errMsg });
     }
   }
 
@@ -116,8 +136,13 @@ export class InvoicesController {
   @Put(':id/paid')
   @Roles('super_admin', 'admin', 'sales')
   @ApiOperation({ summary: '标记为已付款' })
-  async markAsPaid(@Param('id') id: string) {
-    return this.invoicesService.markAsPaid(id);
+  async markAsPaid(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+    const audit = {
+      userId: req.user.id,
+      userRole: req.user.role,
+      ip: req.ip,
+    };
+    return this.invoicesService.markAsPaid(id, audit);
   }
 
   /**
@@ -129,18 +154,13 @@ export class InvoicesController {
   async cancel(
     @Param('id') id: string,
     @Body() body: { reason: string },
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
-    return this.invoicesService.cancel(id, req.user.id, body.reason);
-  }
-
-  /**
-   * 获取到期提醒列表
-   */
-  @Get('reminders/due')
-  @Roles('super_admin', 'admin', 'sales')
-  @ApiOperation({ summary: '获取到期提醒列表（提前3天）' })
-  async getDueReminders() {
-    return this.invoicesService.getDueReminders();
+    const audit = {
+      userId: req.user.id,
+      userRole: req.user.role,
+      ip: req.ip,
+    };
+    return this.invoicesService.cancel(id, req.user.id, body.reason, audit);
   }
 }

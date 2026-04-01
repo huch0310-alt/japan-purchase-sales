@@ -43,7 +43,24 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('super_admin', 'admin', 'procurement', 'sales'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
+        limits: {
+            fileSize: 5 * 1024 * 1024,
+        },
+        fileFilter: (req, file, callback) => {
+            const allowedMimes = [
+                'image/jpeg',
+                'image/png',
+                'image/gif',
+                'image/webp',
+                'application/pdf',
+            ];
+            if (!allowedMimes.includes(file.mimetype)) {
+                return callback(new common_1.BadRequestException('只允许上传 JPEG/PNG/GIF/WebP 图片或 PDF 文件'), false);
+            }
+            callback(null, true);
+        },
+    })),
     (0, swagger_1.ApiOperation)({ summary: '上传文件' }),
     __param(0, (0, common_1.UploadedFile)()),
     __metadata("design:type", Function),

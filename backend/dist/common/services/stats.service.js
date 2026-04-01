@@ -28,20 +28,21 @@ let StatsService = class StatsService {
         this.invoiceRepository = invoiceRepository;
     }
     async getDashboardStats() {
-        const customerCount = await this.customerRepository.count({ where: { isActive: true } });
-        const productCount = await this.productRepository.count({ where: { status: 'active' } });
-        const orderCount = await this.orderRepository.count();
+        const customerCount = await this.customerRepository.count({ where: { isActive: true, deletedAt: (0, typeorm_2.IsNull)() } });
+        const productCount = await this.productRepository.count({ where: { status: 'active', deletedAt: (0, typeorm_2.IsNull)() } });
+        const orderCount = await this.orderRepository.count({ where: { deletedAt: (0, typeorm_2.IsNull)() } });
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const todayOrders = await this.orderRepository
             .createQueryBuilder('o')
             .where('o.createdAt >= :today', { today })
             .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+            .andWhere('o.deletedAt IS NULL')
             .getMany();
         const todaySales = todayOrders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
-        const pendingOrders = await this.orderRepository.count({ where: { status: 'pending' } });
-        const pendingProducts = await this.productRepository.count({ where: { status: 'pending' } });
-        const unpaidInvoices = await this.invoiceRepository.count({ where: { status: 'unpaid' } });
+        const pendingOrders = await this.orderRepository.count({ where: { status: 'pending', deletedAt: (0, typeorm_2.IsNull)() } });
+        const pendingProducts = await this.productRepository.count({ where: { status: 'pending', deletedAt: (0, typeorm_2.IsNull)() } });
+        const unpaidInvoices = await this.invoiceRepository.count({ where: { status: 'unpaid', isCancelled: false } });
         return {
             customerCount,
             productCount,
@@ -53,26 +54,34 @@ let StatsService = class StatsService {
         };
     }
     async getSalesTrend(days = 7) {
-        const result = [];
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - days + 1);
+        startDate.setHours(0, 0, 0, 0);
+        const result = await this.orderRepository
+            .createQueryBuilder('o')
+            .select('DATE(o.created_at)', 'date')
+            .addSelect('SUM(o.total_amount)', 'amount')
+            .where('o.created_at >= :startDate', { startDate })
+            .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+            .andWhere('o.deleted_at IS NULL')
+            .groupBy('DATE(o.created_at)')
+            .orderBy('date', 'ASC')
+            .getRawMany();
+        const amountMap = new Map();
+        for (const row of result) {
+            amountMap.set(row.date, parseFloat(row.amount) || 0);
+        }
+        const trendResult = [];
         for (let i = days - 1; i >= 0; i--) {
             const date = new Date();
             date.setDate(date.getDate() - i);
-            date.setHours(0, 0, 0, 0);
-            const nextDate = new Date(date);
-            nextDate.setDate(nextDate.getDate() + 1);
-            const orders = await this.orderRepository
-                .createQueryBuilder('o')
-                .where('o.createdAt >= :date', { date })
-                .andWhere('o.createdAt < :nextDate', { nextDate })
-                .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
-                .getMany();
-            const amount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
-            result.push({
-                date: date.toISOString().split('T')[0],
-                amount,
+            const dateStr = date.toISOString().split('T')[0];
+            trendResult.push({
+                date: dateStr,
+                amount: amountMap.get(dateStr) || 0,
             });
         }
-        return result;
+        return trendResult;
     }
     async getHotProducts(limit = 10) {
         const products = await this.productRepository.find({
@@ -95,6 +104,7 @@ let StatsService = class StatsService {
             .where('o.createdAt >= :startDate', { startDate })
             .andWhere('o.createdAt <= :endDate', { endDate })
             .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+            .andWhere('o.deletedAt IS NULL')
             .getMany();
         const totalAmount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
         const orderCount = orders.length;
@@ -120,27 +130,29 @@ let StatsService = class StatsService {
         };
     }
     async getTopCustomers(limit = 10) {
-        const customers = await this.customerRepository.find();
-        const customerStats = [];
-        for (const customer of customers) {
-            const orders = await this.orderRepository
-                .createQueryBuilder('o')
-                .where('o.customer_id = :customerId', { customerId: customer.id })
-                .andWhere('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
-                .getMany();
-            const totalAmount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
-            if (totalAmount > 0) {
-                customerStats.push({
-                    id: customer.id,
-                    companyName: customer.companyName,
-                    contactPerson: customer.contactPerson,
-                    orderCount: orders.length,
-                    totalAmount,
-                });
-            }
-        }
-        customerStats.sort((a, b) => b.totalAmount - a.totalAmount);
-        return customerStats.slice(0, limit);
+        const result = await this.orderRepository
+            .createQueryBuilder('o')
+            .leftJoin('o.customer', 'c')
+            .select('o.customer_id', 'customerId')
+            .addSelect('c.company_name', 'companyName')
+            .addSelect('c.contact_person', 'contactPerson')
+            .addSelect('COUNT(o.id)', 'orderCount')
+            .addSelect('COALESCE(SUM(o.total_amount), 0)', 'totalAmount')
+            .where('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+            .andWhere('o.deleted_at IS NULL')
+            .groupBy('o.customer_id')
+            .addGroupBy('c.company_name')
+            .addGroupBy('c.contact_person')
+            .orderBy('COALESCE(SUM(o.total_amount), 0)', 'DESC')
+            .limit(limit)
+            .getRawMany();
+        return result.map(row => ({
+            id: row.customerId,
+            companyName: row.companyName,
+            contactPerson: row.contactPerson,
+            orderCount: parseInt(row.orderCount) || 0,
+            totalAmount: parseFloat(row.totalAmount) || 0,
+        }));
     }
     async getCategorySalesRatio() {
         const result = await this.orderRepository
@@ -149,12 +161,13 @@ let StatsService = class StatsService {
             .leftJoinAndSelect('item.product', 'product')
             .leftJoinAndSelect('product.category', 'category')
             .where('o.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+            .andWhere('o.deletedAt IS NULL')
             .getMany();
         const categoryMap = new Map();
         for (const order of result) {
             const items = order.items || [];
             for (const item of items) {
-                const categoryName = item.product?.category?.name || '未分类';
+                const categoryName = item.product?.category?.nameZh || '未分类';
                 const amount = Number(item.unitPrice) * Number(item.quantity);
                 categoryMap.set(categoryName, (categoryMap.get(categoryName) || 0) + amount);
             }
@@ -172,6 +185,7 @@ let StatsService = class StatsService {
         const result = await this.productRepository
             .createQueryBuilder('product')
             .where('product.createdBy IS NOT NULL')
+            .andWhere('product.deletedAt IS NULL')
             .getMany();
         const staffMap = new Map();
         for (const product of result) {

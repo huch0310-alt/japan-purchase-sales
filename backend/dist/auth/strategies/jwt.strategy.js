@@ -15,15 +15,35 @@ const passport_1 = require("@nestjs/passport");
 const passport_jwt_1 = require("passport-jwt");
 const config_1 = require("@nestjs/config");
 const auth_service_1 = require("../auth.service");
+function extractJwtFromRequest(req) {
+    const authHeader = req.headers?.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        return authHeader.substring(7);
+    }
+    if (req.cookies?.access_token) {
+        return req.cookies.access_token;
+    }
+    return null;
+}
 let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
     constructor(configService, authService) {
+        const secret = configService.get('JWT_SECRET');
+        if (!secret) {
+            throw new common_1.InternalServerErrorException('JWT_SECRET 环境变量未配置，请在 .env 文件中设置');
+        }
         super({
-            jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
+            jwtFromRequest: extractJwtFromRequest,
             ignoreExpiration: false,
-            secretOrKey: configService.get('JWT_SECRET', 'japan-purchase-sales-secret-key'),
+            secretOrKey: secret,
         });
         this.configService = configService;
         this.authService = authService;
+        this.jwtSecret = secret;
+    }
+    async onModuleInit() {
+        if (!this.jwtSecret) {
+            throw new common_1.InternalServerErrorException('JWT_SECRET 未正确初始化');
+        }
     }
     async validate(payload) {
         return this.authService.validateToken(payload);

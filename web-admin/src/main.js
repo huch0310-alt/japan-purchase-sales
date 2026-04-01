@@ -11,6 +11,7 @@ import zh from './locales/zh'
 import ja from './locales/ja'
 import en from './locales/en'
 import { useLanguageStore } from './store/language'
+import api from './api'
 
 // 全局样式
 import './assets/styles/main.css'
@@ -35,6 +36,11 @@ app.use(createPinia())
 app.use(i18n)
 app.use(router)
 app.use(ElementPlus)
+
+// 初始化 CSRF token（只需在首次加载时调用一次）
+api.get('/security/csrf').catch(() => {
+  // 这里不弹错误，避免首屏加载被打断；后续写操作若无 token 会收到 403
+})
 
 // 初始化WebSocket连接
 const token = localStorage.getItem('token')

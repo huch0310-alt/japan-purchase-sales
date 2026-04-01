@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import '../../config/app_config.dart';
@@ -16,6 +18,16 @@ final dioProvider = Provider<Dio>((ref) {
   ));
   return dio;
 });
+
+// 安全存储实例（用于存储敏感Token）
+const _secureStorage = FlutterSecureStorage(
+  aOptions: AndroidOptions(
+    encryptedSharedPreferences: true,
+  ),
+  iOptions: IOSOptions(
+    accessibility: KeychainAccessibility.first_unlock_this_device,
+  ),
+);
 
 // 认证状态
 class AuthState {
@@ -41,8 +53,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
 
   Future<void> _loadAuth() async {
     try {
+      // 使用安全存储读取 Token
+      final token = await _secureStorage.read(key: 'auth_token');
+      // 用户信息可以放在 SharedPreferences（非敏感数据）
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
       final userJson = prefs.getString('user');
 
       if (token != null && userJson != null) {
@@ -74,8 +88,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       final dio = _ref.read(dioProvider);
       final endpoint = loginType == 'staff' ? '/auth/staff/login' : '/auth/customer/login';
 
-      print('Login attempt: $endpoint with username: $username');
-      print('API Base URL: ${dio.options.baseUrl}');
+      debugPrint('Login attempt: $endpoint with username: $username');
 
       final response = await dio.post(endpoint, data: {
         'username': username,
@@ -86,27 +99,28 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
       final token = data['access_token'];
       final user = data['user'] as Map<String, dynamic>;
 
-      // 保存到本地存储 - 使用json.encode正确序列化
+      // 使用安全存储保存 Token（防止 XSS 攻击读取）
+      await _secureStorage.write(key: 'auth_token', value: token);
+      // 用户信息保存在 SharedPreferences
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', token);
       await prefs.setString('user', json.encode(user));
 
       // 设置Dio的Authorization头
       dio.options.headers['Authorization'] = 'Bearer $token';
 
       state = AsyncValue.data(AuthState(token: token, user: user));
-      print('Login success!');
     } catch (e, st) {
-      print('Login error: $e');
-      print('Stack trace: $st');
+      debugPrint('Login error: $e');
       state = AsyncValue.error(e, st);
       rethrow;
     }
   }
 
   Future<void> logout() async {
+    // 清除安全存储中的 Token
+    await _secureStorage.delete(key: 'auth_token');
+    // 清除 SharedPreferences 中的用户信息
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
     await prefs.remove('user');
     _ref.read(dioProvider).options.headers.remove('Authorization');
     state = AsyncValue.data(AuthState());

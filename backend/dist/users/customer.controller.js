@@ -19,28 +19,39 @@ const customer_service_1 = require("./customer.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const validation_dto_1 = require("../common/dto/validation.dto");
+const customer_dto_1 = require("./dto/customer.dto");
 let CustomerController = class CustomerController {
     constructor(customerService) {
         this.customerService = customerService;
     }
-    async findAll(keyword) {
+    async findAll(pagination, keyword) {
         if (keyword) {
-            const customers = await this.customerService.searchByCompanyName(keyword);
-            return customers.map(c => {
-                const { passwordHash, ...result } = c;
-                return result;
-            });
+            const result = await this.customerService.searchByCompanyName(keyword);
+            return {
+                data: result.map((c) => {
+                    const { passwordHash, ...rest } = c;
+                    return rest;
+                }),
+                total: result.length,
+                page: 1,
+                pageSize: result.length,
+                totalPages: 1,
+            };
         }
-        const customers = await this.customerService.findAll();
-        return customers.map(c => {
-            const { passwordHash, ...result } = c;
-            return result;
-        });
+        const result = await this.customerService.findAll({ page: pagination.page, pageSize: pagination.pageSize });
+        return {
+            ...result,
+            data: result.data.map((c) => {
+                const { passwordHash, ...rest } = c;
+                return rest;
+            }),
+        };
     }
     async findOne(id) {
         const customer = await this.customerService.findById(id);
         if (!customer) {
-            throw new Error('客户不存在');
+            throw new common_1.NotFoundException('客户不存在');
         }
         const { passwordHash, ...result } = customer;
         return result;
@@ -61,9 +72,10 @@ __decorate([
     (0, common_1.Get)(),
     (0, roles_decorator_1.Roles)('super_admin', 'admin', 'procurement', 'sales'),
     (0, swagger_1.ApiOperation)({ summary: '获取所有客户列表' }),
-    __param(0, (0, common_1.Query)('keyword')),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Query)('keyword')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [validation_dto_1.PaginationQueryDto, String]),
     __metadata("design:returntype", Promise)
 ], CustomerController.prototype, "findAll", null);
 __decorate([
@@ -91,7 +103,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, customer_dto_1.UpdateCustomerDto]),
     __metadata("design:returntype", Promise)
 ], CustomerController.prototype, "update", null);
 __decorate([

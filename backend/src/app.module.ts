@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -19,6 +21,8 @@ import { MessagesModule } from './messages/messages.module';
 import { TasksModule } from './common/services/tasks.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { GatewaysModule } from './gateways/gateways.module';
+import { MembersModule } from './members/members.module';
+import { ReturnsModule } from './returns/returns.module';
 
 /**
  * 应用根模块
@@ -71,6 +75,15 @@ import { GatewaysModule } from './gateways/gateways.module';
     MessagesModule,
     TasksModule,
     DashboardModule,
+    MembersModule,
+    ReturnsModule,
+  ],
+  providers: [
+    // 全局限流守卫（让 ThrottlerModule 配置真正生效）
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

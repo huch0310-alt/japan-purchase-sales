@@ -5,80 +5,187 @@
         <div class="card-header">
           <span>{{ t('customer.title') }}</span>
           <div>
-            <el-input v-model="searchKeyword" :placeholder="t('customer.searchCompany')" style="width: 200px; margin-right: 10px" @keyup.enter="loadData" />
-            <el-button type="primary" @click="handleAdd">{{ t('customer.addCustomer') }}</el-button>
+            <el-input
+              v-model="searchKeyword"
+              :placeholder="t('customer.searchCompany')"
+              style="width: 200px; margin-right: 10px"
+              @keyup.enter="loadData"
+            />
+            <el-button
+              type="primary"
+              @click="handleAdd"
+            >
+              {{ t('customer.addCustomer') }}
+            </el-button>
           </div>
         </div>
       </template>
 
-      <el-table :data="tableData" border stripe>
-        <el-table-column prop="username" :label="t('customer.username')" width="120" />
-        <el-table-column prop="companyName" :label="t('customer.companyName')" min-width="150" />
-        <el-table-column prop="contactPerson" :label="t('customer.contactPerson')" width="100" />
-        <el-table-column prop="phone" :label="t('customer.contactPhone')" width="130" />
-        <el-table-column prop="address" :label="t('customer.deliveryAddress')" min-width="150" show-overflow-tooltip />
-        <el-table-column prop="vipDiscount" :label="t('customer.vipDiscount')" width="100">
+      <el-table
+        :data="tableData"
+        border
+        stripe
+      >
+        <el-table-column
+          prop="username"
+          :label="t('customer.username')"
+          width="120"
+        />
+        <el-table-column
+          prop="companyName"
+          :label="t('customer.companyName')"
+          min-width="150"
+        />
+        <el-table-column
+          prop="contactPerson"
+          :label="t('customer.contactPerson')"
+          width="100"
+        />
+        <el-table-column
+          prop="phone"
+          :label="t('customer.contactPhone')"
+          width="130"
+        />
+        <el-table-column
+          prop="address"
+          :label="t('customer.deliveryAddress')"
+          min-width="150"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="vipDiscount"
+          :label="t('customer.vipDiscount')"
+          width="100"
+        >
           <template #default="{ row }">
-            {{ ((row.vipDiscount || 0) * 100).toFixed(0) }}%
+            {{ Number(row.vipDiscount || 0).toFixed(0) }}%
           </template>
         </el-table-column>
-        <el-table-column prop="isActive" :label="t('common.status')" width="80">
+        <el-table-column
+          prop="isActive"
+          :label="t('common.status')"
+          width="80"
+        >
           <template #default="{ row }">
             <el-tag :type="row.isActive ? 'success' : 'danger'">
               {{ row.isActive ? t('customer.normal') : t('customer.disabled') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column :label="t('common.action')" width="180" fixed="right">
+        <el-table-column
+          :label="t('common.action')"
+          width="180"
+          fixed="right"
+        >
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleEdit(row)">{{ t('common.edit') }}</el-button>
-            <el-button type="primary" link @click="handleView(row)">{{ t('common.detail') }}</el-button>
-            <el-button type="danger" link @click="handleDelete(row)">{{ t('common.delete') }}</el-button>
+            <el-button
+              type="primary"
+              link
+              @click="handleEdit(row)"
+            >
+              {{ t('common.edit') }}
+            </el-button>
+            <el-button
+              type="primary"
+              link
+              @click="handleView(row)"
+            >
+              {{ t('common.detail') }}
+            </el-button>
+            <el-button
+              type="danger"
+              link
+              @click="handleDelete(row)"
+            >
+              {{ t('common.delete') }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
     <!-- 新增/编辑对话框 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? t('customer.editCustomer') : t('customer.addCustomer')" width="700px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="isEdit ? t('customer.editCustomer') : t('customer.addCustomer')"
+      width="700px"
+    >
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-width="100px"
+      >
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item :label="t('customer.username')" prop="username">
-              <el-input v-model="form.username" :disabled="isEdit" />
+            <el-form-item
+              :label="t('customer.username')"
+              prop="username"
+            >
+              <el-input
+                v-model="form.username"
+                :disabled="isEdit"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item :label="t('customer.password')" prop="password">
-              <el-input v-model="form.password" type="password" show-password :placeholder="t('customer.leaveEmpty')" />
+            <el-form-item
+              :label="t('customer.password')"
+              prop="password"
+            >
+              <el-input
+                v-model="form.password"
+                type="password"
+                show-password
+                :placeholder="t('customer.leaveEmpty')"
+              />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item :label="t('customer.companyName')" prop="companyName">
+            <el-form-item
+              :label="t('customer.companyName')"
+              prop="companyName"
+            >
               <el-input v-model="form.companyName" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item :label="t('customer.vipDiscount')" prop="vipDiscount">
-              <el-input-number v-model="form.vipDiscount" :min="0" :max="100" />
+            <el-form-item
+              :label="t('customer.vipDiscount')"
+              prop="vipDiscount"
+            >
+              <el-input-number
+                v-model="form.vipDiscount"
+                :min="0"
+                :max="100"
+              />
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item :label="t('customer.contactPerson')">
+            <el-form-item
+              :label="t('customer.contactPerson')"
+              prop="contactPerson"
+            >
               <el-input v-model="form.contactPerson" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item :label="t('customer.contactPhone')">
+            <el-form-item
+              :label="t('customer.contactPhone')"
+              prop="phone"
+            >
               <el-input v-model="form.phone" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item :label="t('customer.deliveryAddress')">
+        <el-form-item
+          :label="t('customer.deliveryAddress')"
+          prop="address"
+        >
           <el-input v-model="form.address" />
         </el-form-item>
         <el-divider>{{ t('customer.invoiceInfo') }}</el-divider>
@@ -108,8 +215,15 @@
         </el-row>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" @click="handleSubmit">{{ t('common.confirm') }}</el-button>
+        <el-button @click="dialogVisible = false">
+          {{ t('common.cancel') }}
+        </el-button>
+        <el-button
+          type="primary"
+          @click="handleSubmit"
+        >
+          {{ t('common.confirm') }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -117,6 +231,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatDateTime } from '../utils/format'
@@ -124,6 +239,7 @@ import { formatCurrency } from '../utils/format'
 import api from '../api'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const tableData = ref([])
 const dialogVisible = ref(false)
@@ -139,7 +255,7 @@ const form = reactive({
   contactPerson: '',
   phone: '',
   address: '',
-  vipDiscount: 100,
+  vipDiscount: 0,
   invoiceName: '',
   invoiceAddress: '',
   invoicePhone: '',
@@ -148,13 +264,16 @@ const form = reactive({
 
 const rules = {
   username: [{ required: true, message: t('validation.enterUsername'), trigger: 'blur' }],
-  companyName: [{ required: true, message: t('validation.pleaseInput', { field: t('customer.companyName') }), trigger: 'blur' }]
+  companyName: [{ required: true, message: t('validation.pleaseInput', { field: t('customer.companyName') }), trigger: 'blur' }],
+  contactPerson: [{ required: true, message: t('validation.required'), trigger: 'blur' }],
+  phone: [{ required: true, message: t('validation.required'), trigger: 'blur' }],
+  address: [{ required: true, message: t('validation.required'), trigger: 'blur' }]
 }
 
 const loadData = async () => {
   try {
     const res = await api.get('/customers', { params: { keyword: searchKeyword.value } })
-    tableData.value = res.data
+    tableData.value = res.data.data || []
   } catch (e) {
     ElMessage.error(t('messages.loadFailed'))
   }
@@ -164,7 +283,7 @@ const handleAdd = () => {
   isEdit.value = false
   Object.assign(form, {
     id: '', username: '', password: '', companyName: '', contactPerson: '',
-    phone: '', address: '', vipDiscount: 100, invoiceName: '',
+    phone: '', address: '', vipDiscount: 0, invoiceName: '',
     invoiceAddress: '', invoicePhone: '', invoiceBank: ''
   })
   dialogVisible.value = true
@@ -177,7 +296,7 @@ const handleEdit = (row) => {
 }
 
 const handleView = (row) => {
-  // TODO: 跳转到客户详情页
+  router.push(`/customer/${row.id}`)
 }
 
 const handleDelete = (row) => {
@@ -210,9 +329,9 @@ const handleSubmit = async () => {
       if (!submitData.invoiceAddress) delete submitData.invoiceAddress
       if (!submitData.invoicePhone) delete submitData.invoicePhone
       if (!submitData.invoiceBank) delete submitData.invoiceBank
-      // 转换VIP折扣：百分比 -> 小数
+      // VIP折扣直接存储数字，10表示10%折扣
       if (submitData.vipDiscount !== undefined && submitData.vipDiscount !== null) {
-        submitData.vipDiscount = Number(submitData.vipDiscount) / 100
+        submitData.vipDiscount = Number(submitData.vipDiscount)
       }
 
       if (isEdit.value) {

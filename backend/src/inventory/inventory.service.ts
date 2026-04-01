@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, IsNull } from 'typeorm';
 import { InventoryLog, InventoryType } from './entities/inventory-log.entity';
 import { InventoryAlert } from './entities/inventory-alert.entity';
 import { Product } from '../products/entities/product.entity';
@@ -12,6 +12,8 @@ import { MessagesService } from '../messages/messages.service';
  */
 @Injectable()
 export class InventoryService {
+  private readonly logger = new Logger(InventoryService.name);
+
   constructor(
     @InjectRepository(InventoryLog)
     private logRepository: Repository<InventoryLog>,
@@ -41,7 +43,7 @@ export class InventoryService {
     try {
       const product = await queryRunner.manager.findOne(Product, { where: { id: data.productId } });
       if (!product) {
-        throw new Error('商品不存在');
+        throw new NotFoundException('商品不存在');
       }
 
       const beforeQuantity = product.quantity || 0;
@@ -57,7 +59,7 @@ export class InventoryService {
         case InventoryType.OUT:
           // 原子扣减，只有库存足够时才扣减
           if (beforeQuantity < data.quantity) {
-            throw new Error(`库存不足，当前库存: ${beforeQuantity}，需要: ${data.quantity}`);
+            throw new BadRequestException(`库存不足，当前库存: ${beforeQuantity}，需要: ${data.quantity}`);
           }
           afterQuantity = beforeQuantity - data.quantity;
           break;
@@ -93,7 +95,7 @@ export class InventoryService {
 
       const result = await queryBuilder.execute();
       if (result.affected === 0 && data.type === InventoryType.OUT) {
-        throw new Error(`库存不足，无法扣减: ${product.name}`);
+        throw new BadRequestException(`库存不足，无法扣减: ${product.name}`);
       }
 
       await queryRunner.commitTransaction();
@@ -218,7 +220,7 @@ export class InventoryService {
           relatedId: productId,
         });
       }
-      console.log(`库存预警: ${product.name} 库存不足，当前库存: ${product.quantity}，预警阈值: ${alert.minQuantity}`);
+      this.logger.warn(`库存预警: ${product.name} 库存不足，当前库存: ${product.quantity}，预警阈值: ${alert.minQuantity}`);
     } else if (!isLowStock && alert.isTriggered) {
       // 库存恢复后重置
       alert.isTriggered = false;
@@ -227,10 +229,10 @@ export class InventoryService {
   }
 
   /**
-   * 获取商品库存统计
+   * 获取商品库存统计（排除软删除的商品）
    */
   async getInventoryStats() {
-    const products = await this.productRepository.find();
+    const products = await this.productRepository.find({ where: { deletedAt: IsNull() } });
     const totalProducts = products.length;
     const totalQuantity = products.reduce((sum, p) => sum + (p.quantity || 0), 0);
     const lowStockCount = products.filter(p => (p.quantity || 0) < 10).length;

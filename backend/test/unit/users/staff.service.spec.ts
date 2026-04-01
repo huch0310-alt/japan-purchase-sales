@@ -1,11 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { StaffService } from '../../../src/users/staff.service';
 import { Staff } from '../../../src/users/entities/staff.entity';
 import { ConflictException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { createTestStaff } from '../../fixtures';
+
+// Mock bcrypt
+jest.mock('bcryptjs');
+const mockedBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 
 describe('StaffService', () => {
   let service: StaffService;
@@ -20,6 +24,11 @@ describe('StaffService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     };
+
+    // Reset and setup bcrypt mocks
+    mockedBcrypt.hash.mockReset();
+    mockedBcrypt.compare.mockReset();
+    (mockedBcrypt.hash as jest.Mock).mockResolvedValue('$2b$10$hashed-password');
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -43,7 +52,7 @@ describe('StaffService', () => {
       const result = await service.findByUsername('test-staff');
 
       expect(result).toEqual(testStaff);
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { username: 'test-staff' } });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { username: 'test-staff', deletedAt: IsNull() } });
     });
 
     it('应该返回null当员工不存在', async () => {
@@ -63,7 +72,7 @@ describe('StaffService', () => {
       const result = await service.findById(testStaff.id);
 
       expect(result).toEqual(testStaff);
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: testStaff.id } });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: testStaff.id, deletedAt: IsNull() } });
     });
   });
 
@@ -71,7 +80,7 @@ describe('StaffService', () => {
     it('应该创建新员工', async () => {
       const newStaff = {
         username: 'new-staff',
-        password: 'password123',
+        password: 'Password123',
         name: '新员工',
         phone: '090-1234-5678',
         role: 'sales',
@@ -86,7 +95,7 @@ describe('StaffService', () => {
 
       expect(result).toEqual(createdStaff);
       expect(repository.create).toHaveBeenCalled();
-      expect(bcrypt.hash).toHaveBeenCalled();
+      expect(mockedBcrypt.hash).toHaveBeenCalled();
     });
 
     it('应该抛出异常当用户名已存在', async () => {
@@ -96,7 +105,7 @@ describe('StaffService', () => {
       await expect(
         service.create({
           username: 'existing',
-          password: 'password',
+          password: 'Password123',
           name: 'Test',
           role: 'sales',
         }),
@@ -112,7 +121,11 @@ describe('StaffService', () => {
       const result = await service.findAll();
 
       expect(result).toEqual(staffList);
-      expect(repository.find).toHaveBeenCalledWith({ order: { createdAt: 'DESC' } });
+      expect(repository.find).toHaveBeenCalledWith({
+        where: { deletedAt: IsNull() },
+        order: { createdAt: 'DESC' },
+        loadRelationIds: false,
+      });
     });
   });
 
@@ -144,9 +157,9 @@ describe('StaffService', () => {
     it('应该更新员工密码', async () => {
       repository.update.mockResolvedValue({ affected: 1 } as any);
 
-      await service.updatePassword('test-id', 'newpassword');
+      await service.updatePassword('test-id', 'NewPassword123');
 
-      expect(bcrypt.hash).toHaveBeenCalled();
+      expect(mockedBcrypt.hash).toHaveBeenCalled();
       expect(repository.update).toHaveBeenCalled();
     });
   });

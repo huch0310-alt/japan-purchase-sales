@@ -33,7 +33,7 @@ let LogsController = class LogsController {
     }
     async findProcurementSalesLogs(startDate, endDate) {
         return this.logsService.findAll({
-            userRole: 'procurement',
+            userRoles: ['procurement', 'sales'],
             startDate: startDate ? new Date(startDate) : undefined,
             endDate: endDate ? new Date(endDate) : undefined,
         });

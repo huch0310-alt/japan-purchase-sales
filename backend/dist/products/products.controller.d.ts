@@ -1,12 +1,15 @@
 import { ProductsService } from './products.service';
+import { AuthenticatedRequest } from '../common/types';
+import { PaginationQueryDto } from '../common/dto/validation.dto';
+import { UpdateProductDto } from './dto/product.dto';
 export declare class ProductsController {
     private readonly productsService;
     constructor(productsService: ProductsService);
-    findActive(categoryId?: string): Promise<import("./entities/product.entity").Product[]>;
+    findActive(categoryId?: string): Promise<import("../common/dto/validation.dto").PaginatedResponse<import("./entities/product.entity").Product>>;
     findPending(): Promise<import("./entities/product.entity").Product[]>;
-    findAll(categoryId?: string, status?: string, keyword?: string): Promise<import("./entities/product.entity").Product[]>;
-    findOne(id: string): Promise<import("./entities/product.entity").Product>;
-    create(req: any, createProductDto: {
+    findAll(pagination: PaginationQueryDto, categoryId?: string, status?: string, keyword?: string): Promise<import("../common/dto/validation.dto").PaginatedResponse<import("./entities/product.entity").Product>>;
+    findOne(id: string): Promise<import("./entities/product.entity").Product | null>;
+    create(req: AuthenticatedRequest, createProductDto: {
         name: string;
         quantity?: number;
         unit?: string;
@@ -25,7 +28,7 @@ export declare class ProductsController {
     }): Promise<{
         message: string;
     }>;
-    update(id: string, updateProductDto: any): Promise<import("./entities/product.entity").Product>;
+    update(id: string, updateProductDto: UpdateProductDto): Promise<import("./entities/product.entity").Product>;
     delete(id: string): Promise<{
         message: string;
     }>;

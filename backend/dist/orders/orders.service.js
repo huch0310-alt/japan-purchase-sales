@@ -22,17 +22,22 @@ const customer_entity_1 = require("../users/entities/customer.entity");
 const customer_service_1 = require("../users/customer.service");
 const settings_service_1 = require("../settings/settings.service");
 const products_service_1 = require("../products/products.service");
+const inventory_service_1 = require("../inventory/inventory.service");
 const event_service_1 = require("../common/services/event.service");
 const product_entity_1 = require("../products/entities/product.entity");
+const inventory_log_entity_1 = require("../inventory/entities/inventory-log.entity");
+const logs_service_1 = require("../logs/logs.service");
 let OrdersService = class OrdersService {
-    constructor(orderRepository, orderItemRepository, customerService, settingService, productsService, eventService, dataSource) {
+    constructor(orderRepository, orderItemRepository, customerService, settingService, productsService, inventoryService, eventService, dataSource, logsService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.customerService = customerService;
         this.settingService = settingService;
         this.productsService = productsService;
+        this.inventoryService = inventoryService;
         this.eventService = eventService;
         this.dataSource = dataSource;
+        this.logsService = logsService;
     }
     generateOrderNo() {
         const date = new Date();
@@ -42,27 +47,30 @@ let OrdersService = class OrdersService {
         const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
         return `ORD${year}${month}${day}${random}`;
     }
-    async create(data) {
+    async create(data, audit) {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
         try {
             const customer = await queryRunner.manager.findOne(customer_entity_1.Customer, { where: { id: data.customerId } });
             if (!customer) {
-                throw new Error('客户不存在');
+                throw new common_1.NotFoundException('客户不存在');
             }
             let subtotal = 0;
             const orderItemsData = [];
+            const productIds = data.items.map(item => item.productId);
+            const products = await this.productsService.findByIds(productIds);
+            const productMap = new Map(products.map(p => [p.id, p]));
             for (const item of data.items) {
-                const product = await this.productsService.findById(item.productId);
+                const product = productMap.get(item.productId);
                 if (!product) {
-                    throw new Error(`商品不存在: ${item.productId}`);
+                    throw new common_1.NotFoundException(`商品不存在: ${item.productId}`);
                 }
                 if (product.status !== 'active') {
-                    throw new Error(`商品未上架: ${product.name}`);
+                    throw new common_1.BadRequestException(`商品未上架: ${product.name}`);
                 }
                 if (product.quantity < item.quantity) {
-                    throw new Error(`商品库存不足: ${product.name}`);
+                    throw new common_1.BadRequestException(`商品库存不足: ${product.name}`);
                 }
                 const unitPrice = Number(product.salePrice) || 0;
                 const itemSubtotal = unitPrice * item.quantity;
@@ -76,8 +84,8 @@ let OrdersService = class OrdersService {
             }
             const taxRate = await this.settingService.getValue('tax_rate') || '10';
             const taxRateNum = parseInt(taxRate) / 100;
-            const vipDiscountNum = parseFloat(String(customer.vipDiscount));
-            const afterDiscount = Math.round(subtotal * vipDiscountNum * 100) / 100;
+            const vipDiscountNum = parseFloat(String(customer.vipDiscount)) / 100;
+            const afterDiscount = Math.round(subtotal * (1 - vipDiscountNum) * 100) / 100;
             const discountAmount = Math.round((subtotal - afterDiscount) * 100) / 100;
             const taxAmount = Math.round(afterDiscount * taxRateNum);
             const totalAmount = afterDiscount + taxAmount;
@@ -104,15 +112,50 @@ let OrdersService = class OrdersService {
                     unitPrice: itemData.unitPrice,
                 });
                 await queryRunner.manager.save(order_item_entity_1.OrderItem, orderItem);
-                await queryRunner.manager.update(product_entity_1.Product, itemData.product.id, {
-                    quantity: itemData.product.quantity - itemData.quantity,
+                const result = await queryRunner.manager
+                    .createQueryBuilder()
+                    .update(product_entity_1.Product)
+                    .set({ quantity: () => `quantity - ${itemData.quantity}` })
+                    .where('id = :id AND quantity >= :quantity', {
+                    id: itemData.product.id,
+                    quantity: itemData.quantity,
+                })
+                    .execute();
+                if (result.affected === 0) {
+                    throw new common_1.BadRequestException(`商品库存不足: ${itemData.product.name}`);
+                }
+                const log = queryRunner.manager.create(inventory_log_entity_1.InventoryLog, {
+                    productId: itemData.product.id,
+                    type: inventory_log_entity_1.InventoryType.OUT,
+                    quantity: -itemData.quantity,
+                    beforeQuantity: itemData.product.quantity,
+                    afterQuantity: itemData.product.quantity - itemData.quantity,
+                    operatorId: data.customerId,
+                    remark: `订单 ${savedOrder.orderNo}`,
+                    relatedId: savedOrder.id,
                 });
+                await queryRunner.manager.save(inventory_log_entity_1.InventoryLog, log);
             }
             await queryRunner.commitTransaction();
             const fullOrder = await this.findById(savedOrder.id);
             if (fullOrder) {
                 fullOrder.customer = customer;
                 this.eventService.notifyOrderCreated(fullOrder);
+            }
+            if (audit) {
+                await this.logsService.recordOperation({
+                    userId: audit.userId,
+                    userRole: audit.userRole,
+                    ip: audit.ip,
+                    module: 'orders',
+                    action: 'create',
+                    detail: {
+                        orderId: savedOrder.id,
+                        orderNo: savedOrder.orderNo,
+                        customerId: data.customerId,
+                        totalAmount: savedOrder.totalAmount,
+                    },
+                });
             }
             return fullOrder;
         }
@@ -126,28 +169,29 @@ let OrdersService = class OrdersService {
     }
     async findById(id) {
         return this.orderRepository.findOne({
-            where: { id },
-            relations: ['customer', 'items', 'items.product'],
+            where: { id, deletedAt: (0, typeorm_2.IsNull)() },
+            relations: ['customer', 'items', 'items.product', 'invoice'],
         });
     }
     async findByOrderNo(orderNo) {
         return this.orderRepository.findOne({
-            where: { orderNo },
+            where: { orderNo, deletedAt: (0, typeorm_2.IsNull)() },
             relations: ['customer', 'items', 'items.product'],
         });
     }
     async findByCustomer(customerId) {
         return this.orderRepository.find({
-            where: { customerId },
+            where: { customerId, deletedAt: (0, typeorm_2.IsNull)() },
             relations: ['items', 'items.product'],
             order: { createdAt: 'DESC' },
         });
     }
     async findAll(filters) {
+        const page = filters?.page || 1;
+        const pageSize = filters?.pageSize || 20;
+        const skip = (page - 1) * pageSize;
         const query = this.orderRepository.createQueryBuilder('order')
-            .leftJoinAndSelect('order.customer', 'customer')
-            .leftJoinAndSelect('order.items', 'items')
-            .leftJoinAndSelect('items.product', 'product');
+            .where('order.deletedAt IS NULL');
         if (filters?.status) {
             query.andWhere('order.status = :status', { status: filters.status });
         }
@@ -166,42 +210,158 @@ let OrdersService = class OrdersService {
         if (filters?.maxAmount) {
             query.andWhere('order.total_amount <= :maxAmount', { maxAmount: filters.maxAmount });
         }
-        return query.orderBy('order.createdAt', 'DESC').getMany();
+        const [orders, total] = await query
+            .orderBy('order.createdAt', 'DESC')
+            .skip(skip)
+            .take(pageSize)
+            .getManyAndCount();
+        if (orders.length === 0) {
+            return {
+                data: [],
+                total: 0,
+                page,
+                pageSize,
+                totalPages: 0,
+            };
+        }
+        const orderIds = orders.map(o => o.id);
+        const customers = await this.orderRepository.manager.createQueryBuilder()
+            .select(['customer.id', 'customer.companyName', 'customer.contactPerson', 'customer.phone'])
+            .from('customers', 'customer')
+            .innerJoin('orders', 'order', 'order.customer_id = customer.id')
+            .where('order.id IN (:...orderIds)', { orderIds })
+            .getMany();
+        const customerMap = new Map(customers.map(c => [c.id, c]));
+        const orderItems = await this.orderRepository.manager.createQueryBuilder()
+            .select(['item.id', 'item.orderId', 'item.productName', 'item.quantity', 'item.unitPrice'])
+            .from('order_items', 'item')
+            .where('item.order_id IN (:...orderIds)', { orderIds })
+            .getMany();
+        const itemsMap = new Map();
+        orderItems.forEach(item => {
+            if (!itemsMap.has(item.orderId)) {
+                itemsMap.set(item.orderId, []);
+            }
+            itemsMap.get(item.orderId).push(item);
+        });
+        const data = orders.map(order => {
+            const customer = customerMap.get(order.customerId);
+            const items = itemsMap.get(order.id) || [];
+            return {
+                ...order,
+                customer,
+                items,
+            };
+        });
+        return {
+            data,
+            total,
+            page,
+            pageSize,
+            totalPages: Math.ceil(total / pageSize),
+        };
     }
-    async confirm(id, confirmedById) {
+    async confirm(id, audit) {
+        const order = await this.findById(id);
+        if (!order) {
+            throw new common_1.NotFoundException('订单不存在');
+        }
+        if (order.status !== 'pending') {
+            throw new common_1.BadRequestException(`订单状态不是待确认，无法确认。当前状态：${order.status}`);
+        }
         await this.orderRepository.update(id, {
             status: 'confirmed',
-            confirmedById,
             confirmedAt: new Date(),
         });
-        const order = await this.findById(id);
-        if (order) {
-            this.eventService.notifyOrderStatusChanged(order);
+        const updatedOrder = await this.findById(id);
+        if (updatedOrder) {
+            this.eventService.notifyOrderStatusChanged(updatedOrder);
         }
-        return order;
+        if (audit && updatedOrder) {
+            await this.logsService.recordOperation({
+                userId: audit.userId,
+                userRole: audit.userRole,
+                ip: audit.ip,
+                module: 'orders',
+                action: 'confirm',
+                detail: { orderId: updatedOrder.id, orderNo: updatedOrder.orderNo },
+            });
+        }
+        return updatedOrder;
     }
-    async batchConfirm(ids, confirmedById) {
-        await this.orderRepository.update(ids, {
-            status: 'confirmed',
-            confirmedById,
-            confirmedAt: new Date(),
-        });
-    }
-    async complete(id) {
+    async batchConfirm(ids, audit) {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
         try {
+            for (const id of ids) {
+                const order = await queryRunner.manager.findOne(order_entity_1.Order, {
+                    where: { id, deletedAt: (0, typeorm_2.IsNull)() },
+                    relations: ['items'],
+                });
+                if (!order) {
+                    throw new common_1.NotFoundException(`订单不存在: ${id}`);
+                }
+                if (order.status !== 'pending') {
+                    throw new common_1.BadRequestException(`订单${order.orderNo}状态不是待确认，无法确认。当前状态：${order.status}`);
+                }
+            }
+            await queryRunner.manager.update(order_entity_1.Order, ids, {
+                status: 'confirmed',
+                confirmedAt: new Date(),
+            });
+            await queryRunner.commitTransaction();
+        }
+        catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
+        }
+        finally {
+            await queryRunner.release();
+        }
+        if (audit) {
+            await this.logsService.recordOperation({
+                userId: audit.userId,
+                userRole: audit.userRole,
+                ip: audit.ip,
+                module: 'orders',
+                action: 'batch_confirm',
+                detail: { orderIds: ids, count: ids.length },
+            });
+        }
+    }
+    async complete(id, audit) {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        try {
+            const order = await queryRunner.manager.findOne(order_entity_1.Order, { where: { id } });
+            if (!order) {
+                throw new common_1.NotFoundException('订单不存在');
+            }
+            if (order.status !== 'confirmed') {
+                throw new common_1.BadRequestException(`订单状态不是已确认，无法完成。当前状态：${order.status}`);
+            }
             await queryRunner.manager.update(order_entity_1.Order, id, {
                 status: 'completed',
                 completedAt: new Date(),
             });
             await queryRunner.commitTransaction();
-            const order = await this.findById(id);
-            if (order) {
-                this.eventService.notifyOrderStatusChanged(order);
+            const completedOrder = await this.findById(id);
+            if (completedOrder) {
+                this.eventService.notifyOrderStatusChanged(completedOrder);
             }
-            return order;
+            if (audit && completedOrder) {
+                await this.logsService.recordOperation({
+                    userId: audit.userId,
+                    userRole: audit.userRole,
+                    ip: audit.ip,
+                    module: 'orders',
+                    action: 'complete',
+                    detail: { orderId: completedOrder.id, orderNo: completedOrder.orderNo },
+                });
+            }
+            return completedOrder;
         }
         catch (error) {
             await queryRunner.rollbackTransaction();
@@ -211,30 +371,74 @@ let OrdersService = class OrdersService {
             await queryRunner.release();
         }
     }
-    async cancel(id) {
+    async cancel(id, cancelledById, cancelReason, isClient = false, audit) {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
         try {
             const order = await this.findById(id);
             if (!order) {
-                throw new Error('订单不存在');
+                throw new common_1.NotFoundException('订单不存在');
             }
-            for (const item of order.items || []) {
-                if (item.product) {
-                    const product = await this.productsService.findById(item.productId);
-                    if (product) {
-                        await queryRunner.manager.update(product_entity_1.Product, item.productId, {
-                            quantity: product.quantity + item.quantity,
-                        });
-                    }
+            if (order.status !== 'pending') {
+                throw new common_1.BadRequestException(`订单状态不是待确认，无法取消。当前状态：${order.status}`);
+            }
+            if (isClient) {
+                const createdTime = new Date(order.createdAt).getTime();
+                const now = Date.now();
+                const minutes = (now - createdTime) / (1000 * 60);
+                if (minutes > 30) {
+                    throw new common_1.BadRequestException('订单已超过30分钟，无法取消');
                 }
             }
-            await queryRunner.manager.update(order_entity_1.Order, id, { status: 'cancelled' });
+            for (const item of order.items || []) {
+                if (item.product && !item.product.deletedAt) {
+                    await queryRunner.manager
+                        .createQueryBuilder()
+                        .update(product_entity_1.Product)
+                        .set({ quantity: () => `quantity + ${item.quantity}` })
+                        .where('id = :id', { id: item.productId })
+                        .andWhere('"deletedAt" IS NULL')
+                        .execute();
+                    const log = queryRunner.manager.create(inventory_log_entity_1.InventoryLog, {
+                        productId: item.productId,
+                        type: inventory_log_entity_1.InventoryType.RETURN,
+                        quantity: item.quantity,
+                        beforeQuantity: item.product.quantity,
+                        afterQuantity: item.product.quantity + item.quantity,
+                        operatorId: cancelledById || order.customerId,
+                        remark: `订单取消退还 ${order.orderNo}`,
+                        relatedId: order.id,
+                    });
+                    await queryRunner.manager.save(inventory_log_entity_1.InventoryLog, log);
+                }
+            }
+            await queryRunner.manager.update(order_entity_1.Order, id, {
+                status: 'cancelled',
+                cancelledById,
+                cancelReason,
+                cancelledAt: new Date(),
+            });
             await queryRunner.commitTransaction();
             const cancelledOrder = await this.findById(id);
             if (cancelledOrder) {
                 this.eventService.notifyOrderStatusChanged(cancelledOrder);
+            }
+            if (audit && cancelledOrder) {
+                await this.logsService.recordOperation({
+                    userId: audit.userId,
+                    userRole: audit.userRole,
+                    ip: audit.ip,
+                    module: 'orders',
+                    action: 'cancel',
+                    detail: {
+                        orderId: cancelledOrder.id,
+                        orderNo: cancelledOrder.orderNo,
+                        cancelledById,
+                        cancelReason,
+                        isClient,
+                    },
+                });
             }
             return cancelledOrder;
         }
@@ -252,9 +456,10 @@ let OrdersService = class OrdersService {
             .leftJoinAndSelect('order.customer', 'customer')
             .leftJoinAndSelect('order.items', 'items')
             .where('order.status = :status', { status: 'completed' })
-            .andWhere('order.invoiceId IS NULL');
+            .andWhere('order.invoiceId IS NULL')
+            .andWhere('order.deletedAt IS NULL');
         if (customerId) {
-            queryBuilder.andWhere('order.customerId = :customerId', { customerId });
+            queryBuilder.andWhere('order.customer_id = :customerId', { customerId });
         }
         return queryBuilder
             .orderBy('order.createdAt', 'DESC')
@@ -266,6 +471,7 @@ let OrdersService = class OrdersService {
             .where('order.createdAt >= :startDate', { startDate })
             .andWhere('order.createdAt <= :endDate', { endDate })
             .andWhere('order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+            .andWhere('order.deletedAt IS NULL')
             .getMany();
         const totalAmount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
         const orderCount = orders.length;
@@ -276,19 +482,37 @@ let OrdersService = class OrdersService {
             orders,
         };
     }
+    async updateInvoiceInfo(orderIds, invoiceId) {
+        await this.orderRepository
+            .createQueryBuilder()
+            .update(order_entity_1.Order)
+            .set({ invoiceId, invoicedAt: new Date() })
+            .where('id IN (:...orderIds)', { orderIds })
+            .execute();
+    }
+    async clearInvoiceInfo(invoiceId) {
+        await this.orderRepository
+            .createQueryBuilder()
+            .update(order_entity_1.Order)
+            .set({ invoiceId: undefined, invoicedAt: undefined })
+            .where('invoice_id = :invoiceId', { invoiceId })
+            .execute();
+    }
 };
 exports.OrdersService = OrdersService;
 exports.OrdersService = OrdersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),
     __param(1, (0, typeorm_1.InjectRepository)(order_item_entity_1.OrderItem)),
-    __param(5, (0, common_1.Inject)((0, common_1.forwardRef)(() => event_service_1.EventService))),
+    __param(6, (0, common_1.Inject)((0, common_1.forwardRef)(() => event_service_1.EventService))),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         customer_service_1.CustomerService,
         settings_service_1.SettingService,
         products_service_1.ProductsService,
+        inventory_service_1.InventoryService,
         event_service_1.EventService,
-        typeorm_2.DataSource])
+        typeorm_2.DataSource,
+        logs_service_1.LogsService])
 ], OrdersService);
 //# sourceMappingURL=orders.service.js.map

@@ -51,17 +51,36 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const bcrypt = __importStar(require("bcryptjs"));
 const customer_entity_1 = require("./entities/customer.entity");
+function validatePasswordStrength(password) {
+    if (!password || password.length < 8) {
+        throw new common_1.BadRequestException('密码长度不能少于8位');
+    }
+    if (!/[A-Z]/.test(password)) {
+        throw new common_1.BadRequestException('密码必须包含大写字母');
+    }
+    if (!/[a-z]/.test(password)) {
+        throw new common_1.BadRequestException('密码必须包含小写字母');
+    }
+    if (!/[0-9]/.test(password)) {
+        throw new common_1.BadRequestException('密码必须包含数字');
+    }
+}
 let CustomerService = class CustomerService {
     constructor(customerRepository) {
         this.customerRepository = customerRepository;
     }
     async findByUsername(username) {
-        return this.customerRepository.findOne({ where: { username } });
+        return this.customerRepository.findOne({ where: { username, deletedAt: (0, typeorm_2.IsNull)() } });
     }
     async findById(id) {
-        return this.customerRepository.findOne({ where: { id } });
+        return this.customerRepository.findOne({ where: { id, deletedAt: (0, typeorm_2.IsNull)() } });
     }
     async create(data) {
+        if (!data.username || !data.password || !data.companyName ||
+            !data.address || !data.contactPerson || !data.phone) {
+            throw new common_1.BadRequestException('用户名、密码、公司名称、联系人、电话、送货地址为必填项');
+        }
+        validatePasswordStrength(data.password);
         const existing = await this.findByUsername(data.username);
         if (existing) {
             throw new common_1.ConflictException('用户名已存在');
@@ -70,23 +89,44 @@ let CustomerService = class CustomerService {
         const customer = this.customerRepository.create({
             ...data,
             passwordHash,
-            vipDiscount: data.vipDiscount || 100,
+            vipDiscount: data.vipDiscount ?? 0,
         });
         return this.customerRepository.save(customer);
     }
-    async findAll() {
-        return this.customerRepository.find({
+    async findAll(filters) {
+        const page = filters?.page || 1;
+        const pageSize = filters?.pageSize || 20;
+        const skip = (page - 1) * pageSize;
+        const [data, total] = await this.customerRepository.findAndCount({
+            where: { deletedAt: (0, typeorm_2.IsNull)() },
             order: { createdAt: 'DESC' },
+            skip,
+            take: pageSize,
         });
+        return {
+            data,
+            total,
+            page,
+            pageSize,
+            totalPages: Math.ceil(total / pageSize),
+        };
     }
     async update(id, data) {
+        if (data.vipDiscount !== undefined && (data.vipDiscount < 0 || data.vipDiscount > 100)) {
+            throw new common_1.BadRequestException('VIP折扣必须在0-100之间');
+        }
+        const customer = await this.findById(id);
+        if (!customer) {
+            throw new common_1.NotFoundException('客户不存在');
+        }
         await this.customerRepository.update(id, data);
-        return this.findById(id);
+        return customer;
     }
     async delete(id) {
         await this.customerRepository.delete(id);
     }
     async updatePassword(id, newPassword) {
+        validatePasswordStrength(newPassword);
         const passwordHash = await bcrypt.hash(newPassword, 10);
         await this.customerRepository.update(id, { passwordHash });
     }
@@ -94,6 +134,7 @@ let CustomerService = class CustomerService {
         return this.customerRepository
             .createQueryBuilder('customer')
             .where('customer.company_name LIKE :keyword', { keyword: `%${keyword}%` })
+            .andWhere('customer.deleted_at IS NULL')
             .getMany();
     }
 };

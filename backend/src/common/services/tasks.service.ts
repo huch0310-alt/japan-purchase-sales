@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Inject, forwardRef } from '@nestjs/common';
 import { InvoicesService } from '../../invoices/invoices.service';
@@ -7,11 +7,28 @@ import { SettingService } from '../../settings/settings.service';
 import { DataSource } from 'typeorm';
 
 /**
+ * 报告数据类型
+ */
+interface ReportData {
+  orders: {
+    orderCount: number;
+    totalamount?: number;
+    totalAmount?: number;
+  };
+  customers?: {
+    newcustomercount?: number;
+    newCustomerCount?: number;
+  };
+}
+
+/**
  * 定时任务服务
  * 处理自动化的后台任务
  */
 @Injectable()
 export class TasksService implements OnModuleInit {
+  private readonly logger = new Logger(TasksService.name);
+
   constructor(
     @Inject(forwardRef(() => InvoicesService))
     private invoicesService: InvoicesService,
@@ -21,7 +38,7 @@ export class TasksService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    console.log('定时任务服务已启动');
+    this.logger.log('定时任务服务已启动');
   }
 
   /**
@@ -30,12 +47,12 @@ export class TasksService implements OnModuleInit {
    */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleInvoiceOverdue() {
-    console.log('执行任务：更新請求書到期状态');
+    this.logger.log('执行任务：更新請求書到期状态');
     try {
       await this.invoicesService.updateOverdueStatus();
-      console.log('請求書到期状态更新完成');
+      this.logger.log('請求書到期状态更新完成');
     } catch (error) {
-      console.error('請求書到期状态更新失败:', error);
+      this.logger.error('請求書到期状态更新失败:', error);
     }
   }
 
@@ -45,7 +62,7 @@ export class TasksService implements OnModuleInit {
    */
   @Cron(CronExpression.EVERY_DAY_AT_9AM)
   async handleInvoiceReminder() {
-    console.log('执行任务：請求書到期提醒');
+    this.logger.log('执行任务：請求書到期提醒');
     try {
       const reminders = await this.invoicesService.getDueReminders();
 
@@ -55,12 +72,12 @@ export class TasksService implements OnModuleInit {
           invoice.customerId,
           new Date(invoice.dueDate),
         );
-        console.log(`已发送請求書到期提醒: ${invoice.invoiceNo}`);
+        this.logger.log(`已发送請求書到期提醒: ${invoice.invoiceNo}`);
       }
 
-      console.log(`請求書到期提醒发送完成，共 ${reminders.length} 条`);
+      this.logger.log(`請求書到期提醒发送完成，共 ${reminders.length} 条`);
     } catch (error) {
-      console.error('請求書到期提醒发送失败:', error);
+      this.logger.error('請求書到期提醒发送失败:', error);
     }
   }
 
@@ -69,14 +86,14 @@ export class TasksService implements OnModuleInit {
    */
   @Cron(CronExpression.EVERY_WEEK)
   async handleWeeklyReport() {
-    console.log('执行任务：生成周报数据');
+    this.logger.log('执行任务：生成周报数据');
     try {
       const report = await this.generateReport('weekly');
       // 发送周报给管理员
       await this.notifyAdmins('周报', report);
-      console.log('周报生成完成', report);
+      this.logger.log('周报生成完成', report);
     } catch (error) {
-      console.error('周报生成失败:', error);
+      this.logger.error('周报生成失败:', error);
     }
   }
 
@@ -85,14 +102,14 @@ export class TasksService implements OnModuleInit {
    */
   @Cron('0 0 1 * *')
   async handleMonthlyReport() {
-    console.log('执行任务：生成月报数据');
+    this.logger.log('执行任务：生成月报数据');
     try {
       const report = await this.generateReport('monthly');
       // 发送月报给管理员
       await this.notifyAdmins('月报', report);
-      console.log('月报生成完成', report);
+      this.logger.log('月报生成完成', report);
     } catch (error) {
-      console.error('月报生成失败:', error);
+      this.logger.error('月报生成失败:', error);
     }
   }
 
@@ -109,20 +126,20 @@ export class TasksService implements OnModuleInit {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
     }
 
-    // 查询订单统计
+    // 查询订单统计（排除软删除的订单）
     const orderStats = await this.dataSource.query(
       `SELECT
         COUNT(*) as orderCount,
         COALESCE(SUM(total_amount), 0) as totalAmount,
         COALESCE(AVG(total_amount), 0) as avgAmount
       FROM orders
-      WHERE created_at >= $1 AND status IN ('confirmed', 'completed')`,
+      WHERE created_at >= $1 AND status IN ('confirmed', 'completed') AND deleted_at IS NULL`,
       [startDate]
     );
 
-    // 查询新增客户统计
+    // 查询新增客户统计（排除软删除的客户）
     const customerStats = await this.dataSource.query(
-      `SELECT COUNT(*) as newCustomerCount FROM customers WHERE created_at >= $1`,
+      `SELECT COUNT(*) as newCustomerCount FROM customers WHERE created_at >= $1 AND deleted_at IS NULL`,
       [startDate]
     );
 
@@ -138,9 +155,9 @@ export class TasksService implements OnModuleInit {
   /**
    * 通知管理员
    */
-  private async notifyAdmins(reportType: string, report: any) {
+  private async notifyAdmins(reportType: string, report: ReportData) {
     const admins = await this.dataSource.query(
-      `SELECT id FROM staff WHERE role IN ('super_admin', 'admin') AND is_active = true`
+      `SELECT id FROM staff WHERE role IN ('super_admin', 'admin') AND is_active = true AND deleted_at IS NULL`
     );
 
     const title = `${reportType}统计`;

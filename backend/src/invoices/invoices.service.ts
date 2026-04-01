@@ -1,14 +1,15 @@
-import { Injectable, Inject, forwardRef, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, DataSource } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Invoice } from './entities/invoice.entity';
-import { Order } from '../orders/entities/order.entity';
 import { OrdersService } from '../orders/orders.service';
 import { SettingService } from '../settings/settings.service';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { LogsService } from '../logs/logs.service';
+import { OperationAuditContext } from '../common/types';
 
 /**
  * 請求書服务
@@ -19,12 +20,11 @@ export class InvoicesService {
   constructor(
     @InjectRepository(Invoice)
     private invoiceRepository: Repository<Invoice>,
-    @InjectRepository(Order)
-    private orderRepository: Repository<Order>,
     @Inject(forwardRef(() => OrdersService))
     private ordersService: OrdersService,
     private settingService: SettingService,
     private dataSource: DataSource,
+    private logsService: LogsService,
   ) {}
 
   /**
@@ -41,10 +41,13 @@ export class InvoicesService {
   /**
    * 创建請求書（合并订单）
    */
-  async create(data: {
-    customerId: string;
-    orderIds: string[];
-  }): Promise<Invoice> {
+  async create(
+    data: {
+      customerId: string;
+      orderIds: string[];
+    },
+    audit?: OperationAuditContext,
+  ): Promise<Invoice> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -56,10 +59,10 @@ export class InvoicesService {
       for (const orderId of data.orderIds) {
         const order = await this.ordersService.findById(orderId);
         if (!order) {
-          throw new Error(`订单 ${orderId} 不存在`);
+          throw new NotFoundException(`订单 ${orderId} 不存在`);
         }
         if (order.customerId !== data.customerId) {
-          throw new Error('订单与客户不匹配');
+          throw new BadRequestException('订单与客户不匹配');
         }
         if (order.status !== 'completed') {
           throw new BadRequestException(`订单 ${order.orderNo} 状态不是已完成，无法生成请求书`);
@@ -67,9 +70,10 @@ export class InvoicesService {
         if (order.invoiceId) {
           throw new BadRequestException(`订单 ${order.orderNo} 已生成过请求书`);
         }
-        subtotal += Number(order.subtotal);
-        // 税前金额 = 订单合计 - 消费税
-        taxBasis += Number(order.totalAmount) - Number(order.taxAmount);
+        // 折扣后税前金额 = 订单合计 - 消费税
+        const orderTaxBasis = Number(order.totalAmount) - Number(order.taxAmount);
+        subtotal += orderTaxBasis;
+        taxBasis += orderTaxBasis;
       }
 
       // 获取消费税率
@@ -107,14 +111,27 @@ export class InvoicesService {
       const savedInvoice = await queryRunner.manager.save(Invoice, invoice);
 
       // 2. 更新所有订单的 invoice_id 和 invoiced_at 字段
-      await queryRunner.manager
-        .createQueryBuilder()
-        .update(Order)
-        .set({ invoiceId: savedInvoice.id, invoicedAt: new Date() })
-        .where('id IN (:...orderIds)', { orderIds: data.orderIds })
-        .execute();
+      await this.ordersService.updateInvoiceInfo(data.orderIds, savedInvoice.id);
 
       await queryRunner.commitTransaction();
+
+      if (audit) {
+        await this.logsService.recordOperation({
+          userId: audit.userId,
+          userRole: audit.userRole,
+          ip: audit.ip,
+          module: 'invoices',
+          action: 'create',
+          detail: {
+            invoiceId: savedInvoice.id,
+            invoiceNo: savedInvoice.invoiceNo,
+            customerId: data.customerId,
+            orderIds: data.orderIds,
+            totalAmount: savedInvoice.totalAmount,
+          },
+        });
+      }
+
       return savedInvoice;
     } catch (error) {
       await queryRunner.rollbackTransaction();
@@ -155,16 +172,24 @@ export class InvoicesService {
   }
 
   /**
-   * 查询所有請求書
+   * 查询所有請求書（排除已撤销的）
+   * 优化版本：使用批量查询替代多表JOIN
    */
   async findAll(filters?: {
     customerId?: string;
     status?: string;
     startDate?: Date;
     endDate?: Date;
-  }): Promise<Invoice[]> {
+    page?: number;
+    pageSize?: number;
+  }): Promise<{ data: Invoice[]; total: number; page: number; pageSize: number; totalPages: number }> {
+    const page = filters?.page || 1;
+    const pageSize = filters?.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+
+    // 第一步：查询请求书主表
     const query = this.invoiceRepository.createQueryBuilder('invoice')
-      .leftJoinAndSelect('invoice.customer', 'customer');
+      .where('invoice.isCancelled = false');
 
     if (filters?.customerId) {
       query.andWhere('invoice.customer_id = :customerId', { customerId: filters.customerId });
@@ -179,25 +204,93 @@ export class InvoicesService {
       query.andWhere('invoice.issue_date <= :endDate', { endDate: filters.endDate });
     }
 
-    return query.orderBy('invoice.createdAt', 'DESC').getMany();
+    // 获取请求书列表和总数
+    const [invoices, total] = await query
+      .orderBy('invoice.createdAt', 'DESC')
+      .skip(skip)
+      .take(pageSize)
+      .getManyAndCount();
+
+    // 如果没有请求书，直接返回空结果
+    if (invoices.length === 0) {
+      return {
+        data: [],
+        total: 0,
+        page,
+        pageSize,
+        totalPages: 0,
+      };
+    }
+
+    // 第二步：批量加载客户信息
+    const customerIds = [...new Set(invoices.map(inv => inv.customerId))];
+    const customers = await this.invoiceRepository.manager.createQueryBuilder()
+      .select(['customer.id', 'customer.companyName', 'customer.invoiceName', 'customer.invoiceAddress'])
+      .from('customers', 'customer')
+      .where('customer.id IN (:...customerIds)', { customerIds })
+      .getMany();
+    
+    const customerMap = new Map(customers.map(c => [c.id, c]));
+
+    // 第三步：组装数据
+    const data = invoices.map(invoice => {
+      const customer = customerMap.get(invoice.customerId);
+      return {
+        ...invoice,
+        customer,
+      } as Invoice;
+    });
+
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
   }
 
   /**
    * 标记为已付款
    */
-  async markAsPaid(id: string): Promise<Invoice> {
+  async markAsPaid(id: string, audit?: OperationAuditContext): Promise<Invoice> {
+    const invoice = await this.findById(id);
+    if (!invoice) {
+      throw new BadRequestException('請求書不存在');
+    }
     await this.invoiceRepository.update(id, {
       status: 'paid',
       paidAt: new Date(),
     });
-    return this.findById(id);
+    const updatedInvoice = await this.findById(id);
+
+    if (audit && updatedInvoice) {
+      await this.logsService.recordOperation({
+        userId: audit.userId,
+        userRole: audit.userRole,
+        ip: audit.ip,
+        module: 'invoices',
+        action: 'mark_paid',
+        detail: {
+          invoiceId: updatedInvoice.id,
+          invoiceNo: updatedInvoice.invoiceNo,
+        },
+      });
+    }
+
+    return updatedInvoice!;
   }
 
   /**
    * 撤销請求書（仅限未付款状态）
    * 撤销后关联订单的 invoice_id 和 invoiced_at 字段置空
    */
-  async cancel(id: string, cancelledById: string, reason: string): Promise<Invoice> {
+  async cancel(
+    id: string,
+    cancelledById: string,
+    reason: string,
+    audit?: OperationAuditContext,
+  ): Promise<Invoice> {
     const invoice = await this.findById(id);
 
     if (!invoice) {
@@ -211,6 +304,8 @@ export class InvoicesService {
     if (invoice.isCancelled) {
       throw new BadRequestException('請求書已被撤销');
     }
+
+    const invoiceNo = invoice.invoiceNo;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -227,16 +322,30 @@ export class InvoicesService {
       });
 
       // 2. 清空关联订单的 invoice_id 和 invoiced_at
-      await queryRunner.manager
-        .createQueryBuilder()
-        .update(Order)
-        .set({ invoiceId: null, invoicedAt: null })
-        .where('invoice_id = :id', { id })
-        .execute();
+      await this.ordersService.clearInvoiceInfo(id);
 
       await queryRunner.commitTransaction();
 
-      return this.findById(id);
+      // 返回更新后的請求書
+      const updatedInvoice = await this.findById(id);
+
+      if (audit) {
+        await this.logsService.recordOperation({
+          userId: audit.userId,
+          userRole: audit.userRole,
+          ip: audit.ip,
+          module: 'invoices',
+          action: 'cancel',
+          detail: {
+            invoiceId: id,
+            invoiceNo,
+            cancelReason: reason,
+            cancelledById,
+          },
+        });
+      }
+
+      return updatedInvoice!;
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -265,7 +374,7 @@ export class InvoicesService {
   async generatePdf(invoiceId: string): Promise<Buffer> {
     const invoice = await this.findById(invoiceId);
     if (!invoice) {
-      throw new Error('請求書不存在');
+      throw new NotFoundException('請求書不存在');
     }
 
     // 获取公司信息
@@ -275,14 +384,11 @@ export class InvoicesService {
     const companyFax = await this.settingService.getValue('company_fax') || '';
     const companyBank = await this.settingService.getValue('company_bank') || '';
 
-    // 获取订单详情
-    const orders = [];
-    for (const orderId of invoice.orderIds) {
-      const order = await this.ordersService.findById(orderId);
-      if (order) {
-        orders.push(order);
-      }
-    }
+    // 获取订单详情（优化：使用 Promise.all 并行查询，避免 N+1 问题）
+    const orders = await Promise.all(
+      invoice.orderIds.map(orderId => this.ordersService.findById(orderId))
+    );
+    const validOrders = orders.filter(order => order !== null) as Order[];
 
     // 创建PDF
     const pdfDoc = await PDFDocument.create();
@@ -411,7 +517,7 @@ export class InvoicesService {
     // 订单明细
     let yPos = tableTop - 20;
     let itemCount = 0;
-    for (const order of orders) {
+    for (const order of validOrders) {
       const items = order.items || [];
       for (const item of items) {
         page.drawText(item.productName?.substring(0, 25) || '', { x: 55, y: yPos, size: 8, font });

@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { StaffService } from './staff.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { UpdateStaffDto } from './dto/staff.dto';
 
 /**
  * 员工控制器
@@ -38,7 +39,7 @@ export class StaffController {
   async findOne(@Param('id') id: string) {
     const staff = await this.staffService.findById(id);
     if (!staff) {
-      throw new Error('员工不存在');
+      throw new NotFoundException('员工不存在');
     }
     const { passwordHash, ...result } = staff as any;
     return result;
@@ -66,7 +67,7 @@ export class StaffController {
   @Put(':id')
   @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '更新员工信息' })
-  async update(@Param('id') id: string, @Body() updateStaffDto: any) {
+  async update(@Param('id') id: string, @Body() updateStaffDto: UpdateStaffDto) {
     return this.staffService.update(id, updateStaffDto);
   }
 

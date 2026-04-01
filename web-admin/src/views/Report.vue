@@ -15,7 +15,13 @@
                   :end-placeholder="t('report.endDate')"
                   @change="loadData"
                 />
-                <el-button type="primary" style="margin-left: 10px" @click="handleExport">{{ t('report.exportExcel') }}</el-button>
+                <el-button
+                  type="primary"
+                  style="margin-left: 10px"
+                  @click="handleExport"
+                >
+                  {{ t('report.exportExcel') }}
+                </el-button>
               </div>
             </div>
           </template>
@@ -23,51 +29,134 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="20" style="margin-top: 20px">
-      <el-col :span="12">
+    <el-row
+      :gutter="20"
+      style="margin-top: 20px"
+    >
+      <el-col
+        :xs="24"
+        :sm="24"
+        :md="12"
+      >
         <el-card>
-          <template #header><span>{{ t('report.salesTrendChart') }}</span></template>
-          <div ref="salesChartRef" style="height: 300px"></div>
+          <template #header>
+            <span>{{ t('report.salesTrendChart') }}</span>
+          </template>
+          <div
+            ref="salesChartRef"
+            style="height: 300px"
+          />
         </el-card>
       </el-col>
-      <el-col :span="12">
+      <el-col
+        :xs="24"
+        :sm="24"
+        :md="12"
+      >
         <el-card>
-          <template #header><span>{{ t('report.categorySales') }}</span></template>
-          <div ref="categoryChartRef" style="height: 300px"></div>
+          <template #header>
+            <span>{{ t('report.categorySales') }}</span>
+          </template>
+          <div
+            ref="categoryChartRef"
+            style="height: 300px"
+          />
         </el-card>
       </el-col>
     </el-row>
 
-    <el-row :gutter="20" style="margin-top: 20px">
-      <el-col :span="8">
+    <el-row
+      :gutter="20"
+      style="margin-top: 20px"
+    >
+      <el-col
+        :xs="24"
+        :sm="12"
+        :md="8"
+      >
         <el-card>
-          <template #header><span>{{ t('report.hotProducts') }}</span></template>
-          <el-table :data="hotProducts" height="250">
-            <el-table-column type="index" width="50" />
-            <el-table-column prop="name" :label="t('dashboard.productName')" />
-            <el-table-column prop="sales" :label="t('report.sales')" width="80" />
+          <template #header>
+            <span>{{ t('report.hotProducts') }}</span>
+          </template>
+          <el-table
+            :data="hotProducts"
+            height="250"
+          >
+            <el-table-column
+              type="index"
+              width="50"
+            />
+            <el-table-column
+              prop="name"
+              :label="t('dashboard.productName')"
+            />
+            <el-table-column
+              prop="sales"
+              :label="t('report.sales')"
+              width="80"
+            />
           </el-table>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col
+        :xs="24"
+        :sm="12"
+        :md="8"
+      >
         <el-card>
-          <template #header><span>{{ t('report.customerRanking') }}</span></template>
-          <el-table :data="topCustomers" height="250">
-            <el-table-column type="index" width="50" />
-            <el-table-column prop="companyName" :label="t('report.customerName')" />
-            <el-table-column prop="amount" :label="t('dashboard.salesAmount')" width="100">
-              <template #default="{ row }">{{ formatCurrency(row.amount) }}</template>
+          <template #header>
+            <span>{{ t('report.customerRanking') }}</span>
+          </template>
+          <el-table
+            :data="topCustomers"
+            height="250"
+          >
+            <el-table-column
+              type="index"
+              width="50"
+            />
+            <el-table-column
+              prop="companyName"
+              :label="t('report.customerName')"
+            />
+            <el-table-column
+              prop="amount"
+              :label="t('dashboard.salesAmount')"
+              width="100"
+            >
+              <template #default="{ row }">
+                {{ formatCurrency(row.amount) }}
+              </template>
             </el-table-column>
           </el-table>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col
+        :xs="24"
+        :sm="12"
+        :md="8"
+      >
         <el-card>
-          <template #header><span>{{ t('report.procurementPerformance') }}</span></template>
-          <el-table :data="procurementStats" height="250">
-            <el-table-column type="index" width="50" />
-            <el-table-column prop="name" :label="t('report.staff')" />
-            <el-table-column prop="count" :label="t('report.procurementCount')" width="80" />
+          <template #header>
+            <span>{{ t('report.procurementPerformance') }}</span>
+          </template>
+          <el-table
+            :data="procurementStats"
+            height="250"
+          >
+            <el-table-column
+              type="index"
+              width="50"
+            />
+            <el-table-column
+              prop="name"
+              :label="t('report.staff')"
+            />
+            <el-table-column
+              prop="count"
+              :label="t('report.procurementCount')"
+              width="80"
+            />
           </el-table>
         </el-card>
       </el-col>
@@ -76,10 +165,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import * as echarts from 'echarts'
+import { use } from 'echarts/core'
+import { LineChart, PieChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+import * as echarts from 'echarts/core'
 import { ElMessage } from 'element-plus'
+
+// 注册必须的组件
+use([LineChart, PieChart, GridComponent, TooltipComponent, CanvasRenderer])
 import { formatCurrency } from '../utils/format'
 import api from '../api'
 
@@ -91,6 +187,10 @@ const categoryChartRef = ref()
 const hotProducts = ref([])
 const topCustomers = ref([])
 const procurementStats = ref([])
+
+// ECharts 实例引用，用于组件卸载时销毁
+let salesChartInstance = null
+let categoryChartInstance = null
 
 const loadData = async () => {
   try {
@@ -127,23 +227,31 @@ const loadData = async () => {
 
     // 销售趋势图
     const salesData = salesTrendRes.data || []
-    const salesChart = echarts.init(salesChartRef.value)
-    salesChart.setOption({
+    // 销毁旧实例（如果存在）
+    if (salesChartInstance) {
+      salesChartInstance.dispose()
+    }
+    salesChartInstance = echarts.init(salesChartRef.value)
+    salesChartInstance.setOption({
       tooltip: { trigger: 'axis' },
       xAxis: { type: 'category', data: salesData.map(d => d.date || d.label || '') },
       yAxis: {
-  type: 'value',
-  axisLabel: {
-    formatter: (value) => `¥${value.toLocaleString()}`
-  }
-},
+        type: 'value',
+        axisLabel: {
+          formatter: (value) => `¥${value.toLocaleString()}`
+        }
+      },
       series: [{ data: salesData.map(d => d.amount || d.value || 0), type: 'line', smooth: true }]
     })
 
     // 分类占比图
     const categoryData = categoryRatioRes.data || []
-    const categoryChart = echarts.init(categoryChartRef.value)
-    categoryChart.setOption({
+    // 销毁旧实例（如果存在）
+    if (categoryChartInstance) {
+      categoryChartInstance.dispose()
+    }
+    categoryChartInstance = echarts.init(categoryChartRef.value)
+    categoryChartInstance.setOption({
       tooltip: { trigger: 'item' },
       series: [{
         type: 'pie',
@@ -181,6 +289,18 @@ const handleExport = async () => {
 }
 
 onMounted(() => { loadData() })
+
+// 组件卸载时销毁图表实例，防止内存泄漏
+onUnmounted(() => {
+  if (salesChartInstance) {
+    salesChartInstance.dispose()
+    salesChartInstance = null
+  }
+  if (categoryChartInstance) {
+    categoryChartInstance.dispose()
+    categoryChartInstance = null
+  }
+})
 </script>
 
 <style scoped>

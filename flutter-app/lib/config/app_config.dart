@@ -1,9 +1,15 @@
 /// 应用配置
 class AppConfig {
   /// API基础URL
-  /// TODO: 生产环境必须配置HTTPS证书后改为 https://43.153.155.76/api
-  /// 当前临时使用HTTP，生产部署时必须启用HTTPS
-  static const String apiBaseUrl = 'http://43.153.155.76:3001/api';
+  /// 使用环境变量或默认值，支持 HTTPS
+  /// 生产环境: flutter run --dart-define=API_BASE_URL=https://your-domain.com/api
+  static const String apiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://43.153.155.76:3001/api',
+  );
+
+  /// 是否使用 HTTPS
+  static bool get isHttps => apiBaseUrl.startsWith('https');
 
   /// 应用名称
   static const String appName = '日本采销管理系统';

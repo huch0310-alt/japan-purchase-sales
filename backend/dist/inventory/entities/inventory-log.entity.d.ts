@@ -15,5 +15,6 @@ export declare class InventoryLog {
     afterQuantity: number;
     operatorId: string;
     remark: string;
+    relatedId: string;
     createdAt: Date;
 }

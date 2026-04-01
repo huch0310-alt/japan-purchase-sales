@@ -11,33 +11,88 @@
               :range-separator="t('report.startDate')"
               :start-placeholder="t('logs.startDate')"
               :end-placeholder="t('logs.endDate')"
-              @change="loadData"
               style="margin-right: 10px"
+              @change="loadData"
             />
-            <el-select v-model="filterModule" :placeholder="t('logs.moduleFilter')" style="width: 120px; margin-right: 10px" @change="loadData">
-              <el-option :label="t('logs.all')" value="" />
-              <el-option :label="t('logs.users')" value="users" />
-              <el-option :label="t('logs.products')" value="products" />
-              <el-option :label="t('logs.orders')" value="orders" />
-              <el-option :label="t('logs.invoices')" value="invoices" />
+            <el-select
+              v-model="filterModule"
+              :placeholder="t('logs.moduleFilter')"
+              style="width: 120px; margin-right: 10px"
+              @change="loadData"
+            >
+              <el-option
+                :label="t('logs.all')"
+                value=""
+              />
+              <el-option
+                :label="t('logs.users')"
+                value="users"
+              />
+              <el-option
+                :label="t('logs.products')"
+                value="products"
+              />
+              <el-option
+                :label="t('logs.orders')"
+                value="orders"
+              />
+              <el-option
+                :label="t('logs.invoices')"
+                value="invoices"
+              />
             </el-select>
           </div>
         </div>
       </template>
 
-      <el-table :data="tableData" border stripe>
-        <el-table-column prop="userName" :label="t('logs.operator')" width="120" />
-        <el-table-column prop="userRole" :label="t('logs.role')" width="100">
+      <el-table
+        :data="tableData"
+        border
+        stripe
+      >
+        <el-table-column
+          prop="userName"
+          :label="t('logs.operator')"
+          width="120"
+        />
+        <el-table-column
+          prop="userRole"
+          :label="t('logs.role')"
+          width="100"
+        >
           <template #default="{ row }">
             <el-tag>{{ getRoleText(row.userRole) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="module" :label="t('logs.module')" width="100" />
-        <el-table-column prop="action" :label="t('logs.action')" width="100" />
-        <el-table-column prop="detail" :label="t('logs.detail')" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="ip" :label="t('logs.ip')" width="130" />
-        <el-table-column prop="createdAt" :label="t('logs.operationTime')" width="180">
-          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        <el-table-column
+          prop="module"
+          :label="t('logs.module')"
+          width="100"
+        />
+        <el-table-column
+          prop="action"
+          :label="t('logs.action')"
+          width="100"
+        />
+        <el-table-column
+          prop="detail"
+          :label="t('logs.detail')"
+          min-width="200"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="ip"
+          :label="t('logs.ip')"
+          width="130"
+        />
+        <el-table-column
+          prop="createdAt"
+          :label="t('logs.operationTime')"
+          width="180"
+        >
+          <template #default="{ row }">
+            {{ formatDateTime(row.createdAt) }}
+          </template>
         </el-table-column>
       </el-table>
 
@@ -88,8 +143,10 @@ const loadData = async () => {
     }
     if (filterModule.value) params.module = filterModule.value
     const res = await api.get('/logs', { params })
-    tableData.value = res.data
-    pagination.total = res.data.length
+    // 后端 findAll 返回数组（暂不支持分页）
+    const data = Array.isArray(res.data) ? res.data : (res.data?.data || [])
+    tableData.value = data
+    pagination.total = data.length
   } catch (e) {
     ElMessage.error(t('messages.loadFailed'))
   }

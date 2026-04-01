@@ -54,6 +54,7 @@ __decorate([
     __metadata("design:type", Date)
 ], PointsLog.prototype, "createdAt", void 0);
 exports.PointsLog = PointsLog = __decorate([
-    (0, typeorm_1.Entity)('points_logs')
+    (0, typeorm_1.Entity)('points_logs'),
+    (0, typeorm_1.Index)('idx_points_logs_customer_id', ['customerId'])
 ], PointsLog);
 //# sourceMappingURL=points-log.entity.js.map

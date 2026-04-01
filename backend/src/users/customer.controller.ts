@@ -1,9 +1,12 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomerService } from './customer.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { PaginationQueryDto } from '../common/dto/validation.dto';
+import { UpdateCustomerDto } from './dto/customer.dto';
+import { Customer } from './entities/customer.entity';
 
 /**
  * 客户控制器
@@ -22,19 +25,32 @@ export class CustomerController {
   @Get()
   @Roles('super_admin', 'admin', 'procurement', 'sales')
   @ApiOperation({ summary: '获取所有客户列表' })
-  async findAll(@Query('keyword') keyword?: string) {
+  async findAll(
+    @Query() pagination: PaginationQueryDto,
+    @Query('keyword') keyword?: string,
+  ) {
     if (keyword) {
-      const customers = await this.customerService.searchByCompanyName(keyword);
-      return customers.map(c => {
-        const { passwordHash, ...result } = c as any;
-        return result;
-      });
+      const result = await this.customerService.searchByCompanyName(keyword);
+      // 返回统一格式
+      return {
+        data: result.map((c: Customer) => {
+          const { passwordHash, ...rest } = c;
+          return rest;
+        }),
+        total: result.length,
+        page: 1,
+        pageSize: result.length,
+        totalPages: 1,
+      };
     }
-    const customers = await this.customerService.findAll();
-    return customers.map(c => {
-      const { passwordHash, ...result } = c as any;
-      return result;
-    });
+    const result = await this.customerService.findAll({ page: pagination.page, pageSize: pagination.pageSize });
+    return {
+      ...result,
+      data: result.data.map((c: Customer) => {
+        const { passwordHash, ...rest } = c;
+        return rest;
+      }),
+    };
   }
 
   /**
@@ -46,7 +62,7 @@ export class CustomerController {
   async findOne(@Param('id') id: string) {
     const customer = await this.customerService.findById(id);
     if (!customer) {
-      throw new Error('客户不存在');
+      throw new NotFoundException('客户不存在');
     }
     const { passwordHash, ...result } = customer as any;
     return result;
@@ -80,7 +96,7 @@ export class CustomerController {
   @Put(':id')
   @Roles('super_admin', 'admin')
   @ApiOperation({ summary: '更新客户信息' })
-  async update(@Param('id') id: string, @Body() updateCustomerDto: any) {
+  async update(@Param('id') id: string, @Body() updateCustomerDto: UpdateCustomerDto) {
     return this.customerService.update(id, updateCustomerDto);
   }
 

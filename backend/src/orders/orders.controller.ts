@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { AuthenticatedRequest } from '../common/types';
+import { PaginationQueryDto } from '../common/dto/validation.dto';
 
 /**
  * 订单控制器
@@ -21,17 +23,25 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: '客户创建订单' })
-  async create(@Request() req, @Body() createOrderDto: {
+  async create(@Request() req: AuthenticatedRequest, @Body() createOrderDto: {
     items: { productId: string; quantity: number }[];
     deliveryAddress: string;
     contactPerson: string;
     contactPhone: string;
     remark?: string;
   }) {
-    return this.ordersService.create({
-      customerId: req.user.id,
-      ...createOrderDto,
-    });
+    const audit = {
+      userId: req.user.id,
+      userRole: req.user.type === 'customer' ? 'customer' : req.user.role,
+      ip: req.ip,
+    };
+    return this.ordersService.create(
+      {
+        customerId: req.user.id,
+        ...createOrderDto,
+      },
+      audit,
+    );
   }
 
   /**
@@ -41,7 +51,7 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: '获取当前客户的订单列表' })
-  async findMyOrders(@Request() req) {
+  async findMyOrders(@Request() req: AuthenticatedRequest) {
     return this.ordersService.findByCustomer(req.user.id);
   }
 
@@ -54,6 +64,7 @@ export class OrdersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: '获取所有订单列表' })
   async findAll(
+    @Query() pagination: PaginationQueryDto,
     @Query('status') status?: string,
     @Query('customerId') customerId?: string,
     @Query('startDate') startDate?: string,
@@ -68,6 +79,8 @@ export class OrdersController {
       endDate: endDate ? new Date(endDate) : undefined,
       minAmount,
       maxAmount,
+      page: pagination.page,
+      pageSize: pagination.pageSize,
     });
   }
 
@@ -79,8 +92,13 @@ export class OrdersController {
   @Roles('super_admin', 'admin', 'sales')
   @ApiBearerAuth()
   @ApiOperation({ summary: '批量确认订单' })
-  async batchConfirm(@Body() body: { ids: string[] }, @Request() req) {
-    await this.ordersService.batchConfirm(body.ids, req.user.id);
+  async batchConfirm(@Request() req: AuthenticatedRequest, @Body() body: { ids: string[] }) {
+    const audit = {
+      userId: req.user.id,
+      userRole: req.user.role,
+      ip: req.ip,
+    };
+    await this.ordersService.batchConfirm(body.ids, audit);
     return { message: '批量确认成功' };
   }
 
@@ -118,13 +136,22 @@ export class OrdersController {
 
   /**
    * 获取订单详情
+   * 权限：客户只能查看自己的订单，管理员/销售可以查看所有订单
    */
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: '获取订单详情' })
-  async findOne(@Param('id') id: string) {
-    return this.ordersService.findById(id);
+  async findOne(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+    const order = await this.ordersService.findById(id);
+    if (!order) {
+      throw new NotFoundException('订单不存在');
+    }
+    // 客户只能查看自己的订单
+    if (req.user.type === 'customer' && order.customerId !== req.user.id) {
+      throw new ForbiddenException('无权查看此订单');
+    }
+    return order;
   }
 
   /**
@@ -135,8 +162,13 @@ export class OrdersController {
   @Roles('super_admin', 'admin', 'sales')
   @ApiBearerAuth()
   @ApiOperation({ summary: '确认订单' })
-  async confirm(@Param('id') id: string, @Request() req) {
-    return this.ordersService.confirm(id, req.user.id);
+  async confirm(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+    const audit = {
+      userId: req.user.id,
+      userRole: req.user.role,
+      ip: req.ip,
+    };
+    return this.ordersService.confirm(id, audit);
   }
 
   /**
@@ -147,33 +179,53 @@ export class OrdersController {
   @Roles('super_admin', 'admin', 'sales')
   @ApiBearerAuth()
   @ApiOperation({ summary: '完成订单' })
-  async complete(@Param('id') id: string) {
-    return this.ordersService.complete(id);
+  async complete(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+    const audit = {
+      userId: req.user.id,
+      userRole: req.user.role,
+      ip: req.ip,
+    };
+    return this.ordersService.complete(id, audit);
   }
 
   /**
    * 取消订单（客户30分钟内可取消）
+   * 客户只能取消自己的订单，员工可以取消任何订单
    */
   @Put(':id/cancel')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: '取消订单' })
-  async cancel(@Param('id') id: string, @Request() req) {
+  async cancel(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     const order = await this.ordersService.findById(id);
     if (!order) {
-      throw new Error('订单不存在');
+      throw new NotFoundException('订单不存在');
     }
-    // 检查是否为订单客户或销售人员
-    if (order.customerId !== req.user.id && !['super_admin', 'admin', 'sales'].includes(req.user.role)) {
-      throw new Error('无权取消此订单');
+
+    // 判断是否为客户角色（客户有30分钟限制）
+    const isClient = req.user.type === 'customer';
+
+    // 客户只能取消自己的订单
+    if (isClient && order.customerId !== req.user.id) {
+      throw new ForbiddenException('无权取消此订单');
     }
-    // 检查是否在30分钟内且未确认
-    const createdTime = new Date(order.createdAt).getTime();
-    const now = Date.now();
-    const minutes = (now - createdTime) / (1000 * 60);
-    if (minutes > 30 || order.status !== 'pending') {
-      throw new Error('订单已无法取消');
+
+    // 员工取消：需要检查权限
+    if (!isClient && !['super_admin', 'admin', 'sales'].includes(req.user.role)) {
+      throw new ForbiddenException('无权取消此订单');
     }
-    return this.ordersService.cancel(id);
+
+    // 状态检查：只有待确认状态可以取消
+    if (order.status !== 'pending') {
+      throw new BadRequestException('订单状态不是待确认，无法取消');
+    }
+
+    // 时间检查已移至 Service 层（客户30分钟限制）
+    const audit = {
+      userId: req.user.id,
+      userRole: req.user.type === 'customer' ? 'customer' : req.user.role,
+      ip: req.ip,
+    };
+    return this.ordersService.cancel(id, req.user.id, undefined, isClient, audit);
   }
 }

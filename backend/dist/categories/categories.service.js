@@ -17,25 +17,80 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const category_entity_1 = require("./entities/category.entity");
+const category_dto_1 = require("./dto/category.dto");
 let CategoriesService = class CategoriesService {
     constructor(categoryRepository) {
         this.categoryRepository = categoryRepository;
     }
     async findAll() {
-        return this.categoryRepository.find({ order: { sortOrder: 'ASC', createdAt: 'DESC' } });
+        const categories = await this.categoryRepository.find({ order: { sortOrder: 'ASC', createdAt: 'DESC' } });
+        return categories.map(c => new category_dto_1.CategoryResponseDto({
+            id: c.id,
+            nameZh: c.nameZh,
+            nameJa: c.nameJa,
+            nameEn: c.nameEn,
+            sortOrder: c.sortOrder,
+            isActive: c.isActive,
+            createdAt: c.createdAt,
+        }));
     }
     async findById(id) {
         return this.categoryRepository.findOne({ where: { id } });
     }
     async create(data) {
-        const category = this.categoryRepository.create(data);
-        return this.categoryRepository.save(category);
+        if (!data.nameZh || !data.nameJa || !data.nameEn) {
+            throw new common_1.BadRequestException('分类名称必须同时提供中文、日语、英语三种语言');
+        }
+        const category = this.categoryRepository.create({
+            name: data.nameZh,
+            nameZh: data.nameZh,
+            nameJa: data.nameJa,
+            nameEn: data.nameEn,
+            sortOrder: data.sortOrder || 0,
+            isSystem: false,
+        });
+        const saved = await this.categoryRepository.save(category);
+        return new category_dto_1.CategoryResponseDto({
+            id: saved.id,
+            nameZh: saved.nameZh,
+            nameJa: saved.nameJa,
+            nameEn: saved.nameEn,
+            sortOrder: saved.sortOrder,
+            isActive: saved.isActive,
+            createdAt: saved.createdAt,
+        });
     }
     async update(id, data) {
+        const category = await this.findById(id);
+        if (!category) {
+            throw new common_1.BadRequestException('分类不存在');
+        }
+        if (category.isSystem) {
+            throw new common_1.BadRequestException('系统内置分类不可修改');
+        }
         await this.categoryRepository.update(id, data);
-        return this.findById(id);
+        const updated = await this.findById(id);
+        if (!updated) {
+            throw new common_1.BadRequestException('分类更新失败');
+        }
+        return new category_dto_1.CategoryResponseDto({
+            id: updated.id,
+            nameZh: updated.nameZh,
+            nameJa: updated.nameJa,
+            nameEn: updated.nameEn,
+            sortOrder: updated.sortOrder,
+            isActive: updated.isActive,
+            createdAt: updated.createdAt,
+        });
     }
     async delete(id) {
+        const category = await this.findById(id);
+        if (!category) {
+            throw new common_1.BadRequestException('分类不存在');
+        }
+        if (category.isSystem) {
+            throw new common_1.BadRequestException('系统内置分类不可删除');
+        }
         await this.categoryRepository.delete(id);
     }
 };

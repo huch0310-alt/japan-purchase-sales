@@ -4,56 +4,126 @@
       <template #header>
         <div class="card-header">
           <span>{{ t('nav.invoiceGenerate') }}</span>
-          <el-tag type="info">{{ t('invoice.onlyCompletedOrders') }}</el-tag>
+          <el-tag type="info">
+            {{ t('invoice.onlyCompletedOrders') }}
+          </el-tag>
         </div>
       </template>
 
       <div class="filter-section">
-        <el-select v-model="filterCustomerId" :placeholder="t('order.selectCustomer')" clearable filterable @change="loadOrders">
-          <el-option v-for="c in customers" :key="c.id" :label="c.companyName" :value="c.id" />
+        <el-select
+          v-model="filterCustomerId"
+          :placeholder="t('order.selectCustomer')"
+          clearable
+          filterable
+          @change="loadOrders"
+        >
+          <el-option
+            v-for="c in customers"
+            :key="c.id"
+            :label="c.companyName"
+            :value="c.id"
+          />
         </el-select>
       </div>
 
-      <el-table ref="orderTable" :data="orders" @selection-change="handleSelectionChange" v-loading="loading">
-        <el-table-column type="selection" width="55" :selectable="checkSelectable" />
-        <el-table-column prop="orderNo" :label="t('order.orderNo')" width="180" />
-        <el-table-column prop="customer.companyName" :label="t('order.customer')" />
-        <el-table-column prop="totalAmount" :label="t('order.totalAmount')" width="120">
+      <el-table
+        ref="orderTable"
+        v-loading="loading"
+        :data="orders"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column
+          type="selection"
+          width="55"
+          :selectable="checkSelectable"
+        />
+        <el-table-column
+          prop="orderNo"
+          :label="t('order.orderNo')"
+          width="180"
+        />
+        <el-table-column
+          prop="customer.companyName"
+          :label="t('order.customer')"
+        />
+        <el-table-column
+          prop="totalAmount"
+          :label="t('order.totalAmount')"
+          width="120"
+        >
           <template #default="{ row }">
             ¥{{ row.totalAmount }} <!-- TODO: i18n currency symbol when available -->
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" :label="t('order.orderTime')" width="160">
+        <el-table-column
+          prop="createdAt"
+          :label="t('order.orderTime')"
+          width="160"
+        >
           <template #default="{ row }">
             {{ formatDateTime(row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column prop="invoiceId" :label="t('invoice.status')" width="120">
+        <el-table-column
+          prop="invoiceId"
+          :label="t('invoice.status')"
+          width="120"
+        >
           <template #default="{ row }">
-            <el-tag v-if="row.invoiceId" type="success">{{ t('invoice.alreadyInvoiced') }}</el-tag>
-            <el-tag v-else type="info">{{ t('invoice.available') }}</el-tag>
+            <el-tag
+              v-if="row.invoiceId"
+              type="success"
+            >
+              {{ t('invoice.alreadyInvoiced') }}
+            </el-tag>
+            <el-tag
+              v-else
+              type="info"
+            >
+              {{ t('invoice.available') }}
+            </el-tag>
           </template>
         </el-table-column>
       </el-table>
 
       <div class="action-bar">
-        <el-button type="primary" :disabled="selectedOrders.length === 0" @click="generateInvoice">
+        <el-button
+          type="primary"
+          :disabled="selectedOrders.length === 0"
+          @click="generateInvoice"
+        >
           {{ t('invoice.generate') }} ({{ selectedOrders.length }})
         </el-button>
       </div>
     </el-card>
 
     <!-- 生成确认对话框 -->
-    <el-dialog v-model="showConfirmDialog" :title="t('invoice.confirmGenerate')" width="500px">
+    <el-dialog
+      v-model="showConfirmDialog"
+      :title="t('invoice.confirmGenerate')"
+      width="500px"
+    >
       <p>{{ t('invoice.confirmMessage', { count: selectedOrders.length, total: selectedAmount }) }}</p>
       <el-form :model="invoiceForm">
         <el-form-item :label="t('invoice.dueDate')">
-          <el-date-picker v-model="invoiceForm.dueDate" type="date" :placeholder="t('invoice.selectDueDate')" />
+          <el-date-picker
+            v-model="invoiceForm.dueDate"
+            type="date"
+            :placeholder="t('invoice.selectDueDate')"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showConfirmDialog = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" @click="confirmGenerate">{{ t('common.confirm') }}</el-button>
+        <el-button @click="showConfirmDialog = false">
+          {{ t('common.cancel') }}
+        </el-button>
+        <el-button
+          type="primary"
+          @click="confirmGenerate"
+        >
+          {{ t('common.confirm') }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -85,7 +155,7 @@ const checkSelectable = (row) => !row.invoiceId
 const loadCustomers = async () => {
   try {
     const res = await api.get('/customers')
-    customers.value = res.data
+    customers.value = res.data.data || []
   } catch (e) {
     console.error('Failed to load customers:', e)
   }

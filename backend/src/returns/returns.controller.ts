@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Put, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ReturnsService } from './returns.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ReturnStatus } from './entities/return.entity';
+import { AuthenticatedRequest } from '../common/types';
 
 /**
  * 退货管理控制器
@@ -46,8 +47,8 @@ export class ReturnsController {
   @Put(':id/approve')
   @ApiOperation({ summary: '批准退货' })
   @Roles('super_admin', 'admin')
-  async approve(@Param('id') id: string) {
-    const operatorId = 'current-user-id';
+  async approve(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+    const operatorId = req.user.id;
     return this.returnsService.approve(id, operatorId);
   }
 

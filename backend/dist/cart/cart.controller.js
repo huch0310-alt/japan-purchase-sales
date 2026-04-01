@@ -27,11 +27,11 @@ let CartController = class CartController {
     async addItem(req, body) {
         return this.cartService.addItem(req.user.id, body.productId, body.quantity || 1);
     }
-    async updateQuantity(id, body) {
-        return this.cartService.updateQuantity(id, body.quantity);
+    async updateQuantity(req, id, body) {
+        return this.cartService.updateQuantity(id, req.user.id, body.quantity);
     }
-    async deleteItem(id) {
-        await this.cartService.deleteItem(id);
+    async deleteItem(req, id) {
+        await this.cartService.deleteItem(id, req.user.id);
         return { message: '删除成功' };
     }
     async clear(req) {
@@ -63,18 +63,20 @@ __decorate([
 __decorate([
     (0, common_1.Put)('items/:id'),
     (0, swagger_1.ApiOperation)({ summary: '更新购物车商品数量' }),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [Object, String, Object]),
     __metadata("design:returntype", Promise)
 ], CartController.prototype, "updateQuantity", null);
 __decorate([
     (0, common_1.Delete)('items/:id'),
     (0, swagger_1.ApiOperation)({ summary: '删除购物车商品' }),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], CartController.prototype, "deleteItem", null);
 __decorate([

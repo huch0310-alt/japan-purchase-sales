@@ -16,6 +16,8 @@ const orders_controller_1 = require("./orders.controller");
 const products_module_1 = require("../products/products.module");
 const settings_module_1 = require("../settings/settings.module");
 const users_module_1 = require("../users/users.module");
+const inventory_module_1 = require("../inventory/inventory.module");
+const logs_module_1 = require("../logs/logs.module");
 let OrdersModule = class OrdersModule {
 };
 exports.OrdersModule = OrdersModule;
@@ -26,6 +28,8 @@ exports.OrdersModule = OrdersModule = __decorate([
             products_module_1.ProductsModule,
             settings_module_1.SettingsModule,
             users_module_1.UsersModule,
+            inventory_module_1.InventoryModule,
+            logs_module_1.LogsModule,
         ],
         providers: [orders_service_1.OrdersService],
         controllers: [orders_controller_1.OrdersController],

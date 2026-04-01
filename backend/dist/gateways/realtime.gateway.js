@@ -8,24 +8,35 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var RealtimeGateway_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RealtimeGateway = void 0;
 const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const jwt_1 = require("@nestjs/jwt");
-let RealtimeGateway = class RealtimeGateway {
+const common_1 = require("@nestjs/common");
+let RealtimeGateway = RealtimeGateway_1 = class RealtimeGateway {
     constructor(jwtService) {
         this.jwtService = jwtService;
+        this.logger = new common_1.Logger(RealtimeGateway_1.name);
         this.userSockets = new Map();
     }
     async handleConnection(client) {
         try {
-            const token = client.handshake.auth.token || client.handshake.query.token;
+            const authHeader = client.handshake.headers.authorization;
+            let token = null;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7);
+            }
             if (!token) {
+                token = client.handshake.auth?.token || null;
+            }
+            if (!token) {
+                this.logger.warn('WebSocket连接缺少认证token');
                 client.disconnect();
                 return;
             }
-            const payload = this.jwtService.verify(String(token));
+            const payload = this.jwtService.verify(token);
             const userId = payload.sub;
             client.data.userId = userId;
             client.data.role = payload.role;
@@ -38,10 +49,10 @@ let RealtimeGateway = class RealtimeGateway {
                 this.userSockets.set(userId, new Set());
             }
             this.userSockets.get(userId)?.add(client.id);
-            console.log(`用户 ${userId} 已连接, Socket ID: ${client.id}`);
+            this.logger.log(`用户 ${userId} 已连接, Socket ID: ${client.id}`);
         }
         catch (error) {
-            console.error('WebSocket认证失败:', error);
+            this.logger.error('WebSocket认证失败');
             client.disconnect();
         }
     }
@@ -52,7 +63,7 @@ let RealtimeGateway = class RealtimeGateway {
             if (this.userSockets.get(userId)?.size === 0) {
                 this.userSockets.delete(userId);
             }
-            console.log(`用户 ${userId} 已断开连接, Socket ID: ${client.id}`);
+            this.logger.log(`用户 ${userId} 已断开连接, Socket ID: ${client.id}`);
         }
     }
     sendToUser(userId, event, data) {
@@ -76,12 +87,16 @@ __decorate([
     (0, websockets_1.WebSocketServer)(),
     __metadata("design:type", socket_io_1.Server)
 ], RealtimeGateway.prototype, "server", void 0);
-exports.RealtimeGateway = RealtimeGateway = __decorate([
+exports.RealtimeGateway = RealtimeGateway = RealtimeGateway_1 = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
-            origin: ['http://localhost:3000', 'http://localhost:8080'],
+            origin: process.env.ALLOWED_ORIGINS
+                ? process.env.ALLOWED_ORIGINS.split(',')
+                : ['http://localhost:3000', 'http://localhost:8080'],
             credentials: true,
         },
+        pingTimeout: 5000,
+        pingInterval: 10000,
     }),
     __metadata("design:paramtypes", [jwt_1.JwtService])
 ], RealtimeGateway);

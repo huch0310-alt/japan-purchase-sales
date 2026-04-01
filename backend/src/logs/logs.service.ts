@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OperationLog } from './entities/log.entity';
@@ -8,6 +8,8 @@ import { OperationLog } from './entities/log.entity';
  */
 @Injectable()
 export class LogsService {
+  private readonly logger = new Logger(LogsService.name);
+
   constructor(
     @InjectRepository(OperationLog)
     private logRepository: Repository<OperationLog>,
@@ -29,11 +31,38 @@ export class LogsService {
   }
 
   /**
+   * 记录业务操作审计（失败不影响主流程）
+   */
+  async recordOperation(params: {
+    userId?: string;
+    userRole?: string;
+    module: string;
+    action: string;
+    detail?: Record<string, unknown>;
+    ip?: string;
+  }): Promise<void> {
+    try {
+      await this.create({
+        userId: params.userId,
+        userRole: params.userRole,
+        module: params.module,
+        action: params.action,
+        detail: params.detail ? JSON.stringify(params.detail) : undefined,
+        ip: params.ip,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`操作日志写入失败：${msg}`);
+    }
+  }
+
+  /**
    * 查询日志
    */
   async findAll(filters?: {
     userId?: string;
     userRole?: string;
+    userRoles?: string[];
     module?: string;
     startDate?: Date;
     endDate?: Date;
@@ -43,7 +72,9 @@ export class LogsService {
     if (filters?.userId) {
       query.andWhere('log.user_id = :userId', { userId: filters.userId });
     }
-    if (filters?.userRole) {
+    if (filters?.userRoles?.length) {
+      query.andWhere('log.user_role IN (:...roles)', { roles: filters.userRoles });
+    } else if (filters?.userRole) {
       query.andWhere('log.user_role = :userRole', { userRole: filters.userRole });
     }
     if (filters?.module) {
@@ -56,6 +87,6 @@ export class LogsService {
       query.andWhere('log.created_at <= :endDate', { endDate: filters.endDate });
     }
 
-    return query.orderBy('log.createdAt', 'DESC').getMany();
+    return query.orderBy('log.created_at', 'DESC').getMany();
   }
 }

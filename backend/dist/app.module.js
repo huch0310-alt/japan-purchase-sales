@@ -10,6 +10,10 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
+const throttler_1 = require("@nestjs/throttler");
+const core_1 = require("@nestjs/core");
+const throttler_2 = require("@nestjs/throttler");
+const typeorm_naming_strategies_1 = require("typeorm-naming-strategies");
 const auth_module_1 = require("./auth/auth.module");
 const users_module_1 = require("./users/users.module");
 const products_module_1 = require("./products/products.module");
@@ -26,6 +30,8 @@ const messages_module_1 = require("./messages/messages.module");
 const tasks_module_1 = require("./common/services/tasks.module");
 const dashboard_module_1 = require("./dashboard/dashboard.module");
 const gateways_module_1 = require("./gateways/gateways.module");
+const members_module_1 = require("./members/members.module");
+const returns_module_1 = require("./returns/returns.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -46,11 +52,16 @@ exports.AppModule = AppModule = __decorate([
                     password: configService.get('DB_PASSWORD', 'postgres'),
                     database: configService.get('DB_DATABASE', 'japan_purchase_sales'),
                     entities: [__dirname + '/**/*.entity{.ts,.js}'],
-                    synchronize: configService.get('DB_SYNCHRONIZE', false),
+                    synchronize: configService.get('DB_SYNCHRONIZE', 'false') === 'true',
                     logging: configService.get('DB_LOGGING', false),
+                    namingStrategy: new typeorm_naming_strategies_1.SnakeNamingStrategy(),
                 }),
                 inject: [config_1.ConfigService],
             }),
+            throttler_1.ThrottlerModule.forRoot([{
+                    ttl: 60000,
+                    limit: 100,
+                }]),
             gateways_module_1.GatewaysModule,
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
@@ -67,6 +78,14 @@ exports.AppModule = AppModule = __decorate([
             messages_module_1.MessagesModule,
             tasks_module_1.TasksModule,
             dashboard_module_1.DashboardModule,
+            members_module_1.MembersModule,
+            returns_module_1.ReturnsModule,
+        ],
+        providers: [
+            {
+                provide: core_1.APP_GUARD,
+                useClass: throttler_2.ThrottlerGuard,
+            },
         ],
     })
 ], AppModule);

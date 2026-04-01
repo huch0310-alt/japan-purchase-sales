@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Unit } from './entities/unit.entity';
@@ -27,8 +27,12 @@ export class UnitsService {
   }
 
   async update(id: string, data: Partial<Unit>): Promise<Unit> {
+    const unit = await this.findById(id);
+    if (!unit) {
+      throw new NotFoundException('单位不存在');
+    }
     await this.unitRepository.update(id, data);
-    return this.findById(id);
+    return unit;
   }
 
   async delete(id: string): Promise<void> {

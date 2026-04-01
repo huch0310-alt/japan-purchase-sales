@@ -3,7 +3,7 @@ export declare class SettingsController {
     private readonly settingService;
     constructor(settingService: SettingService);
     findAll(): Promise<import("./entities/setting.entity").Setting[]>;
-    findOne(key: string): Promise<string>;
+    findOne(key: string): Promise<string | null>;
     setMultiple(body: {
         key: string;
         value: string;

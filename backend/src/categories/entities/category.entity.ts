@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, DeleteDateColumn } from 'typeorm';
 import { Product } from '../../products/entities/product.entity';
 
 /**
@@ -10,6 +10,9 @@ import { Product } from '../../products/entities/product.entity';
 export class Category {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column()
+  name: string;  // 默认名称
 
   @Column({ name: 'name_zh' })
   nameZh: string;  // 中文名称
@@ -34,4 +37,7 @@ export class Category {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
 }

@@ -90,7 +90,7 @@ export class MessagesService {
    * 订单状态变化通知
    */
   async notifyOrderStatus(orderId: string, customerId: string, status: string): Promise<void> {
-    const statusText = {
+    const statusText: Record<string, string> = {
       pending: '待确认',
       confirmed: '已确认',
       completed: '已完成',
@@ -111,7 +111,7 @@ export class MessagesService {
    * 商品审核结果通知
    */
   async notifyProductStatus(productId: string, staffId: string, status: string): Promise<void> {
-    const statusText = {
+    const statusText: Record<string, string> = {
       approved: '已通过',
       rejected: '已拒绝',
       active: '已上架',

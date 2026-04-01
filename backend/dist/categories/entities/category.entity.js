@@ -24,11 +24,27 @@ __decorate([
     __metadata("design:type", String)
 ], Category.prototype, "name", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: 0 }),
+    (0, typeorm_1.Column)({ name: 'name_zh' }),
+    __metadata("design:type", String)
+], Category.prototype, "nameZh", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'name_ja' }),
+    __metadata("design:type", String)
+], Category.prototype, "nameJa", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'name_en' }),
+    __metadata("design:type", String)
+], Category.prototype, "nameEn", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'sort_order', default: 0 }),
     __metadata("design:type", Number)
 ], Category.prototype, "sortOrder", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: true }),
+    (0, typeorm_1.Column)({ name: 'is_system', default: false }),
+    __metadata("design:type", Boolean)
+], Category.prototype, "isSystem", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'is_active', default: true }),
     __metadata("design:type", Boolean)
 ], Category.prototype, "isActive", void 0);
 __decorate([
@@ -39,6 +55,10 @@ __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], Category.prototype, "createdAt", void 0);
+__decorate([
+    (0, typeorm_1.DeleteDateColumn)(),
+    __metadata("design:type", Date)
+], Category.prototype, "deletedAt", void 0);
 exports.Category = Category = __decorate([
     (0, typeorm_1.Entity)('categories')
 ], Category);

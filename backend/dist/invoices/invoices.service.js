@@ -50,19 +50,19 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const invoice_entity_1 = require("./entities/invoice.entity");
-const order_entity_1 = require("../orders/entities/order.entity");
 const orders_service_1 = require("../orders/orders.service");
 const settings_service_1 = require("../settings/settings.service");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const pdf_lib_1 = require("pdf-lib");
+const logs_service_1 = require("../logs/logs.service");
 let InvoicesService = class InvoicesService {
-    constructor(invoiceRepository, orderRepository, ordersService, settingService, dataSource) {
+    constructor(invoiceRepository, ordersService, settingService, dataSource, logsService) {
         this.invoiceRepository = invoiceRepository;
-        this.orderRepository = orderRepository;
         this.ordersService = ordersService;
         this.settingService = settingService;
         this.dataSource = dataSource;
+        this.logsService = logsService;
     }
     generateInvoiceNo() {
         const date = new Date();
@@ -71,19 +71,20 @@ let InvoicesService = class InvoicesService {
         const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
         return `INV${year}${month}${random}`;
     }
-    async create(data) {
+    async create(data, audit) {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
         try {
             let subtotal = 0;
+            let taxBasis = 0;
             for (const orderId of data.orderIds) {
                 const order = await this.ordersService.findById(orderId);
                 if (!order) {
-                    throw new Error(`订单 ${orderId} 不存在`);
+                    throw new common_1.NotFoundException(`订单 ${orderId} 不存在`);
                 }
                 if (order.customerId !== data.customerId) {
-                    throw new Error('订单与客户不匹配');
+                    throw new common_1.BadRequestException('订单与客户不匹配');
                 }
                 if (order.status !== 'completed') {
                     throw new common_1.BadRequestException(`订单 ${order.orderNo} 状态不是已完成，无法生成请求书`);
@@ -91,12 +92,14 @@ let InvoicesService = class InvoicesService {
                 if (order.invoiceId) {
                     throw new common_1.BadRequestException(`订单 ${order.orderNo} 已生成过请求书`);
                 }
-                subtotal += Number(order.subtotal);
+                const orderTaxBasis = Number(order.totalAmount) - Number(order.taxAmount);
+                subtotal += orderTaxBasis;
+                taxBasis += orderTaxBasis;
             }
             const taxRate = await this.settingService.getValue('tax_rate') || '10';
             const taxRateNum = parseInt(taxRate) / 100;
-            const taxAmount = Math.round(subtotal * taxRateNum);
-            const totalAmount = subtotal + taxAmount;
+            const taxAmount = Math.round(taxBasis * taxRateNum);
+            const totalAmount = taxBasis + taxAmount;
             const defaultPaymentDays = parseInt(await this.settingService.getValue('default_payment_days') || '30');
             const issueDate = new Date();
             const dueDate = new Date();
@@ -113,13 +116,24 @@ let InvoicesService = class InvoicesService {
                 status: 'unpaid',
             });
             const savedInvoice = await queryRunner.manager.save(invoice_entity_1.Invoice, invoice);
-            await queryRunner.manager
-                .createQueryBuilder()
-                .update(order_entity_1.Order)
-                .set({ invoiceId: savedInvoice.id })
-                .where('id IN (:...orderIds)', { orderIds: data.orderIds })
-                .execute();
+            await this.ordersService.updateInvoiceInfo(data.orderIds, savedInvoice.id);
             await queryRunner.commitTransaction();
+            if (audit) {
+                await this.logsService.recordOperation({
+                    userId: audit.userId,
+                    userRole: audit.userRole,
+                    ip: audit.ip,
+                    module: 'invoices',
+                    action: 'create',
+                    detail: {
+                        invoiceId: savedInvoice.id,
+                        invoiceNo: savedInvoice.invoiceNo,
+                        customerId: data.customerId,
+                        orderIds: data.orderIds,
+                        totalAmount: savedInvoice.totalAmount,
+                    },
+                });
+            }
             return savedInvoice;
         }
         catch (error) {
@@ -149,8 +163,11 @@ let InvoicesService = class InvoicesService {
         });
     }
     async findAll(filters) {
+        const page = filters?.page || 1;
+        const pageSize = filters?.pageSize || 20;
+        const skip = (page - 1) * pageSize;
         const query = this.invoiceRepository.createQueryBuilder('invoice')
-            .leftJoinAndSelect('invoice.customer', 'customer');
+            .where('invoice.isCancelled = false');
         if (filters?.customerId) {
             query.andWhere('invoice.customer_id = :customerId', { customerId: filters.customerId });
         }
@@ -163,14 +180,117 @@ let InvoicesService = class InvoicesService {
         if (filters?.endDate) {
             query.andWhere('invoice.issue_date <= :endDate', { endDate: filters.endDate });
         }
-        return query.orderBy('invoice.createdAt', 'DESC').getMany();
+        const [invoices, total] = await query
+            .orderBy('invoice.createdAt', 'DESC')
+            .skip(skip)
+            .take(pageSize)
+            .getManyAndCount();
+        if (invoices.length === 0) {
+            return {
+                data: [],
+                total: 0,
+                page,
+                pageSize,
+                totalPages: 0,
+            };
+        }
+        const customerIds = [...new Set(invoices.map(inv => inv.customerId))];
+        const customers = await this.invoiceRepository.manager.createQueryBuilder()
+            .select(['customer.id', 'customer.companyName', 'customer.invoiceName', 'customer.invoiceAddress'])
+            .from('customers', 'customer')
+            .where('customer.id IN (:...customerIds)', { customerIds })
+            .getMany();
+        const customerMap = new Map(customers.map(c => [c.id, c]));
+        const data = invoices.map(invoice => {
+            const customer = customerMap.get(invoice.customerId);
+            return {
+                ...invoice,
+                customer,
+            };
+        });
+        return {
+            data,
+            total,
+            page,
+            pageSize,
+            totalPages: Math.ceil(total / pageSize),
+        };
     }
-    async markAsPaid(id) {
+    async markAsPaid(id, audit) {
+        const invoice = await this.findById(id);
+        if (!invoice) {
+            throw new common_1.BadRequestException('請求書不存在');
+        }
         await this.invoiceRepository.update(id, {
             status: 'paid',
             paidAt: new Date(),
         });
-        return this.findById(id);
+        const updatedInvoice = await this.findById(id);
+        if (audit && updatedInvoice) {
+            await this.logsService.recordOperation({
+                userId: audit.userId,
+                userRole: audit.userRole,
+                ip: audit.ip,
+                module: 'invoices',
+                action: 'mark_paid',
+                detail: {
+                    invoiceId: updatedInvoice.id,
+                    invoiceNo: updatedInvoice.invoiceNo,
+                },
+            });
+        }
+        return updatedInvoice;
+    }
+    async cancel(id, cancelledById, reason, audit) {
+        const invoice = await this.findById(id);
+        if (!invoice) {
+            throw new common_1.BadRequestException('請求書不存在');
+        }
+        if (invoice.status === 'paid') {
+            throw new common_1.BadRequestException('已付款的請求書不能撤销');
+        }
+        if (invoice.isCancelled) {
+            throw new common_1.BadRequestException('請求書已被撤销');
+        }
+        const invoiceNo = invoice.invoiceNo;
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        try {
+            await queryRunner.manager.update(invoice_entity_1.Invoice, id, {
+                isCancelled: true,
+                cancelledAt: new Date(),
+                cancelledById,
+                cancelReason: reason,
+                status: 'cancelled',
+            });
+            await this.ordersService.clearInvoiceInfo(id);
+            await queryRunner.commitTransaction();
+            const updatedInvoice = await this.findById(id);
+            if (audit) {
+                await this.logsService.recordOperation({
+                    userId: audit.userId,
+                    userRole: audit.userRole,
+                    ip: audit.ip,
+                    module: 'invoices',
+                    action: 'cancel',
+                    detail: {
+                        invoiceId: id,
+                        invoiceNo,
+                        cancelReason: reason,
+                        cancelledById,
+                    },
+                });
+            }
+            return updatedInvoice;
+        }
+        catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
+        }
+        finally {
+            await queryRunner.release();
+        }
     }
     async updateOverdueStatus() {
         const now = new Date();
@@ -185,7 +305,7 @@ let InvoicesService = class InvoicesService {
     async generatePdf(invoiceId) {
         const invoice = await this.findById(invoiceId);
         if (!invoice) {
-            throw new Error('請求書不存在');
+            throw new common_1.NotFoundException('請求書不存在');
         }
         const companyName = await this.settingService.getValue('company_name') || '株式会社';
         const companyAddress = await this.settingService.getValue('company_address') || '';
@@ -201,9 +321,18 @@ let InvoicesService = class InvoicesService {
         }
         const pdfDoc = await pdf_lib_1.PDFDocument.create();
         const page = pdfDoc.addPage([595, 842]);
-        const font = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.Helvetica);
-        const boldFont = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.HelveticaBold);
-        const { width, height } = page.getSize();
+        let font, boldFont;
+        const fontPath = path.join(__dirname, '..', 'assets', 'fonts', 'NotoSansJP-Regular.ttf');
+        try {
+            const fontBytes = fs.readFileSync(fontPath);
+            font = await pdfDoc.embedFont(fontBytes);
+            boldFont = font;
+        }
+        catch {
+            font = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.Helvetica);
+            boldFont = await pdfDoc.embedFont(pdf_lib_1.StandardFonts.HelveticaBold);
+        }
+        const { height } = page.getSize();
         page.drawText('請求書', {
             x: 250,
             y: height - 60,
@@ -375,12 +504,11 @@ exports.InvoicesService = InvoicesService;
 exports.InvoicesService = InvoicesService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(invoice_entity_1.Invoice)),
-    __param(1, (0, typeorm_1.InjectRepository)(order_entity_1.Order)),
-    __param(2, (0, common_1.Inject)((0, common_1.forwardRef)(() => orders_service_1.OrdersService))),
+    __param(1, (0, common_1.Inject)((0, common_1.forwardRef)(() => orders_service_1.OrdersService))),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository,
         orders_service_1.OrdersService,
         settings_service_1.SettingService,
-        typeorm_2.DataSource])
+        typeorm_2.DataSource,
+        logs_service_1.LogsService])
 ], InvoicesService);
 //# sourceMappingURL=invoices.service.js.map

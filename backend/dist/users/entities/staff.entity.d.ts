@@ -8,4 +8,5 @@ export declare class Staff {
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
+    deletedAt: Date;
 }

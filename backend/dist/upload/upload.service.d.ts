@@ -1,6 +1,11 @@
 import { ConfigService } from '@nestjs/config';
+interface UploadFile {
+    originalname: string;
+    path: string;
+}
 export declare class UploadService {
     private configService;
+    private readonly logger;
     private cos;
     private bucket;
     private region;
@@ -10,7 +15,8 @@ export declare class UploadService {
     ensureUploadDir(): Promise<void>;
     getFileUrl(filePath: string): string;
     deleteFile(filePath: string): Promise<void>;
-    uploadToCos(file: any): Promise<string>;
+    uploadToCos(file: UploadFile): Promise<string>;
     deleteFromCos(fileUrl: string): Promise<void>;
     isCosConfigured(): boolean;
 }
+export {};

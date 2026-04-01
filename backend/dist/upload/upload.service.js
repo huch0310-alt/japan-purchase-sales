@@ -44,6 +44,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var UploadService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UploadService = void 0;
 const common_1 = require("@nestjs/common");
@@ -51,9 +52,10 @@ const config_1 = require("@nestjs/config");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const cos_nodejs_sdk_v5_1 = __importDefault(require("cos-nodejs-sdk-v5"));
-let UploadService = class UploadService {
+let UploadService = UploadService_1 = class UploadService {
     constructor(configService) {
         this.configService = configService;
+        this.logger = new common_1.Logger(UploadService_1.name);
         this.initCos();
     }
     initCos() {
@@ -93,7 +95,7 @@ let UploadService = class UploadService {
     }
     async uploadToCos(file) {
         if (!this.cos) {
-            throw new Error('腾讯云COS未配置');
+            throw new common_1.BadRequestException('腾讯云COS未配置');
         }
         const key = `uploads/${Date.now()}-${file.originalname}`;
         return new Promise((resolve, reject) => {
@@ -103,7 +105,7 @@ let UploadService = class UploadService {
                 Key: key,
                 Body: fs.createReadStream(file.path),
                 onProgress: (progress) => {
-                    console.log('上传进度:', progress.percent);
+                    this.logger.log(`上传进度: ${progress.percent}`);
                 },
             }, (err, data) => {
                 if (err) {
@@ -117,7 +119,7 @@ let UploadService = class UploadService {
     }
     async deleteFromCos(fileUrl) {
         if (!this.cos) {
-            throw new Error('腾讯云COS未配置');
+            throw new common_1.BadRequestException('腾讯云COS未配置');
         }
         const key = fileUrl.replace(`https://${this.bucket}.cos.${this.region}.myqcloud.com/`, '');
         return new Promise((resolve, reject) => {
@@ -140,7 +142,7 @@ let UploadService = class UploadService {
     }
 };
 exports.UploadService = UploadService;
-exports.UploadService = UploadService = __decorate([
+exports.UploadService = UploadService = UploadService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [config_1.ConfigService])
 ], UploadService);

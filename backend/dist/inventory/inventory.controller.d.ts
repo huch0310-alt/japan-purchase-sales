@@ -1,9 +1,10 @@
 import { InventoryService } from './inventory.service';
 import { InventoryType } from './entities/inventory-log.entity';
+import { AuthenticatedRequest } from '../common/types';
 export declare class InventoryController {
     private readonly inventoryService;
     constructor(inventoryService: InventoryService);
-    recordInventory(body: {
+    recordInventory(req: AuthenticatedRequest, body: {
         productId: string;
         type: InventoryType;
         quantity: number;

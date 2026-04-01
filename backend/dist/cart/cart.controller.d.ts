@@ -1,24 +1,26 @@
 import { CartService } from './cart.service';
+import { AuthenticatedRequest } from '../common/types';
 export declare class CartController {
     private readonly cartService;
     constructor(cartService: CartService);
-    findAll(req: any): Promise<import("./entities/cart-item.entity").CartItem[]>;
-    addItem(req: any, body: {
+    findAll(req: AuthenticatedRequest): Promise<import("./entities/cart-item.entity").CartItem[]>;
+    addItem(req: AuthenticatedRequest, body: {
         productId: string;
         quantity?: number;
     }): Promise<import("./entities/cart-item.entity").CartItem>;
-    updateQuantity(id: string, body: {
+    updateQuantity(req: AuthenticatedRequest, id: string, body: {
         quantity: number;
     }): Promise<void | import("./entities/cart-item.entity").CartItem>;
-    deleteItem(id: string): Promise<{
+    deleteItem(req: AuthenticatedRequest, id: string): Promise<{
         message: string;
     }>;
-    clear(req: any): Promise<{
+    clear(req: AuthenticatedRequest): Promise<{
         message: string;
     }>;
-    calculateTotal(req: any): Promise<{
+    calculateTotal(req: AuthenticatedRequest): Promise<{
         subtotal: number;
         taxAmount: number;
         total: number;
+        discountAmount: number;
     }>;
 }

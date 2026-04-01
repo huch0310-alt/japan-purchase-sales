@@ -20,4 +20,5 @@ export declare class Customer {
     invoices: Invoice[];
     createdAt: Date;
     updatedAt: Date;
+    deletedAt: Date;
 }

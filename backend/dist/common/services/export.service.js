@@ -163,25 +163,29 @@ let ExportService = class ExportService {
         return Buffer.from(buffer);
     }
     async exportCustomerReport() {
-        const customers = await this.customerRepository.find();
-        const customerStats = [];
-        for (const customer of customers) {
-            const orders = await this.orderRepository
-                .createQueryBuilder('order')
-                .where('order.customer_id = :customerId', { customerId: customer.id })
-                .andWhere('order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
-                .getMany();
-            const totalAmount = orders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
-            customerStats.push({
-                companyName: customer.companyName,
-                contactPerson: customer.contactPerson,
-                phone: customer.phone,
-                orderCount: orders.length,
-                totalAmount,
-                vipDiscount: customer.vipDiscount,
-            });
-        }
-        customerStats.sort((a, b) => b.totalAmount - a.totalAmount);
+        const result = await this.customerRepository
+            .createQueryBuilder('customer')
+            .leftJoin('customer.orders', 'order')
+            .select('customer.id', 'id')
+            .addSelect('customer.companyName', 'companyName')
+            .addSelect('customer.contactPerson', 'contactPerson')
+            .addSelect('customer.phone', 'phone')
+            .addSelect('customer.vipDiscount', 'vipDiscount')
+            .addSelect('COUNT(order.id)', 'orderCount')
+            .addSelect('COALESCE(SUM(order.total_amount), 0)', 'totalAmount')
+            .where('customer.isActive = :isActive', { isActive: true })
+            .andWhere('order.status IS NULL OR order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+            .groupBy('customer.id')
+            .orderBy('totalAmount', 'DESC')
+            .getRawMany();
+        const customerStats = result.map(row => ({
+            companyName: row.companyName,
+            contactPerson: row.contactPerson,
+            phone: row.phone,
+            orderCount: parseInt(row.orderCount) || 0,
+            totalAmount: parseFloat(row.totalAmount) || 0,
+            vipDiscount: row.vipDiscount,
+        }));
         const workbook = new ExcelJS.Workbook();
         workbook.creator = '日本采销管理系统';
         workbook.created = new Date();

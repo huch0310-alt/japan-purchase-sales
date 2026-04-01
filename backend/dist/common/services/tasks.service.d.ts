@@ -8,6 +8,7 @@ export declare class TasksService implements OnModuleInit {
     private messagesService;
     private settingService;
     private dataSource;
+    private readonly logger;
     constructor(invoicesService: InvoicesService, messagesService: MessagesService, settingService: SettingService, dataSource: DataSource);
     onModuleInit(): void;
     handleInvoiceOverdue(): Promise<void>;

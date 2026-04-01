@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, DeleteDateColumn } from 'typeorm';
 
 /**
  * 商品单位实体
@@ -12,12 +12,15 @@ export class Unit {
   @Column({ name: 'name' })
   name: string;  // 单位名称
 
-  @Column({ default: 0, name: 'sortOrder' })
+  @Column({ default: 0, name: 'sort_order' })
   sortOrder: number;  // 排序
 
-  @Column({ default: true, name: 'isActive' })
+  @Column({ default: true, name: 'is_active' })
   isActive: boolean;  // 是否启用
 
-  @CreateDateColumn({ name: 'createdAt' })
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
+
+  @DeleteDateColumn()
+  deletedAt: Date;
 }

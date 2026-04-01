@@ -1,12 +1,23 @@
+import { OnModuleInit } from '@nestjs/common';
 import { Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../auth.service';
+export interface JwtPayload {
+    sub: string;
+    username: string;
+    role: string;
+    type: string;
+    iat?: number;
+    exp?: number;
+}
 declare const JwtStrategy_base: new (...args: any[]) => Strategy;
-export declare class JwtStrategy extends JwtStrategy_base {
+export declare class JwtStrategy extends JwtStrategy_base implements OnModuleInit {
     private configService;
     private authService;
+    private readonly jwtSecret;
     constructor(configService: ConfigService, authService: AuthService);
-    validate(payload: any): Promise<{
+    onModuleInit(): Promise<void>;
+    validate(payload: JwtPayload): Promise<{
         type: string;
         id: string;
         username: string;
@@ -17,6 +28,7 @@ export declare class JwtStrategy extends JwtStrategy_base {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        deletedAt: Date;
     } | {
         type: string;
         id: string;
@@ -37,6 +49,7 @@ export declare class JwtStrategy extends JwtStrategy_base {
         invoices: import("../../invoices/entities/invoice.entity").Invoice[];
         createdAt: Date;
         updatedAt: Date;
+        deletedAt: Date;
     }>;
 }
 export {};

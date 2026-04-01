@@ -24,15 +24,40 @@
           <h2>{{ t('login.title') }}</h2>
         </div>
       </template>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item :label="t('customer.username')" prop="username">
-          <el-input v-model="form.username" :placeholder="t('validation.enterUsername')" />
+      <el-form
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        label-width="80px"
+      >
+        <el-form-item
+          :label="t('customer.username')"
+          prop="username"
+        >
+          <el-input
+            v-model="form.username"
+            :placeholder="t('validation.enterUsername')"
+          />
         </el-form-item>
-        <el-form-item :label="t('customer.password')" prop="password">
-          <el-input v-model="form.password" type="password" :placeholder="t('validation.enterPassword')" show-password @keyup.enter="handleLogin" />
+        <el-form-item
+          :label="t('customer.password')"
+          prop="password"
+        >
+          <el-input
+            v-model="form.password"
+            type="password"
+            :placeholder="t('validation.enterPassword')"
+            show-password
+            @keyup.enter="handleLogin"
+          />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" style="width: 100%" :loading="loading" @click="handleLogin">
+          <el-button
+            type="primary"
+            style="width: 100%"
+            :loading="loading"
+            @click="handleLogin"
+          >
             {{ t('login.submit') }}
           </el-button>
         </el-form-item>

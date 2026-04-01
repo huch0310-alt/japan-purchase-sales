@@ -3,8 +3,8 @@ import api from '../api'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
-    token: localStorage.getItem('token') || null
+    user: null,
+    token: null
   }),
   getters: {
     isLoggedIn: state => !!state.token,
@@ -19,14 +19,16 @@ export const useUserStore = defineStore('user', {
       this.token = access_token
       this.user = user
 
+      // 存储token和用户信息到localStorage，供路由守卫使用
       localStorage.setItem('token', access_token)
       localStorage.setItem('user', JSON.stringify(user))
-
+      
       api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`
     },
     logout() {
       this.token = null
       this.user = null
+      // 清除localStorage中的token和用户信息
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       delete api.defaults.headers.common['Authorization']

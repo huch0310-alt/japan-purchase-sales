@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InventoryService } from './inventory.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { InventoryType } from './entities/inventory-log.entity';
+import { AuthenticatedRequest } from '../common/types';
 
 /**
  * 库存管理控制器
@@ -22,13 +23,13 @@ export class InventoryController {
   @Post('record')
   @ApiOperation({ summary: '记录库存变动' })
   @Roles('super_admin', 'admin', 'procurement')
-  async recordInventory(@Body() body: {
+  async recordInventory(@Request() req: AuthenticatedRequest, @Body() body: {
     productId: string;
     type: InventoryType;
     quantity: number;
     remark?: string;
   }) {
-    const operatorId = 'current-user-id';
+    const operatorId = req.user.id;
     return this.inventoryService.recordInventory({
       ...body,
       operatorId,

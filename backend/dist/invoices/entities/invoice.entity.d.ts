@@ -13,6 +13,11 @@ export declare class Invoice {
     status: string;
     fileUrl: string;
     paidAt: Date;
+    isCancelled: boolean;
+    cancelledAt: Date;
+    cancelledById: string;
+    cancelReason: string;
     createdAt: Date;
     updatedAt: Date;
+    deletedAt: Date;
 }

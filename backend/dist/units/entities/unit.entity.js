@@ -19,21 +19,25 @@ __decorate([
     __metadata("design:type", String)
 ], Unit.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'name' }),
     __metadata("design:type", String)
 ], Unit.prototype, "name", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: 0 }),
+    (0, typeorm_1.Column)({ default: 0, name: 'sort_order' }),
     __metadata("design:type", Number)
 ], Unit.prototype, "sortOrder", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: true }),
+    (0, typeorm_1.Column)({ default: true, name: 'is_active' }),
     __metadata("design:type", Boolean)
 ], Unit.prototype, "isActive", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)(),
+    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], Unit.prototype, "createdAt", void 0);
+__decorate([
+    (0, typeorm_1.DeleteDateColumn)(),
+    __metadata("design:type", Date)
+], Unit.prototype, "deletedAt", void 0);
 exports.Unit = Unit = __decorate([
     (0, typeorm_1.Entity)('units')
 ], Unit);

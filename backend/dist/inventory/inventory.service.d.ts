@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { InventoryLog, InventoryType } from './entities/inventory-log.entity';
 import { InventoryAlert } from './entities/inventory-alert.entity';
 import { Product } from '../products/entities/product.entity';
@@ -8,7 +8,9 @@ export declare class InventoryService {
     private alertRepository;
     private productRepository;
     private messagesService;
-    constructor(logRepository: Repository<InventoryLog>, alertRepository: Repository<InventoryAlert>, productRepository: Repository<Product>, messagesService: MessagesService);
+    private dataSource;
+    private readonly logger;
+    constructor(logRepository: Repository<InventoryLog>, alertRepository: Repository<InventoryAlert>, productRepository: Repository<Product>, messagesService: MessagesService, dataSource: DataSource);
     recordInventory(data: {
         productId: string;
         type: InventoryType;

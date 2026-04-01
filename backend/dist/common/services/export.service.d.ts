@@ -12,7 +12,7 @@ export declare class ExportService {
     exportSalesReport(startDate: Date, endDate: Date): Promise<Buffer>;
     exportProductReport(): Promise<Buffer>;
     exportCustomerReport(): Promise<Buffer>;
-    exportInvoiceReport(startDate: Date, endDate: Date): Promise<Buffer>;
+    exportInvoiceReport(startDate: Date | undefined, endDate: Date | undefined): Promise<Buffer>;
     private getStatusText;
     private getInvoiceStatusText;
 }

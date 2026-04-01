@@ -25,13 +25,25 @@ let ProductsService = class ProductsService {
     }
     async findById(id) {
         return this.productRepository.findOne({
-            where: { id },
+            where: { id, deletedAt: (0, typeorm_2.IsNull)() },
             relations: ['category']
         });
     }
+    async findByIds(ids) {
+        if (ids.length === 0)
+            return [];
+        return this.productRepository.find({
+            where: ids.map(id => ({ id, deletedAt: (0, typeorm_2.IsNull)() })),
+            relations: ['category'],
+        });
+    }
     async findAll(filters) {
+        const page = filters?.page || 1;
+        const pageSize = filters?.pageSize || 20;
+        const skip = (page - 1) * pageSize;
         const query = this.productRepository.createQueryBuilder('product')
-            .leftJoinAndSelect('product.category', 'category');
+            .leftJoinAndSelect('product.category', 'category')
+            .andWhere('product.deletedAt IS NULL');
         if (filters?.categoryId) {
             query.andWhere('product.category_id = :categoryId', { categoryId: filters.categoryId });
         }
@@ -41,18 +53,29 @@ let ProductsService = class ProductsService {
         if (filters?.keyword) {
             query.andWhere('product.name LIKE :keyword', { keyword: `%${filters.keyword}%` });
         }
-        return query.orderBy('product.createdAt', 'DESC').getMany();
+        const [data, total] = await query
+            .orderBy('product.createdAt', 'DESC')
+            .skip(skip)
+            .take(pageSize)
+            .getManyAndCount();
+        return {
+            data,
+            total,
+            page,
+            pageSize,
+            totalPages: Math.ceil(total / pageSize),
+        };
     }
     async findPending() {
         return this.productRepository.find({
-            where: { status: 'pending' },
+            where: { status: 'pending', deletedAt: (0, typeorm_2.IsNull)() },
             relations: ['category'],
             order: { createdAt: 'DESC' },
         });
     }
     async findActive() {
         return this.productRepository.find({
-            where: { status: 'active' },
+            where: { status: 'active', deletedAt: (0, typeorm_2.IsNull)() },
             relations: ['category'],
             order: { createdAt: 'DESC' },
         });
@@ -65,45 +88,85 @@ let ProductsService = class ProductsService {
         return this.productRepository.save(product);
     }
     async approve(id, salePrice) {
+        const product = await this.findById(id);
+        if (!product) {
+            throw new common_1.NotFoundException('商品不存在');
+        }
+        if (product.status !== 'pending') {
+            throw new common_1.BadRequestException(`商品状态不是待审核，无法审核。当前状态：${product.status}`);
+        }
         await this.productRepository.update(id, {
             status: 'approved',
             salePrice,
         });
-        const product = await this.findById(id);
-        if (product) {
-            this.eventService.notifyProductApproved(product);
+        const updatedProduct = await this.findById(id);
+        if (updatedProduct) {
+            this.eventService.notifyProductApproved(updatedProduct);
         }
-        return product;
+        return updatedProduct;
     }
     async reject(id) {
-        await this.productRepository.update(id, { status: 'rejected' });
         const product = await this.findById(id);
-        if (product) {
-            this.eventService.notifyProductRejected(product);
+        if (!product) {
+            throw new common_1.NotFoundException('商品不存在');
         }
-        return product;
+        if (product.status !== 'pending') {
+            throw new common_1.BadRequestException(`商品状态不是待审核，无法拒绝。当前状态：${product.status}`);
+        }
+        await this.productRepository.update(id, { status: 'rejected' });
+        const rejectedProduct = await this.findById(id);
+        if (rejectedProduct) {
+            this.eventService.notifyProductRejected(rejectedProduct);
+        }
+        return rejectedProduct;
     }
     async activate(id) {
+        const product = await this.findById(id);
+        if (!product) {
+            throw new common_1.NotFoundException('商品不存在');
+        }
+        if (product.status !== 'approved') {
+            throw new common_1.BadRequestException(`商品状态不是已审核，无法上架。当前状态：${product.status}`);
+        }
         await this.productRepository.update(id, { status: 'active' });
-        return this.findById(id);
+        const activatedProduct = await this.findById(id);
+        if (!activatedProduct) {
+            throw new common_1.NotFoundException('商品不存在');
+        }
+        return activatedProduct;
     }
     async deactivate(id) {
+        const product = await this.findById(id);
+        if (!product) {
+            throw new common_1.NotFoundException('商品不存在');
+        }
+        if (product.status !== 'active') {
+            throw new common_1.BadRequestException(`商品状态不是上架，无法下架。当前状态：${product.status}`);
+        }
         await this.productRepository.update(id, { status: 'inactive' });
-        return this.findById(id);
+        const deactivatedProduct = await this.findById(id);
+        if (!deactivatedProduct) {
+            throw new common_1.NotFoundException('商品不存在');
+        }
+        return deactivatedProduct;
     }
     async batchDeactivate(ids) {
         await this.productRepository.update(ids, { status: 'inactive' });
     }
     async update(id, data) {
+        const product = await this.findById(id);
+        if (!product) {
+            throw new common_1.NotFoundException('商品不存在');
+        }
         await this.productRepository.update(id, data);
-        return this.findById(id);
+        return product;
     }
     async delete(id) {
         await this.productRepository.delete(id);
     }
     async findHotProducts(limit = 10) {
         return this.productRepository.find({
-            where: { status: 'active' },
+            where: { status: 'active', deletedAt: (0, typeorm_2.IsNull)() },
             relations: ['category'],
             order: { salesCount: 'DESC', createdAt: 'DESC' },
             take: limit,

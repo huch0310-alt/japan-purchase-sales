@@ -1,8 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
 import COS from 'cos-nodejs-sdk-v5';
+
+/**
+ * 上传文件接口
+ */
+interface UploadFile {
+  originalname: string;
+  path: string;
+}
 
 /**
  * 文件上传服务
@@ -10,8 +18,9 @@ import COS from 'cos-nodejs-sdk-v5';
  */
 @Injectable()
 export class UploadService {
+  private readonly logger = new Logger(UploadService.name);
   private cos: COS;
-  private bucket: string;
+  private bucket: string | undefined;
   private region: string;
 
   constructor(private configService: ConfigService) {
@@ -80,21 +89,21 @@ export class UploadService {
    * 腾讯云COS上传
    * 需要配置TENCENT_COS相关环境变量
    */
-  async uploadToCos(file: any): Promise<string> {
+  async uploadToCos(file: UploadFile): Promise<string> {
     if (!this.cos) {
-      throw new Error('腾讯云COS未配置');
+      throw new BadRequestException('腾讯云COS未配置');
     }
 
     const key = `uploads/${Date.now()}-${file.originalname}`;
 
     return new Promise((resolve, reject) => {
       this.cos.putObject({
-        Bucket: this.bucket,
+        Bucket: this.bucket!,
         Region: this.region,
         Key: key,
         Body: fs.createReadStream(file.path),
         onProgress: (progress) => {
-          console.log('上传进度:', progress.percent);
+          this.logger.log(`上传进度: ${progress.percent}`);
         },
       }, (err, data) => {
         if (err) {
@@ -111,7 +120,7 @@ export class UploadService {
    */
   async deleteFromCos(fileUrl: string): Promise<void> {
     if (!this.cos) {
-      throw new Error('腾讯云COS未配置');
+      throw new BadRequestException('腾讯云COS未配置');
     }
 
     // 从URL中提取Key
@@ -119,7 +128,7 @@ export class UploadService {
 
     return new Promise((resolve, reject) => {
       this.cos.deleteObject({
-        Bucket: this.bucket,
+        Bucket: this.bucket!,
         Region: this.region,
         Key: key,
       }, (err) => {

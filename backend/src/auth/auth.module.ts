@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -18,10 +18,22 @@ import { UsersModule } from '../users/users.module';
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'),
-        signOptions: { expiresIn: '7d' },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const jwtSecret = configService.get<string>('JWT_SECRET');
+        const insecurePlaceholder = 'japan-purchase-sales-secret-key-change-in-production';
+
+        // 安全验证：生产环境禁止使用默认占位符
+        if (process.env.NODE_ENV === 'production' && jwtSecret === insecurePlaceholder) {
+          const logger = new Logger('AuthModule');
+          logger.error('🚨 安全警告: JWT_SECRET 使用了默认占位符！请在生产环境使用强随机密钥。');
+          logger.error('生成命令: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
+        }
+
+        return {
+          secret: jwtSecret,
+          signOptions: { expiresIn: '7d' },
+        };
+      },
       inject: [ConfigService],
     }),
   ],

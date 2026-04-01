@@ -10,9 +10,13 @@ import { Customer } from '../../users/entities/customer.entity';
 /**
  * 导出服务
  * 处理Excel和PDF报表导出
+ * 注意：导出操作有内置数据量限制（默认10000条），防止大数据量导致内存溢出
  */
 @Injectable()
 export class ExportService {
+  // 导出记录数上限（防止 OOM）
+  private readonly MAX_EXPORT_RECORDS = 10000;
+
   constructor(
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
@@ -26,6 +30,7 @@ export class ExportService {
 
   /**
    * 导出销售报表
+   * 注意：默认限制10000条记录
    */
   async exportSalesReport(startDate: Date, endDate: Date): Promise<Buffer> {
     const orders = await this.orderRepository
@@ -34,6 +39,8 @@ export class ExportService {
       .where('order.created_at >= :startDate', { startDate })
       .andWhere('order.created_at <= :endDate', { endDate })
       .andWhere('order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
+      .orderBy('order.created_at', 'DESC')
+      .take(this.MAX_EXPORT_RECORDS)
       .getMany();
 
     const workbook = new ExcelJS.Workbook();
@@ -100,11 +107,15 @@ export class ExportService {
 
   /**
    * 导出商品报表
+   * 注意：默认限制10000条记录
    */
   async exportProductReport(): Promise<Buffer> {
     const products = await this.productRepository
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.category', 'category')
+      .where('product.deleted_at IS NULL')
+      .orderBy('product.created_at', 'DESC')
+      .take(this.MAX_EXPORT_RECORDS)
       .getMany();
 
     const workbook = new ExcelJS.Workbook();
@@ -153,6 +164,7 @@ export class ExportService {
   /**
    * 导出客户报表
    * 使用SQL聚合查询解决N+1问题
+   * 注意：默认限制10000条记录
    */
   async exportCustomerReport(): Promise<Buffer> {
     // 使用 LEFT JOIN 和 GROUP BY 一次查询获取所有客户及其订单统计
@@ -165,11 +177,12 @@ export class ExportService {
       .addSelect('customer.phone', 'phone')
       .addSelect('customer.vipDiscount', 'vipDiscount')
       .addSelect('COUNT(order.id)', 'orderCount')
-      .addSelect('COALESCE(SUM(order.totalAmount), 0)', 'totalAmount')
+      .addSelect('COALESCE(SUM(order.total_amount), 0)', 'totalAmount')
       .where('customer.isActive = :isActive', { isActive: true })
       .andWhere('order.status IS NULL OR order.status IN (:...statuses)', { statuses: ['confirmed', 'completed'] })
       .groupBy('customer.id')
       .orderBy('totalAmount', 'DESC')
+      .take(this.MAX_EXPORT_RECORDS)
       .getRawMany();
 
     const customerStats = result.map(row => ({
@@ -214,8 +227,9 @@ export class ExportService {
 
   /**
    * 导出請求書报表
+   * 注意：默认限制10000条记录
    */
-  async exportInvoiceReport(startDate: Date, endDate: Date): Promise<Buffer> {
+  async exportInvoiceReport(startDate: Date | undefined, endDate: Date | undefined): Promise<Buffer> {
     const query = this.invoiceRepository
       .createQueryBuilder('invoice')
       .leftJoinAndSelect('invoice.customer', 'customer');
@@ -227,7 +241,10 @@ export class ExportService {
       query.andWhere('invoice.issue_date <= :endDate', { endDate });
     }
 
-    const invoices = await query.getMany();
+    const invoices = await query
+      .orderBy('invoice.issue_date', 'DESC')
+      .take(this.MAX_EXPORT_RECORDS)
+      .getMany();
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = '日本采销管理系统';
@@ -276,7 +293,7 @@ export class ExportService {
    * 获取订单状态文本
    */
   private getStatusText(status: string): string {
-    const map = {
+    const map: Record<string, string> = {
       pending: '待确认',
       confirmed: '已确认',
       completed: '已完成',
@@ -289,7 +306,7 @@ export class ExportService {
    * 获取請求書状态文本
    */
   private getInvoiceStatusText(status: string): string {
-    const map = {
+    const map: Record<string, string> = {
       unpaid: '未払い',
       paid: '支払済',
       overdue: '期限超過',

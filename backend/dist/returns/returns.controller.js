@@ -30,8 +30,8 @@ let ReturnsController = class ReturnsController {
     async findAll(status) {
         return this.returnsService.findAll(status);
     }
-    async approve(id) {
-        const operatorId = 'current-user-id';
+    async approve(req, id) {
+        const operatorId = req.user.id;
         return this.returnsService.approve(id, operatorId);
     }
     async reject(id, reason) {
@@ -63,9 +63,10 @@ __decorate([
     (0, common_1.Put)(':id/approve'),
     (0, swagger_1.ApiOperation)({ summary: '批准退货' }),
     (0, roles_decorator_1.Roles)('super_admin', 'admin'),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], ReturnsController.prototype, "approve", null);
 __decorate([

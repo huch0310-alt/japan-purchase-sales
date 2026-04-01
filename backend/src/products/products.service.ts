@@ -1,8 +1,9 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { EventService } from '../common/services/event.service';
+import { PaginatedResponse } from '../common/dto/validation.dto';
 
 /**
  * 商品服务
@@ -22,8 +23,19 @@ export class ProductsService {
    */
   async findById(id: string): Promise<Product | null> {
     return this.productRepository.findOne({
-      where: { id },
+      where: { id, deletedAt: IsNull() },
       relations: ['category']
+    });
+  }
+
+  /**
+   * 批量查找商品（解决N+1查询问题）
+   */
+  async findByIds(ids: string[]): Promise<Product[]> {
+    if (ids.length === 0) return [];
+    return this.productRepository.find({
+      where: ids.map(id => ({ id, deletedAt: IsNull() } as any)),
+      relations: ['category'],
     });
   }
 
@@ -34,9 +46,16 @@ export class ProductsService {
     categoryId?: string;
     status?: string;
     keyword?: string;
-  }): Promise<Product[]> {
+    page?: number;
+    pageSize?: number;
+  }): Promise<PaginatedResponse<Product>> {
+    const page = filters?.page || 1;
+    const pageSize = filters?.pageSize || 20;
+    const skip = (page - 1) * pageSize;
+
     const query = this.productRepository.createQueryBuilder('product')
-      .leftJoinAndSelect('product.category', 'category');
+      .leftJoinAndSelect('product.category', 'category')
+      .andWhere('product.deletedAt IS NULL');
 
     if (filters?.categoryId) {
       query.andWhere('product.category_id = :categoryId', { categoryId: filters.categoryId });
@@ -45,10 +64,27 @@ export class ProductsService {
       query.andWhere('product.status = :status', { status: filters.status });
     }
     if (filters?.keyword) {
-      query.andWhere('product.name LIKE :keyword', { keyword: `%${filters.keyword}%` });
+      // 转义 LIKE 查询中的特殊字符 (%) 和 (_)，防止异常匹配
+      const escapedKeyword = filters.keyword
+        .replace(/\\/g, '\\\\')  // 先转义反斜杠自身
+        .replace(/%/g, '\\%')    // 转义 %
+        .replace(/_/g, '\\_');   // 转义 _
+      query.andWhere('product.name LIKE :keyword', { keyword: `%${escapedKeyword}%` });
     }
 
-    return query.orderBy('product.createdAt', 'DESC').getMany();
+    const [data, total] = await query
+      .orderBy('product.createdAt', 'DESC')
+      .skip(skip)
+      .take(pageSize)
+      .getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
   }
 
   /**
@@ -56,7 +92,7 @@ export class ProductsService {
    */
   async findPending(): Promise<Product[]> {
     return this.productRepository.find({
-      where: { status: 'pending' },
+      where: { status: 'pending', deletedAt: IsNull() },
       relations: ['category'],
       order: { createdAt: 'DESC' },
     });
@@ -67,7 +103,7 @@ export class ProductsService {
    */
   async findActive(): Promise<Product[]> {
     return this.productRepository.find({
-      where: { status: 'active' },
+      where: { status: 'active', deletedAt: IsNull() },
       relations: ['category'],
       order: { createdAt: 'DESC' },
     });
@@ -98,10 +134,10 @@ export class ProductsService {
   async approve(id: string, salePrice: number): Promise<Product> {
     const product = await this.findById(id);
     if (!product) {
-      throw new Error('商品不存在');
+      throw new NotFoundException('商品不存在');
     }
     if (product.status !== 'pending') {
-      throw new Error(`商品状态不是待审核，无法审核。当前状态：${product.status}`);
+      throw new BadRequestException(`商品状态不是待审核，无法审核。当前状态：${product.status}`);
     }
     await this.productRepository.update(id, {
       status: 'approved',
@@ -112,7 +148,7 @@ export class ProductsService {
     if (updatedProduct) {
       this.eventService.notifyProductApproved(updatedProduct);
     }
-    return updatedProduct;
+    return updatedProduct!;
   }
 
   /**
@@ -122,10 +158,10 @@ export class ProductsService {
   async reject(id: string): Promise<Product> {
     const product = await this.findById(id);
     if (!product) {
-      throw new Error('商品不存在');
+      throw new NotFoundException('商品不存在');
     }
     if (product.status !== 'pending') {
-      throw new Error(`商品状态不是待审核，无法拒绝。当前状态：${product.status}`);
+      throw new BadRequestException(`商品状态不是待审核，无法拒绝。当前状态：${product.status}`);
     }
     await this.productRepository.update(id, { status: 'rejected' });
     const rejectedProduct = await this.findById(id);
@@ -133,7 +169,7 @@ export class ProductsService {
     if (rejectedProduct) {
       this.eventService.notifyProductRejected(rejectedProduct);
     }
-    return rejectedProduct;
+    return rejectedProduct!;
   }
 
   /**
@@ -143,13 +179,17 @@ export class ProductsService {
   async activate(id: string): Promise<Product> {
     const product = await this.findById(id);
     if (!product) {
-      throw new Error('商品不存在');
+      throw new NotFoundException('商品不存在');
     }
     if (product.status !== 'approved') {
-      throw new Error(`商品状态不是已审核，无法上架。当前状态：${product.status}`);
+      throw new BadRequestException(`商品状态不是已审核，无法上架。当前状态：${product.status}`);
     }
     await this.productRepository.update(id, { status: 'active' });
-    return this.findById(id);
+    const activatedProduct = await this.findById(id);
+    if (!activatedProduct) {
+      throw new NotFoundException('商品不存在');
+    }
+    return activatedProduct;
   }
 
   /**
@@ -159,13 +199,17 @@ export class ProductsService {
   async deactivate(id: string): Promise<Product> {
     const product = await this.findById(id);
     if (!product) {
-      throw new Error('商品不存在');
+      throw new NotFoundException('商品不存在');
     }
     if (product.status !== 'active') {
-      throw new Error(`商品状态不是上架，无法下架。当前状态：${product.status}`);
+      throw new BadRequestException(`商品状态不是上架，无法下架。当前状态：${product.status}`);
     }
     await this.productRepository.update(id, { status: 'inactive' });
-    return this.findById(id);
+    const deactivatedProduct = await this.findById(id);
+    if (!deactivatedProduct) {
+      throw new NotFoundException('商品不存在');
+    }
+    return deactivatedProduct;
   }
 
   /**
@@ -179,8 +223,12 @@ export class ProductsService {
    * 更新商品信息
    */
   async update(id: string, data: Partial<Product>): Promise<Product> {
+    const product = await this.findById(id);
+    if (!product) {
+      throw new NotFoundException('商品不存在');
+    }
     await this.productRepository.update(id, data);
-    return this.findById(id);
+    return product;
   }
 
   /**
@@ -196,7 +244,7 @@ export class ProductsService {
    */
   async findHotProducts(limit: number = 10): Promise<Product[]> {
     return this.productRepository.find({
-      where: { status: 'active' },
+      where: { status: 'active', deletedAt: IsNull() },
       relations: ['category'],
       order: { salesCount: 'DESC', createdAt: 'DESC' },
       take: limit,

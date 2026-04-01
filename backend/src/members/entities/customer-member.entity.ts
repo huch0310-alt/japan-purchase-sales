@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, Unique } from 'typeorm';
 import { Customer } from '../../users/entities/customer.entity';
 import { MemberLevel } from './member-level.entity';
 
@@ -6,6 +6,7 @@ import { MemberLevel } from './member-level.entity';
  * 客户会员信息实体
  */
 @Entity('customer_members')
+@Unique(['customerId'])
 export class CustomerMember {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -19,20 +19,26 @@ const orders_service_1 = require("./orders.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const validation_dto_1 = require("../common/dto/validation.dto");
 let OrdersController = class OrdersController {
     constructor(ordersService) {
         this.ordersService = ordersService;
     }
     async create(req, createOrderDto) {
+        const audit = {
+            userId: req.user.id,
+            userRole: req.user.type === 'customer' ? 'customer' : req.user.role,
+            ip: req.ip,
+        };
         return this.ordersService.create({
             customerId: req.user.id,
             ...createOrderDto,
-        });
+        }, audit);
     }
     async findMyOrders(req) {
         return this.ordersService.findByCustomer(req.user.id);
     }
-    async findAll(status, customerId, startDate, endDate, minAmount, maxAmount) {
+    async findAll(pagination, status, customerId, startDate, endDate, minAmount, maxAmount) {
         return this.ordersService.findAll({
             status,
             customerId,
@@ -40,10 +46,17 @@ let OrdersController = class OrdersController {
             endDate: endDate ? new Date(endDate) : undefined,
             minAmount,
             maxAmount,
+            page: pagination.page,
+            pageSize: pagination.pageSize,
         });
     }
-    async batchConfirm(body, req) {
-        await this.ordersService.batchConfirm(body.ids, req.user.id);
+    async batchConfirm(req, body) {
+        const audit = {
+            userId: req.user.id,
+            userRole: req.user.role,
+            ip: req.ip,
+        };
+        await this.ordersService.batchConfirm(body.ids, audit);
         return { message: '批量确认成功' };
     }
     async findAvailableForInvoice(customerId) {
@@ -52,30 +65,53 @@ let OrdersController = class OrdersController {
     async getSalesReport(startDate, endDate) {
         return this.ordersService.getSalesReport(new Date(startDate), new Date(endDate));
     }
-    async findOne(id) {
-        return this.ordersService.findById(id);
+    async findOne(req, id) {
+        const order = await this.ordersService.findById(id);
+        if (!order) {
+            throw new common_1.NotFoundException('订单不存在');
+        }
+        if (req.user.type === 'customer' && order.customerId !== req.user.id) {
+            throw new common_1.ForbiddenException('无权查看此订单');
+        }
+        return order;
     }
     async confirm(id, req) {
-        return this.ordersService.confirm(id, req.user.id);
+        const audit = {
+            userId: req.user.id,
+            userRole: req.user.role,
+            ip: req.ip,
+        };
+        return this.ordersService.confirm(id, audit);
     }
-    async complete(id) {
-        return this.ordersService.complete(id);
+    async complete(id, req) {
+        const audit = {
+            userId: req.user.id,
+            userRole: req.user.role,
+            ip: req.ip,
+        };
+        return this.ordersService.complete(id, audit);
     }
     async cancel(id, req) {
         const order = await this.ordersService.findById(id);
         if (!order) {
-            throw new Error('订单不存在');
+            throw new common_1.NotFoundException('订单不存在');
         }
-        if (order.customerId !== req.user.id && !['super_admin', 'admin', 'sales'].includes(req.user.role)) {
-            throw new Error('无权取消此订单');
+        const isClient = req.user.type === 'customer';
+        if (isClient && order.customerId !== req.user.id) {
+            throw new common_1.ForbiddenException('无权取消此订单');
         }
-        const createdTime = new Date(order.createdAt).getTime();
-        const now = Date.now();
-        const minutes = (now - createdTime) / (1000 * 60);
-        if (minutes > 30 || order.status !== 'pending') {
-            throw new Error('订单已无法取消');
+        if (!isClient && !['super_admin', 'admin', 'sales'].includes(req.user.role)) {
+            throw new common_1.ForbiddenException('无权取消此订单');
         }
-        return this.ordersService.cancel(id);
+        if (order.status !== 'pending') {
+            throw new common_1.BadRequestException('订单状态不是待确认，无法取消');
+        }
+        const audit = {
+            userId: req.user.id,
+            userRole: req.user.type === 'customer' ? 'customer' : req.user.role,
+            ip: req.ip,
+        };
+        return this.ordersService.cancel(id, req.user.id, undefined, isClient, audit);
     }
 };
 exports.OrdersController = OrdersController;
@@ -106,14 +142,15 @@ __decorate([
     (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, swagger_1.ApiOperation)({ summary: '获取所有订单列表' }),
-    __param(0, (0, common_1.Query)('status')),
-    __param(1, (0, common_1.Query)('customerId')),
-    __param(2, (0, common_1.Query)('startDate')),
-    __param(3, (0, common_1.Query)('endDate')),
-    __param(4, (0, common_1.Query)('minAmount')),
-    __param(5, (0, common_1.Query)('maxAmount')),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Query)('status')),
+    __param(2, (0, common_1.Query)('customerId')),
+    __param(3, (0, common_1.Query)('startDate')),
+    __param(4, (0, common_1.Query)('endDate')),
+    __param(5, (0, common_1.Query)('minAmount')),
+    __param(6, (0, common_1.Query)('maxAmount')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String, Number, Number]),
+    __metadata("design:paramtypes", [validation_dto_1.PaginationQueryDto, String, String, String, String, Number, Number]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "findAll", null);
 __decorate([
@@ -122,8 +159,8 @@ __decorate([
     (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, swagger_1.ApiOperation)({ summary: '批量确认订单' }),
-    __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Request)()),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
@@ -156,9 +193,10 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, swagger_1.ApiBearerAuth)(),
     (0, swagger_1.ApiOperation)({ summary: '获取订单详情' }),
-    __param(0, (0, common_1.Param)('id')),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "findOne", null);
 __decorate([
@@ -180,8 +218,9 @@ __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, swagger_1.ApiOperation)({ summary: '完成订单' }),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "complete", null);
 __decorate([

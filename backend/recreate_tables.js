@@ -9,7 +9,7 @@ conn.on('ready', () => {
   console.log('Dropping all tables and recreating...');
   
   // Drop all tables
-  conn.exec('sudo docker exec japan-sales-postgres psql -U postgres -d japan_purchase_sales -c "DROP TABLE IF EXISTS operation_logs, messages, invoices, orders, order_items, products, categories, cart_items, customer_members, member_levels, inventory_logs, inventory_alerts, returns, promotions, coupons, points_logs CASCADE;"', (err, stream) => {
+  conn.exec('sudo docker exec japan-sales-postgres psql -U postgres -d japan_purchase_sales -c "DROP TABLE IF EXISTS operation_logs, messages, invoices, orders, order_items, products, categories, cart_items, customer_members, member_levels, inventory_logs, inventory_alerts, returns, points_logs CASCADE;"', (err, stream) => {
     let output = '';
     stream.on('data', (data) => { output += data; });
     stream.on('close', () => {

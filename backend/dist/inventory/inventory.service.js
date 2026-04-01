@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var InventoryService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InventoryService = void 0;
 const common_1 = require("@nestjs/common");
@@ -20,46 +21,76 @@ const inventory_log_entity_1 = require("./entities/inventory-log.entity");
 const inventory_alert_entity_1 = require("./entities/inventory-alert.entity");
 const product_entity_1 = require("../products/entities/product.entity");
 const messages_service_1 = require("../messages/messages.service");
-let InventoryService = class InventoryService {
-    constructor(logRepository, alertRepository, productRepository, messagesService) {
+let InventoryService = InventoryService_1 = class InventoryService {
+    constructor(logRepository, alertRepository, productRepository, messagesService, dataSource) {
         this.logRepository = logRepository;
         this.alertRepository = alertRepository;
         this.productRepository = productRepository;
         this.messagesService = messagesService;
+        this.dataSource = dataSource;
+        this.logger = new common_1.Logger(InventoryService_1.name);
     }
     async recordInventory(data) {
-        const product = await this.productRepository.findOne({ where: { id: data.productId } });
-        if (!product) {
-            throw new Error('商品不存在');
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        try {
+            const product = await queryRunner.manager.findOne(product_entity_1.Product, { where: { id: data.productId } });
+            if (!product) {
+                throw new common_1.NotFoundException('商品不存在');
+            }
+            const beforeQuantity = product.quantity || 0;
+            let afterQuantity = beforeQuantity;
+            let actualQuantity = data.quantity;
+            switch (data.type) {
+                case inventory_log_entity_1.InventoryType.IN:
+                case inventory_log_entity_1.InventoryType.RETURN:
+                    afterQuantity = beforeQuantity + data.quantity;
+                    break;
+                case inventory_log_entity_1.InventoryType.OUT:
+                    if (beforeQuantity < data.quantity) {
+                        throw new common_1.BadRequestException(`库存不足，当前库存: ${beforeQuantity}，需要: ${data.quantity}`);
+                    }
+                    afterQuantity = beforeQuantity - data.quantity;
+                    break;
+                case inventory_log_entity_1.InventoryType.ADJUST:
+                    afterQuantity = data.quantity;
+                    actualQuantity = data.quantity - beforeQuantity;
+                    break;
+            }
+            const log = queryRunner.manager.create(inventory_log_entity_1.InventoryLog, {
+                productId: data.productId,
+                type: data.type,
+                quantity: actualQuantity,
+                beforeQuantity,
+                afterQuantity,
+                operatorId: data.operatorId,
+                remark: data.remark,
+            });
+            await queryRunner.manager.save(inventory_log_entity_1.InventoryLog, log);
+            const queryBuilder = queryRunner.manager
+                .createQueryBuilder()
+                .update(product_entity_1.Product)
+                .set({ quantity: afterQuantity })
+                .where('id = :id', { id: data.productId });
+            if (data.type === inventory_log_entity_1.InventoryType.OUT) {
+                queryBuilder.andWhere('quantity >= :qty', { qty: data.quantity });
+            }
+            const result = await queryBuilder.execute();
+            if (result.affected === 0 && data.type === inventory_log_entity_1.InventoryType.OUT) {
+                throw new common_1.BadRequestException(`库存不足，无法扣减: ${product.name}`);
+            }
+            await queryRunner.commitTransaction();
+            await this.checkInventoryAlert(data.productId);
+            return log;
         }
-        const beforeQuantity = product.quantity || 0;
-        let afterQuantity = beforeQuantity;
-        switch (data.type) {
-            case inventory_log_entity_1.InventoryType.IN:
-            case inventory_log_entity_1.InventoryType.RETURN:
-                afterQuantity = beforeQuantity + data.quantity;
-                break;
-            case inventory_log_entity_1.InventoryType.OUT:
-                afterQuantity = beforeQuantity - data.quantity;
-                break;
-            case inventory_log_entity_1.InventoryType.ADJUST:
-                afterQuantity = data.quantity;
-                data.quantity = data.quantity - beforeQuantity;
-                break;
+        catch (error) {
+            await queryRunner.rollbackTransaction();
+            throw error;
         }
-        const log = this.logRepository.create({
-            productId: data.productId,
-            type: data.type,
-            quantity: data.quantity,
-            beforeQuantity,
-            afterQuantity,
-            operatorId: data.operatorId,
-            remark: data.remark,
-        });
-        await this.logRepository.save(log);
-        await this.productRepository.update(data.productId, { quantity: afterQuantity });
-        await this.checkInventoryAlert(data.productId);
-        return log;
+        finally {
+            await queryRunner.release();
+        }
     }
     async getLogs(productId, startDate, endDate) {
         const query = this.logRepository.createQueryBuilder('log')
@@ -135,7 +166,7 @@ let InventoryService = class InventoryService {
                     relatedId: productId,
                 });
             }
-            console.log(`库存预警: ${product.name} 库存不足，当前库存: ${product.quantity}，预警阈值: ${alert.minQuantity}`);
+            this.logger.warn(`库存预警: ${product.name} 库存不足，当前库存: ${product.quantity}，预警阈值: ${alert.minQuantity}`);
         }
         else if (!isLowStock && alert.isTriggered) {
             alert.isTriggered = false;
@@ -143,7 +174,7 @@ let InventoryService = class InventoryService {
         }
     }
     async getInventoryStats() {
-        const products = await this.productRepository.find();
+        const products = await this.productRepository.find({ where: { deletedAt: (0, typeorm_2.IsNull)() } });
         const totalProducts = products.length;
         const totalQuantity = products.reduce((sum, p) => sum + (p.quantity || 0), 0);
         const lowStockCount = products.filter(p => (p.quantity || 0) < 10).length;
@@ -157,7 +188,7 @@ let InventoryService = class InventoryService {
     }
 };
 exports.InventoryService = InventoryService;
-exports.InventoryService = InventoryService = __decorate([
+exports.InventoryService = InventoryService = InventoryService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(inventory_log_entity_1.InventoryLog)),
     __param(1, (0, typeorm_1.InjectRepository)(inventory_alert_entity_1.InventoryAlert)),
@@ -165,6 +196,7 @@ exports.InventoryService = InventoryService = __decorate([
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        messages_service_1.MessagesService])
+        messages_service_1.MessagesService,
+        typeorm_2.DataSource])
 ], InventoryService);
 //# sourceMappingURL=inventory.service.js.map

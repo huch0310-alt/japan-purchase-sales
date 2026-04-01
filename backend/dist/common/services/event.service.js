@@ -70,7 +70,7 @@ let EventService = class EventService {
         }
         this.sendToRoles(['super_admin', 'admin'], 'invoice:overdue', event);
     }
-    notifyProductApproved(product, staffName) {
+    notifyProductApproved(product, _staffName) {
         const event = {
             type: 'product:approved',
             title: '商品审核通过',

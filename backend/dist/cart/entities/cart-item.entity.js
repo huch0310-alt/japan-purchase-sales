@@ -21,21 +21,21 @@ __decorate([
     __metadata("design:type", String)
 ], CartItem.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => customer_entity_1.Customer, customer => customer.cartItems),
-    (0, typeorm_1.JoinColumn)({ name: 'customerId' }),
+    (0, typeorm_1.ManyToOne)(() => customer_entity_1.Customer, customer => customer.cartItems, { onDelete: 'CASCADE' }),
+    (0, typeorm_1.JoinColumn)({ name: 'customer_id' }),
     __metadata("design:type", customer_entity_1.Customer)
 ], CartItem.prototype, "customer", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'customerId' }),
+    (0, typeorm_1.Column)({ name: 'customer_id' }),
     __metadata("design:type", String)
 ], CartItem.prototype, "customerId", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => product_entity_1.Product, product => product.cartItems),
-    (0, typeorm_1.JoinColumn)({ name: 'productId' }),
+    (0, typeorm_1.ManyToOne)(() => product_entity_1.Product, product => product.cartItems, { onDelete: 'SET NULL' }),
+    (0, typeorm_1.JoinColumn)({ name: 'product_id' }),
     __metadata("design:type", product_entity_1.Product)
 ], CartItem.prototype, "product", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'productId' }),
+    (0, typeorm_1.Column)({ name: 'product_id' }),
     __metadata("design:type", String)
 ], CartItem.prototype, "productId", void 0);
 __decorate([
@@ -47,6 +47,7 @@ __decorate([
     __metadata("design:type", Date)
 ], CartItem.prototype, "createdAt", void 0);
 exports.CartItem = CartItem = __decorate([
-    (0, typeorm_1.Entity)('cart_items')
+    (0, typeorm_1.Entity)('cart_items'),
+    (0, typeorm_1.Index)('idx_cart_items_customer_id', ['customerId'])
 ], CartItem);
 //# sourceMappingURL=cart-item.entity.js.map

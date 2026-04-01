@@ -4,6 +4,7 @@ import { AuthModule } from '../../src/auth/auth.module';
 import { UsersModule } from '../../src/users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import * as request from 'supertest';
 import { JwtStrategy } from '../../src/auth/strategies/jwt.strategy';
 import { LocalStrategy } from '../../src/auth/strategies/local.strategy';
@@ -17,6 +18,17 @@ describe('AuthController (集成测试)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
+        TypeOrmModule.forRoot({
+          type: 'postgres',
+          host: process.env.DB_HOST || 'localhost',
+          port: parseInt(process.env.DB_PORT || '5432'),
+          username: process.env.DB_USERNAME || 'postgres',
+          password: process.env.DB_PASSWORD || 'postgres',
+          database: process.env.DB_DATABASE || 'japan_sales_test',
+          entities: [__dirname + '/../../src/**/*.entity{.ts,.js}'],
+          synchronize: true,
+          dropSchema: true,
+        }),
         PassportModule.register({ defaultStrategy: 'jwt' }),
         JwtModule.register({
           secret: 'test-secret',

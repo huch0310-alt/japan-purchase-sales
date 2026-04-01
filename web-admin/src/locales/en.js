@@ -79,7 +79,10 @@ export default {
     maxLength: '{field} must be at most {max} characters',
     enterUsername: 'Please enter username',
     enterPassword: 'Please enter password',
-    enterName: 'Please enter name'
+    enterName: 'Please enter name',
+    enterNameZh: 'Please enter Chinese name',
+    enterNameJa: 'Please enter Japanese name',
+    enterNameEn: 'Please enter English name'
   },
   messages: {
     loadSuccess: 'Loaded successfully',
@@ -167,7 +170,11 @@ export default {
     title: 'Category Management',
     addCategory: 'Add Category',
     editCategory: 'Edit Category',
-    categoryName: 'Category Name'
+    categoryName: 'Category Name',
+    nameZh: 'Chinese Name',
+    nameJa: 'Japanese Name',
+    nameEn: 'English Name',
+    systemCategory: 'System Category'
   },
   unit: {
     title: 'Unit Management',
@@ -216,6 +223,7 @@ export default {
     unpaid: 'Unpaid',
     paid: 'Paid',
     overdue: 'Overdue',
+    cancelled: 'Cancelled',
     view: 'View',
     downloadPdf: 'Download PDF',
     markPaid: 'Mark as Paid',
@@ -231,7 +239,18 @@ export default {
     selectDueDate: 'Select due date',
     mustSameCustomer: 'Orders must be from the same customer',
     generateSuccess: 'Invoice generated successfully',
-    generateFailed: 'Failed to generate invoice'
+    generateFailed: 'Failed to generate invoice',
+    alreadyInvoiced: 'Generated',
+    available: 'Available',
+    status: 'Status',
+    cancel: 'Cancel',
+    cancelInvoice: 'Cancel Invoice',
+    cancelReason: 'Cancel Reason',
+    enterCancelReason: 'Please enter cancel reason',
+    confirmCancel: 'Confirm Cancel',
+    cancelSuccess: 'Invoice cancelled successfully',
+    cancelReasonRequired: 'Please enter cancel reason',
+    alreadyCancelled: 'Invoice has already been cancelled'
   },
   report: {
     title: 'Report Statistics',
@@ -300,5 +319,12 @@ export default {
     unitSettings: 'Unit Settings',
     productUnits: 'Product Units',
     saveSettings: 'Save Settings'
+  },
+  error: {
+    title: 'Something went wrong',
+    defaultMessage: 'Sorry, an error occurred on this page',
+    retry: 'Retry',
+    goHome: 'Go Home',
+    details: 'Error Details'
   }
 }

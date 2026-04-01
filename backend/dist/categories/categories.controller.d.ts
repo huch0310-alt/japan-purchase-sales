@@ -1,14 +1,17 @@
 import { CategoriesService } from './categories.service';
+import { UpdateCategoryDto } from './dto/category.dto';
 export declare class CategoriesController {
     private readonly categoriesService;
     constructor(categoriesService: CategoriesService);
-    findAll(): Promise<import("./entities/category.entity").Category[]>;
-    findOne(id: string): Promise<import("./entities/category.entity").Category>;
+    findAll(): Promise<import("./dto/category.dto").CategoryResponseDto[]>;
+    findOne(id: string): Promise<import("./entities/category.entity").Category | null>;
     create(createCategoryDto: {
-        name: string;
+        nameZh: string;
+        nameJa: string;
+        nameEn: string;
         sortOrder?: number;
-    }): Promise<import("./entities/category.entity").Category>;
-    update(id: string, updateCategoryDto: any): Promise<import("./entities/category.entity").Category>;
+    }): Promise<import("./dto/category.dto").CategoryResponseDto>;
+    update(id: string, updateCategoryDto: UpdateCategoryDto): Promise<import("./dto/category.dto").CategoryResponseDto>;
     delete(id: string): Promise<{
         message: string;
     }>;

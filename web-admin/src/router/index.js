@@ -94,13 +94,13 @@ const routes = [
         path: 'invoice-generate',
         name: 'InvoiceGenerate',
         component: () => import('../views/InvoiceGenerate.vue'),
-        meta: { title: 'nav.invoiceGenerate' }
+        meta: { title: 'nav.invoiceGenerate', roles: ['super_admin', 'admin', 'sales'] }
       },
       {
         path: 'report',
         name: 'Report',
         component: () => import('../views/Report.vue'),
-        meta: { title: 'nav.report' }
+        meta: { title: 'nav.report', roles: ['super_admin', 'admin', 'sales'] }
       },
       {
         path: 'settings',
@@ -119,25 +119,43 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
 
-// 路由守卫
+// 路由守卫 - 权限控制
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  const userStore = useUserStore()
-  const user = userStore.user
 
-  if (to.meta.requiresAuth !== false && !token) {
-    next('/login')
-  } else if (to.path === '/login' && token) {
-    next('/')
-  } else if (to.meta.roles && !to.meta.roles.includes(user?.role)) {
-    next('/')
-  } else {
-    next()
+  // 需要认证的页面检查
+  if (to.meta.requiresAuth !== false) {
+    if (!token) {
+      next('/login')
+      return
+    }
+
+    // 从 localStorage 获取用户信息（同步）
+    const userStr = localStorage.getItem('user')
+    const user = (userStr && userStr !== 'undefined') ? JSON.parse(userStr) : null
+
+    // 页面角色权限检查
+    if (to.meta.roles && user) {
+      const hasPermission = to.meta.roles.includes(user.role)
+      if (!hasPermission) {
+        // 无权限，跳转到首页
+        next('/')
+        return
+      }
+    }
   }
+
+  // 已登录用户访问登录页，跳转到首页
+  if (to.path === '/login' && token) {
+    next('/')
+    return
+  }
+
+  next()
 })
 
 export default router

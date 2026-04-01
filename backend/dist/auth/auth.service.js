@@ -48,26 +48,94 @@ const jwt_1 = require("@nestjs/jwt");
 const bcrypt = __importStar(require("bcryptjs"));
 const staff_service_1 = require("../users/staff.service");
 const customer_service_1 = require("../users/customer.service");
+const loginFailures = new Map();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
+const FAILURE_WINDOW_MS = 30 * 60 * 1000;
+const LOGIN_FAILURE_TTL_MS = 24 * 60 * 60 * 1000;
+const LOGIN_FAILURE_MAX_KEYS = 10000;
 let AuthService = class AuthService {
     constructor(staffService, customerService, jwtService) {
         this.staffService = staffService;
         this.customerService = customerService;
         this.jwtService = jwtService;
     }
+    cleanupLoginFailures(now) {
+        for (const [key, record] of loginFailures.entries()) {
+            const lastRelevantAt = record.lockedUntil ? Math.max(record.firstFailureAt, record.lockedUntil) : record.firstFailureAt;
+            if (now - lastRelevantAt > LOGIN_FAILURE_TTL_MS) {
+                loginFailures.delete(key);
+            }
+        }
+    }
+    ensureLoginFailuresCapacity(now) {
+        if (loginFailures.size < LOGIN_FAILURE_MAX_KEYS)
+            return;
+        this.cleanupLoginFailures(now);
+        if (loginFailures.size < LOGIN_FAILURE_MAX_KEYS)
+            return;
+        const entries = Array.from(loginFailures.entries());
+        entries.sort((a, b) => a[1].firstFailureAt - b[1].firstFailureAt);
+        const removeCount = Math.max(1, Math.floor(LOGIN_FAILURE_MAX_KEYS * 0.1));
+        for (let i = 0; i < Math.min(removeCount, entries.length); i++) {
+            loginFailures.delete(entries[i][0]);
+        }
+    }
+    checkAccountLockout(username, userType) {
+        const key = `${userType}:${username}`;
+        const record = loginFailures.get(key);
+        if (record && record.lockedUntil) {
+            if (Date.now() < record.lockedUntil) {
+                const remainingMinutes = Math.ceil((record.lockedUntil - Date.now()) / 60000);
+                throw new common_1.BadRequestException(`账户已被锁定，请在 ${remainingMinutes} 分钟后重试`);
+            }
+            loginFailures.delete(key);
+        }
+    }
+    recordLoginFailure(username, userType) {
+        const key = `${userType}:${username}`;
+        const now = Date.now();
+        this.ensureLoginFailuresCapacity(now);
+        let record = loginFailures.get(key);
+        if (!record || (now - record.firstFailureAt) > FAILURE_WINDOW_MS) {
+            record = {
+                count: 1,
+                firstFailureAt: now,
+                lockedUntil: null,
+            };
+        }
+        else {
+            record.count++;
+        }
+        if (record.count >= MAX_LOGIN_ATTEMPTS) {
+            record.lockedUntil = now + LOCKOUT_DURATION_MS;
+        }
+        loginFailures.set(key, record);
+    }
+    clearLoginFailure(username, userType) {
+        const key = `${userType}:${username}`;
+        loginFailures.delete(key);
+    }
     async validateStaff(username, password) {
+        this.checkAccountLockout(username, 'staff');
         const staff = await this.staffService.findByUsername(username);
         if (staff && await bcrypt.compare(password, staff.passwordHash)) {
+            this.clearLoginFailure(username, 'staff');
             const { passwordHash, ...result } = staff;
             return result;
         }
+        this.recordLoginFailure(username, 'staff');
         return null;
     }
     async validateCustomer(username, password) {
+        this.checkAccountLockout(username, 'customer');
         const customer = await this.customerService.findByUsername(username);
         if (customer && await bcrypt.compare(password, customer.passwordHash)) {
+            this.clearLoginFailure(username, 'customer');
             const { passwordHash, ...result } = customer;
             return result;
         }
+        this.recordLoginFailure(username, 'customer');
         return null;
     }
     async loginStaff(staff) {

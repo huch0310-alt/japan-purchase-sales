@@ -4,6 +4,7 @@ import { UnitsService } from './units.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { UpdateUnitDto } from './dto/unit.dto';
 
 /**
  * 单位控制器
@@ -39,7 +40,7 @@ export class UnitsController {
   @Roles('super_admin', 'admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: '更新单位' })
-  async update(@Param('id') id: string, @Body() updateUnitDto: any) {
+  async update(@Param('id') id: string, @Body() updateUnitDto: UpdateUnitDto) {
     return this.unitsService.update(id, updateUnitDto);
   }
 

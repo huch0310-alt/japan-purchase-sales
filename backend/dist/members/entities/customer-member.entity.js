@@ -53,6 +53,7 @@ __decorate([
     __metadata("design:type", Date)
 ], CustomerMember.prototype, "updatedAt", void 0);
 exports.CustomerMember = CustomerMember = __decorate([
-    (0, typeorm_1.Entity)('customer_members')
+    (0, typeorm_1.Entity)('customer_members'),
+    (0, typeorm_1.Unique)(['customerId'])
 ], CustomerMember);
 //# sourceMappingURL=customer-member.entity.js.map

@@ -1,4 +1,5 @@
 import { StaffService } from './staff.service';
+import { UpdateStaffDto } from './dto/staff.dto';
 export declare class StaffController {
     private readonly staffService;
     constructor(staffService: StaffService);
@@ -11,7 +12,7 @@ export declare class StaffController {
         phone?: string;
         role: string;
     }): Promise<import("./entities/staff.entity").Staff>;
-    update(id: string, updateStaffDto: any): Promise<import("./entities/staff.entity").Staff>;
+    update(id: string, updateStaffDto: UpdateStaffDto): Promise<import("./entities/staff.entity").Staff>;
     delete(id: string): Promise<{
         message: string;
     }>;

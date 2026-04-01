@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 
+// 订单列表 Provider（使用 FutureProvider 缓存数据，避免重复请求）
+final orderListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final response = await ref.read(dioProvider).get('/orders/my');
+  return List<Map<String, dynamic>>.from(response.data ?? []);
+});
+
 /**
  * 订单列表页面（客户端）
  */
@@ -10,23 +16,34 @@ class OrderListPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final ordersAsync = ref.watch(orderListProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('我的订单'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => ref.invalidate(orderListProvider),
+          ),
+        ],
       ),
-      body: FutureBuilder(
-        future: ref.read(dioProvider).get('/orders/my'),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('加载失败: ${snapshot.error}'));
-          }
-
-          final orders = snapshot.data?.data ?? [];
-
+      body: ordersAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('加载失败: $error'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => ref.invalidate(orderListProvider),
+                child: const Text('重试'),
+              ),
+            ],
+          ),
+        ),
+        data: (orders) {
           if (orders.isEmpty) {
             return const Center(
               child: Column(
@@ -129,6 +146,8 @@ class OrderListPage extends ConsumerWidget {
                       if (confirm == true) {
                         try {
                           await ref.read(dioProvider).put('/orders/${order['id']}/cancel');
+                          // 取消成功后刷新列表
+                          ref.invalidate(orderListProvider);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('订单已取消')),

@@ -1,12 +1,31 @@
 <template>
   <el-container class="layout-container">
+    <!-- 移动端遮罩层 -->
+    <div 
+      v-if="isMobile && !isCollapsed" 
+      class="sidebar-overlay" 
+      @click="isCollapsed = true"
+    />
+    
     <!-- 侧边栏 -->
-    <el-aside width="200px">
+    <el-aside
+      :width="isCollapsed ? '64px' : '200px'"
+      :class="['sidebar', { 'is-collapsed': isCollapsed, 'is-mobile': isMobile }]"
+    >
       <div class="logo">
-        <h3>{{ t('login.title') }}</h3>
+        <h3 v-if="!isCollapsed">
+          {{ t('login.title') }}
+        </h3>
+        <el-icon
+          v-else
+          :size="20"
+        >
+          <Shop />
+        </el-icon>
       </div>
       <el-menu
         :default-active="activeMenu"
+        :collapse="isCollapsed && !isMobile"
         router
         background-color="transparent"
         text-color="#bfcbd9"
@@ -14,47 +33,72 @@
       >
         <el-menu-item index="/dashboard">
           <el-icon><DataLine /></el-icon>
-          <span>{{ t('nav.dashboard') }}</span>
+          <template #title>
+            {{ t('nav.dashboard') }}
+          </template>
         </el-menu-item>
         <el-menu-item index="/customer">
           <el-icon><User /></el-icon>
-          <span>{{ t('nav.customer') }}</span>
+          <template #title>
+            {{ t('nav.customer') }}
+          </template>
         </el-menu-item>
-        <el-menu-item index="/staff" v-if="isAdmin">
+        <el-menu-item
+          v-if="isAdmin"
+          index="/staff"
+        >
           <el-icon><UserFilled /></el-icon>
-          <span>{{ t('nav.staff') }}</span>
+          <template #title>
+            {{ t('nav.staff') }}
+          </template>
         </el-menu-item>
         <el-menu-item index="/product">
           <el-icon><Goods /></el-icon>
-          <span>{{ t('nav.product') }}</span>
+          <template #title>
+            {{ t('nav.product') }}
+          </template>
         </el-menu-item>
         <el-menu-item index="/category">
           <el-icon><Collection /></el-icon>
-          <span>{{ t('nav.category') }}</span>
+          <template #title>
+            {{ t('nav.category') }}
+          </template>
         </el-menu-item>
         <el-menu-item index="/order">
           <el-icon><Document /></el-icon>
-          <span>{{ t('nav.order') }}</span>
+          <template #title>
+            {{ t('nav.order') }}
+          </template>
         </el-menu-item>
         <el-menu-item index="/invoice">
           <el-icon><Tickets /></el-icon>
-          <span>{{ t('nav.invoice') }}</span>
-        </el-menu-item>
-        <el-menu-item index="/invoice-generate">
-          <el-icon><Document /></el-icon>
-          <span>{{ t('nav.invoiceGenerate') }}</span>
+          <template #title>
+            {{ t('nav.invoice') }}
+          </template>
         </el-menu-item>
         <el-menu-item index="/report">
           <el-icon><TrendCharts /></el-icon>
-          <span>{{ t('nav.report') }}</span>
+          <template #title>
+            {{ t('nav.report') }}
+          </template>
         </el-menu-item>
-        <el-menu-item index="/settings" v-if="isAdmin">
+        <el-menu-item
+          v-if="isAdmin"
+          index="/settings"
+        >
           <el-icon><Setting /></el-icon>
-          <span>{{ t('nav.settings') }}</span>
+          <template #title>
+            {{ t('nav.settings') }}
+          </template>
         </el-menu-item>
-        <el-menu-item index="/logs" v-if="isAdmin">
+        <el-menu-item
+          v-if="isAdmin"
+          index="/logs"
+        >
           <el-icon><Clock /></el-icon>
-          <span>{{ t('nav.logs') }}</span>
+          <template #title>
+            {{ t('nav.logs') }}
+          </template>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -63,6 +107,13 @@
     <el-container>
       <el-header>
         <div class="header-content">
+          <!-- 折叠按钮 -->
+          <el-button 
+            class="collapse-btn" 
+            :icon="isCollapsed ? Expand : Fold" 
+            text
+            @click="toggleSidebar"
+          />
           <el-dropdown @command="handleLanguageChange">
             <span class="language-switch">
               {{ languages.find(l => l.value === locale)?.label }}
@@ -80,7 +131,11 @@
             </template>
           </el-dropdown>
           <span class="username">{{ user?.name }}</span>
-          <el-button type="danger" size="small" @click="handleLogout">
+          <el-button
+            type="danger"
+            size="small"
+            @click="handleLogout"
+          >
             {{ t('header.logout') }}
           </el-button>
         </div>
@@ -93,18 +148,37 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useUserStore } from '../store/user'
 import { useLanguageStore } from '../store/language'
 import { ElMessageBox } from 'element-plus'
+import { Fold, Expand, Shop } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const languageStore = useLanguageStore()
 const { t, locale: i18nLocale } = useI18n()
+
+// 响应式状态
+const isCollapsed = ref(false)
+const isMobile = ref(false)
+
+// 检测屏幕宽度
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+  // 移动端默认折叠侧边栏
+  if (isMobile.value) {
+    isCollapsed.value = true
+  }
+}
+
+// 切换侧边栏
+const toggleSidebar = () => {
+  isCollapsed.value = !isCollapsed.value
+}
 
 const user = computed(() => userStore.user)
 const isAdmin = computed(() => userStore.isAdmin)
@@ -132,6 +206,16 @@ const handleLogout = () => {
     router.push('/login')
   })
 }
+
+// 生命周期
+onMounted(() => {
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkMobile)
+})
 </script>
 
 <style scoped>
@@ -139,8 +223,46 @@ const handleLogout = () => {
   height: 100vh;
 }
 
-.el-aside {
+.sidebar {
   background-color: var(--color-bg-sidebar) !important;
+  transition: width 0.3s ease, transform 0.3s ease;
+  overflow: hidden;
+}
+
+.sidebar.is-collapsed {
+  width: 64px !important;
+}
+
+/* 移动端样式 */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 1001;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.is-collapsed {
+    transform: translateX(-100%);
+  }
+  
+  .sidebar:not(.is-collapsed) {
+    transform: translateX(0);
+    width: 200px !important;
+  }
+}
+
+/* 遮罩层 */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
 }
 
 .el-menu {
@@ -175,6 +297,7 @@ const handleLogout = () => {
   justify-content: center;
   background: #242424;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
 }
 
 .logo h3 {
@@ -183,6 +306,11 @@ const handleLogout = () => {
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.logo .el-icon {
+  color: var(--color-primary);
 }
 
 .el-header {
@@ -198,6 +326,12 @@ const handleLogout = () => {
   display: flex;
   align-items: center;
   gap: 16px;
+  width: 100%;
+}
+
+.collapse-btn {
+  margin-right: auto;
+  font-size: 20px;
 }
 
 .username {
@@ -208,5 +342,24 @@ const handleLogout = () => {
 .el-main {
   background-color: var(--color-bg-page);
   padding: 20px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .el-main {
+    padding: 12px;
+  }
+  
+  .header-content {
+    gap: 8px;
+  }
+  
+  .username {
+    display: none;
+  }
+  
+  .language-switch {
+    font-size: 12px;
+  }
 }
 </style>

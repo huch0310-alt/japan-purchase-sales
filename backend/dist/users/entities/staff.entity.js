@@ -23,27 +23,28 @@ __decorate([
     __metadata("design:type", String)
 ], Staff.prototype, "username", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'passwordHash' }),
+    (0, typeorm_1.Column)({ name: 'password_hash' }),
     __metadata("design:type", String)
 ], Staff.prototype, "passwordHash", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'name' }),
     __metadata("design:type", String)
 ], Staff.prototype, "name", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, name: 'phone' }),
     __metadata("design:type", String)
 ], Staff.prototype, "phone", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
         enum: ['super_admin', 'admin', 'procurement', 'sales'],
-        default: 'sales'
+        default: 'sales',
+        name: 'role'
     }),
     __metadata("design:type", String)
 ], Staff.prototype, "role", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: true }),
+    (0, typeorm_1.Column)({ default: true, name: 'is_active' }),
     __metadata("design:type", Boolean)
 ], Staff.prototype, "isActive", void 0);
 __decorate([
@@ -54,6 +55,10 @@ __decorate([
     (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
 ], Staff.prototype, "updatedAt", void 0);
+__decorate([
+    (0, typeorm_1.DeleteDateColumn)(),
+    __metadata("design:type", Date)
+], Staff.prototype, "deletedAt", void 0);
 exports.Staff = Staff = __decorate([
     (0, typeorm_1.Entity)('staff')
 ], Staff);

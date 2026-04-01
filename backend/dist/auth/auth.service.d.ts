@@ -1,34 +1,42 @@
 import { JwtService } from '@nestjs/jwt';
 import { StaffService } from '../users/staff.service';
 import { CustomerService } from '../users/customer.service';
+import { JwtPayload } from './strategies/jwt.strategy';
+import { Staff } from '../users/entities/staff.entity';
+import { Customer } from '../users/entities/customer.entity';
 export declare class AuthService {
     private staffService;
     private customerService;
     private jwtService;
     constructor(staffService: StaffService, customerService: CustomerService, jwtService: JwtService);
-    validateStaff(username: string, password: string): Promise<any>;
-    validateCustomer(username: string, password: string): Promise<any>;
-    loginStaff(staff: any): Promise<{
+    private cleanupLoginFailures;
+    private ensureLoginFailuresCapacity;
+    private checkAccountLockout;
+    private recordLoginFailure;
+    private clearLoginFailure;
+    validateStaff(username: string, password: string): Promise<Omit<Staff, 'passwordHash'> | null>;
+    validateCustomer(username: string, password: string): Promise<Omit<Customer, 'passwordHash'> | null>;
+    loginStaff(staff: Omit<Staff, 'passwordHash'>): Promise<{
         access_token: string;
         user: {
-            id: any;
-            username: any;
-            name: any;
-            role: any;
-            type: string;
-        };
-    }>;
-    loginCustomer(customer: any): Promise<{
-        access_token: string;
-        user: {
-            id: any;
-            username: any;
-            companyName: any;
+            id: string;
+            username: string;
+            name: string;
             role: string;
             type: string;
         };
     }>;
-    validateToken(payload: any): Promise<{
+    loginCustomer(customer: Omit<Customer, 'passwordHash'>): Promise<{
+        access_token: string;
+        user: {
+            id: string;
+            username: string;
+            companyName: string;
+            role: string;
+            type: string;
+        };
+    }>;
+    validateToken(payload: JwtPayload): Promise<{
         type: string;
         id: string;
         username: string;
@@ -39,6 +47,7 @@ export declare class AuthService {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        deletedAt: Date;
     } | {
         type: string;
         id: string;
@@ -59,6 +68,7 @@ export declare class AuthService {
         invoices: import("../invoices/entities/invoice.entity").Invoice[];
         createdAt: Date;
         updatedAt: Date;
+        deletedAt: Date;
     }>;
     changePassword(userId: string, userType: 'staff' | 'customer', oldPassword: string, newPassword: string): Promise<{
         message: string;

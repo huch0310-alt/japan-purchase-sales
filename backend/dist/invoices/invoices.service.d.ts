@@ -1,20 +1,21 @@
 import { Repository, DataSource } from 'typeorm';
 import { Invoice } from './entities/invoice.entity';
-import { Order } from '../orders/entities/order.entity';
 import { OrdersService } from '../orders/orders.service';
 import { SettingService } from '../settings/settings.service';
+import { LogsService } from '../logs/logs.service';
+import { OperationAuditContext } from '../common/types';
 export declare class InvoicesService {
     private invoiceRepository;
-    private orderRepository;
     private ordersService;
     private settingService;
     private dataSource;
-    constructor(invoiceRepository: Repository<Invoice>, orderRepository: Repository<Order>, ordersService: OrdersService, settingService: SettingService, dataSource: DataSource);
+    private logsService;
+    constructor(invoiceRepository: Repository<Invoice>, ordersService: OrdersService, settingService: SettingService, dataSource: DataSource, logsService: LogsService);
     private generateInvoiceNo;
     create(data: {
         customerId: string;
         orderIds: string[];
-    }): Promise<Invoice>;
+    }, audit?: OperationAuditContext): Promise<Invoice>;
     findById(id: string): Promise<Invoice | null>;
     findByInvoiceNo(invoiceNo: string): Promise<Invoice | null>;
     findByCustomer(customerId: string): Promise<Invoice[]>;
@@ -23,8 +24,17 @@ export declare class InvoicesService {
         status?: string;
         startDate?: Date;
         endDate?: Date;
-    }): Promise<Invoice[]>;
-    markAsPaid(id: string): Promise<Invoice>;
+        page?: number;
+        pageSize?: number;
+    }): Promise<{
+        data: Invoice[];
+        total: number;
+        page: number;
+        pageSize: number;
+        totalPages: number;
+    }>;
+    markAsPaid(id: string, audit?: OperationAuditContext): Promise<Invoice>;
+    cancel(id: string, cancelledById: string, reason: string, audit?: OperationAuditContext): Promise<Invoice>;
     updateOverdueStatus(): Promise<void>;
     generatePdf(invoiceId: string): Promise<Buffer>;
     generateAndSavePdf(invoiceId: string, uploadDir: string): Promise<string>;

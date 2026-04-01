@@ -164,12 +164,23 @@ export class PaginationQueryDto {
   @ApiPropertyOptional({ default: 1 })
   @IsOptional()
   @IsNumber()
-  page?: number = 1;
+  page?: number;
 
   @ApiPropertyOptional({ default: 20 })
   @IsOptional()
   @IsNumber()
-  pageSize?: number = 20;
+  pageSize?: number;
+}
+
+/**
+ * 分页响应类型
+ */
+export class PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 /**

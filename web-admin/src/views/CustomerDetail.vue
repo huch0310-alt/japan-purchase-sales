@@ -1,22 +1,50 @@
 <template>
   <div class="customer-detail-page">
-    <el-page-header @back="goBack" :content="t('nav.customerDetail')">
+    <el-page-header
+      :content="t('nav.customerDetail')"
+      @back="goBack"
+    >
       <template #extra>
-        <el-button type="primary" @click="handleEdit">{{ t('common.edit') }}</el-button>
+        <el-button
+          type="primary"
+          @click="handleEdit"
+        >
+          {{ t('common.edit') }}
+        </el-button>
       </template>
     </el-page-header>
 
-    <el-row :gutter="20" style="margin-top: 20px">
+    <el-row
+      :gutter="20"
+      style="margin-top: 20px"
+    >
       <el-col :span="12">
         <el-card>
-          <template #header><span>{{ t('customer.basicInfo') }}</span></template>
-          <el-descriptions :column="1" border>
-            <el-descriptions-item :label="t('customer.username')">{{ customer.username }}</el-descriptions-item>
-            <el-descriptions-item :label="t('customer.companyName')">{{ customer.companyName }}</el-descriptions-item>
-            <el-descriptions-item :label="t('customer.contactPerson')">{{ customer.contactPerson }}</el-descriptions-item>
-            <el-descriptions-item :label="t('customer.contactPhone')">{{ customer.phone }}</el-descriptions-item>
-            <el-descriptions-item :label="t('customer.deliveryAddress')">{{ customer.address }}</el-descriptions-item>
-            <el-descriptions-item :label="t('customer.vipDiscount')">{{ ((customer.vipDiscount || 0) * 100).toFixed(0) }}%</el-descriptions-item>
+          <template #header>
+            <span>{{ t('customer.basicInfo') }}</span>
+          </template>
+          <el-descriptions
+            :column="1"
+            border
+          >
+            <el-descriptions-item :label="t('customer.username')">
+              {{ customer.username }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('customer.companyName')">
+              {{ customer.companyName }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('customer.contactPerson')">
+              {{ customer.contactPerson }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('customer.contactPhone')">
+              {{ customer.phone }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('customer.deliveryAddress')">
+              {{ customer.address }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('customer.vipDiscount')">
+              {{ customer.vipDiscount || 0 }}%
+            </el-descriptions-item>
             <el-descriptions-item :label="t('common.status')">
               <el-tag :type="customer.isActive ? 'success' : 'danger'">
                 {{ customer.isActive ? t('customer.normal') : t('customer.disabled') }}
@@ -28,12 +56,25 @@
 
       <el-col :span="12">
         <el-card>
-          <template #header><span>{{ t('customer.invoiceInfo') }}</span></template>
-          <el-descriptions :column="1" border>
-            <el-descriptions-item :label="t('customer.invoiceName')">{{ customer.invoiceName || '-' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('customer.companyAddress')">{{ customer.invoiceAddress || '-' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('common.phone')">{{ customer.invoicePhone || '-' }}</el-descriptions-item>
-            <el-descriptions-item :label="t('customer.bankAccount')">{{ customer.invoiceBank || '-' }}</el-descriptions-item>
+          <template #header>
+            <span>{{ t('customer.invoiceInfo') }}</span>
+          </template>
+          <el-descriptions
+            :column="1"
+            border
+          >
+            <el-descriptions-item :label="t('customer.invoiceName')">
+              {{ customer.invoiceName || '-' }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('customer.companyAddress')">
+              {{ customer.invoiceAddress || '-' }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('common.phone')">
+              {{ customer.invoicePhone || '-' }}
+            </el-descriptions-item>
+            <el-descriptions-item :label="t('customer.bankAccount')">
+              {{ customer.invoiceBank || '-' }}
+            </el-descriptions-item>
           </el-descriptions>
         </el-card>
       </el-col>
@@ -45,54 +86,102 @@
           <span>{{ t('order.title') }}</span>
         </div>
       </template>
-      <el-table :data="orders" border>
-        <el-table-column prop="orderNo" :label="t('order.orderNo')" width="180" />
-        <el-table-column prop="totalAmount" :label="t('order.amount')" width="100">
-          <template #default="{ row }">¥{{ Number(row.totalAmount || 0).toLocaleString() }}</template>
+      <el-table
+        :data="orders"
+        border
+      >
+        <el-table-column
+          prop="orderNo"
+          :label="t('order.orderNo')"
+          width="180"
+        />
+        <el-table-column
+          prop="totalAmount"
+          :label="t('order.amount')"
+          width="100"
+        >
+          <template #default="{ row }">
+            {{ formatCurrency(row.totalAmount) }}
+          </template>
         </el-table-column>
-        <el-table-column prop="status" :label="t('common.status')" width="100">
+        <el-table-column
+          prop="status"
+          :label="t('common.status')"
+          width="100"
+        >
           <template #default="{ row }">
             <el-tag>{{ getOrderStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" :label="t('order.orderTime')" width="180">
-          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+        <el-table-column
+          prop="createdAt"
+          :label="t('order.orderTime')"
+          width="180"
+        >
+          <template #default="{ row }">
+            {{ formatDateTime(row.createdAt) }}
+          </template>
         </el-table-column>
       </el-table>
     </el-card>
 
     <el-card style="margin-top: 20px">
-      <template #header><span>{{ t('report.customerRanking') }}</span></template>
+      <template #header>
+        <span>{{ t('report.customerRanking') }}</span>
+      </template>
       <el-row :gutter="20">
         <el-col :span="6">
           <div class="stat-card">
-            <div class="stat-value">{{ stats.orderCount }}</div>
-            <div class="stat-label">{{ t('order.total') }}</div>
+            <div class="stat-value">
+              {{ stats.orderCount }}
+            </div>
+            <div class="stat-label">
+              {{ t('order.total') }}
+            </div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="stat-card">
-            <div class="stat-value">{{ formatCurrency(stats.totalAmount) }}</div>
-            <div class="stat-label">{{ t('order.total') }}</div>
+            <div class="stat-value">
+              {{ formatCurrency(stats.totalAmount) }}
+            </div>
+            <div class="stat-label">
+              {{ t('order.total') }}
+            </div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="stat-card">
-            <div class="stat-value">¥{{ Number(stats.avgAmount || 0).toLocaleString() }}</div>
-            <div class="stat-label">{{ t('order.amount') }}</div>
+            <div class="stat-value">
+              {{ formatCurrency(stats.avgAmount) }}
+            </div>
+            <div class="stat-label">
+              {{ t('order.amount') }}
+            </div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="stat-card">
-            <div class="stat-value">{{ stats.lastOrderDate }}</div>
-            <div class="stat-label">{{ t('order.orderTime') }}</div>
+            <div class="stat-value">
+              {{ stats.lastOrderDate }}
+            </div>
+            <div class="stat-label">
+              {{ t('order.orderTime') }}
+            </div>
           </div>
         </el-col>
       </el-row>
     </el-card>
 
-    <el-dialog v-model="editVisible" :title="t('customer.editCustomer')" width="600px">
-      <el-form :model="editForm" label-width="100px">
+    <el-dialog
+      v-model="editVisible"
+      :title="t('customer.editCustomer')"
+      width="600px"
+    >
+      <el-form
+        :model="editForm"
+        label-width="100px"
+      >
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item :label="t('customer.companyName')">
@@ -101,7 +190,11 @@
           </el-col>
           <el-col :span="12">
             <el-form-item :label="t('customer.vipDiscount')">
-              <el-input-number v-model="editForm.vipDiscount" :min="0" :max="100" />
+              <el-input-number
+                v-model="editForm.vipDiscount"
+                :min="0"
+                :max="100"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -122,8 +215,15 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="editVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" @click="handleSubmit">{{ t('common.confirm') }}</el-button>
+        <el-button @click="editVisible = false">
+          {{ t('common.cancel') }}
+        </el-button>
+        <el-button
+          type="primary"
+          @click="handleSubmit"
+        >
+          {{ t('common.confirm') }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -156,22 +256,22 @@ const loadData = async () => {
   try {
     const res = await api.get(`/customers/${route.params.id}`)
     customer.value = res.data
-    // VIP折扣：数据库存储0.10，转换为10%显示
+    // VIP折扣：直接使用存储值（10表示10%折扣）
     editForm.value = {
       ...res.data,
-      vipDiscount: res.data.vipDiscount ? res.data.vipDiscount * 100 : 100
+      vipDiscount: res.data.vipDiscount || 0
     }
 
     // 获取客户订单
     const orderRes = await api.get('/orders', { params: { customerId: route.params.id } })
-    orders.value = orderRes.data
+    orders.value = orderRes.data.data || []
 
     // 计算统计数据
     const totalAmount = orders.value.reduce((sum, o) => sum + Number(o.totalAmount), 0)
     stats.value = {
       orderCount: orders.value.length,
-      totalAmount: totalAmount.toLocaleString(),
-      avgAmount: orders.value.length ? (totalAmount / orders.value.length).toFixed(0) : 0,
+      totalAmount: totalAmount,
+      avgAmount: orders.value.length ? Math.round(totalAmount / orders.value.length) : 0,
       lastOrderDate: orders.value.length ? formatDate(orders.value[0].createdAt) : '-'
     }
   } catch (e) {
@@ -187,10 +287,10 @@ const handleEdit = () => {
 
 const handleSubmit = async () => {
   try {
-    // VIP折扣：用户输入10%，转换为0.10存储到数据库
+    // VIP折扣：直接存储用户输入值（10表示10%折扣）
     const submitData = {
       ...editForm.value,
-      vipDiscount: Number(editForm.value.vipDiscount) / 100
+      vipDiscount: Number(editForm.value.vipDiscount)
     }
     await api.put(`/customers/${customer.value.id}`, submitData)
     ElMessage.success(t('messages.updateSuccess'))

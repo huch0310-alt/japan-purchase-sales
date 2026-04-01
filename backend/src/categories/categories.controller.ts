@@ -4,6 +4,7 @@ import { CategoriesService } from './categories.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { UpdateCategoryDto } from './dto/category.dto';
 
 /**
  * 分类控制器
@@ -39,7 +40,7 @@ export class CategoriesController {
   @Roles('super_admin', 'admin')
   @ApiBearerAuth()
   @ApiOperation({ summary: '更新分类' })
-  async update(@Param('id') id: string, @Body() updateCategoryDto: any) {
+  async update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
     return this.categoriesService.update(id, updateCategoryDto);
   }
 

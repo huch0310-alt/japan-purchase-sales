@@ -7,6 +7,8 @@ import { OrdersController } from './orders.controller';
 import { ProductsModule } from '../products/products.module';
 import { SettingsModule } from '../settings/settings.module';
 import { UsersModule } from '../users/users.module';
+import { InventoryModule } from '../inventory/inventory.module';
+import { LogsModule } from '../logs/logs.module';
 
 /**
  * 订单模块
@@ -17,6 +19,8 @@ import { UsersModule } from '../users/users.module';
     ProductsModule,
     SettingsModule,
     UsersModule,
+    InventoryModule,
+    LogsModule,
   ],
   providers: [OrdersService],
   controllers: [OrdersController],

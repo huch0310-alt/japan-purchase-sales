@@ -25,8 +25,13 @@ let InvoicesController = class InvoicesController {
         this.invoicesService = invoicesService;
         this.configService = configService;
     }
-    async create(createInvoiceDto) {
-        return this.invoicesService.create(createInvoiceDto);
+    async create(req, createInvoiceDto) {
+        const audit = {
+            userId: req.user.id,
+            userRole: req.user.role,
+            ip: req.ip,
+        };
+        return this.invoicesService.create(createInvoiceDto, audit);
     }
     async findMyInvoices(req) {
         const user = req.user;
@@ -44,6 +49,9 @@ let InvoicesController = class InvoicesController {
             startDate: startDate ? new Date(startDate) : undefined,
             endDate: endDate ? new Date(endDate) : undefined,
         });
+    }
+    async getDueReminders() {
+        return this.invoicesService.getDueReminders();
     }
     async findOne(id) {
         return this.invoicesService.findById(id);
@@ -63,14 +71,25 @@ let InvoicesController = class InvoicesController {
             fileStream.pipe(res);
         }
         catch (error) {
-            res.status(500).json({ message: 'PDF生成失败', error: error.message });
+            const errMsg = error instanceof Error ? error.message : String(error);
+            res.status(500).json({ message: 'PDF生成失败', error: errMsg });
         }
     }
-    async markAsPaid(id) {
-        return this.invoicesService.markAsPaid(id);
+    async markAsPaid(id, req) {
+        const audit = {
+            userId: req.user.id,
+            userRole: req.user.role,
+            ip: req.ip,
+        };
+        return this.invoicesService.markAsPaid(id, audit);
     }
-    async getDueReminders() {
-        return this.invoicesService.getDueReminders();
+    async cancel(id, body, req) {
+        const audit = {
+            userId: req.user.id,
+            userRole: req.user.role,
+            ip: req.ip,
+        };
+        return this.invoicesService.cancel(id, req.user.id, body.reason, audit);
     }
 };
 exports.InvoicesController = InvoicesController;
@@ -78,9 +97,10 @@ __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
     (0, swagger_1.ApiOperation)({ summary: '创建請求書（合并订单）' }),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], InvoicesController.prototype, "create", null);
 __decorate([
@@ -104,6 +124,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], InvoicesController.prototype, "findAll", null);
 __decorate([
+    (0, common_1.Get)('reminders/due'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
+    (0, swagger_1.ApiOperation)({ summary: '获取到期提醒列表（提前3天）' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], InvoicesController.prototype, "getDueReminders", null);
+__decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({ summary: '获取請求書详情' }),
     __param(0, (0, common_1.Param)('id')),
@@ -126,18 +154,22 @@ __decorate([
     (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
     (0, swagger_1.ApiOperation)({ summary: '标记为已付款' }),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], InvoicesController.prototype, "markAsPaid", null);
 __decorate([
-    (0, common_1.Get)('reminders/due'),
-    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales'),
-    (0, swagger_1.ApiOperation)({ summary: '获取到期提醒列表（提前3天）' }),
+    (0, common_1.Put)(':id/cancel'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin'),
+    (0, swagger_1.ApiOperation)({ summary: '撤销請求書（仅限未付款状态）' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
-], InvoicesController.prototype, "getDueReminders", null);
+], InvoicesController.prototype, "cancel", null);
 exports.InvoicesController = InvoicesController = __decorate([
     (0, swagger_1.ApiTags)('請求書管理'),
     (0, common_1.Controller)('invoices'),

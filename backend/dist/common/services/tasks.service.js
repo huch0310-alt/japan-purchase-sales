@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var TasksService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TasksService = void 0;
 const common_1 = require("@nestjs/common");
@@ -20,60 +21,61 @@ const invoices_service_1 = require("../../invoices/invoices.service");
 const messages_service_1 = require("../../messages/messages.service");
 const settings_service_1 = require("../../settings/settings.service");
 const typeorm_1 = require("typeorm");
-let TasksService = class TasksService {
+let TasksService = TasksService_1 = class TasksService {
     constructor(invoicesService, messagesService, settingService, dataSource) {
         this.invoicesService = invoicesService;
         this.messagesService = messagesService;
         this.settingService = settingService;
         this.dataSource = dataSource;
+        this.logger = new common_1.Logger(TasksService_1.name);
     }
     onModuleInit() {
-        console.log('定时任务服务已启动');
+        this.logger.log('定时任务服务已启动');
     }
     async handleInvoiceOverdue() {
-        console.log('执行任务：更新請求書到期状态');
+        this.logger.log('执行任务：更新請求書到期状态');
         try {
             await this.invoicesService.updateOverdueStatus();
-            console.log('請求書到期状态更新完成');
+            this.logger.log('請求書到期状态更新完成');
         }
         catch (error) {
-            console.error('請求書到期状态更新失败:', error);
+            this.logger.error('請求書到期状态更新失败:', error);
         }
     }
     async handleInvoiceReminder() {
-        console.log('执行任务：請求書到期提醒');
+        this.logger.log('执行任务：請求書到期提醒');
         try {
             const reminders = await this.invoicesService.getDueReminders();
             for (const invoice of reminders) {
                 await this.messagesService.notifyInvoiceDue(invoice.id, invoice.customerId, new Date(invoice.dueDate));
-                console.log(`已发送請求書到期提醒: ${invoice.invoiceNo}`);
+                this.logger.log(`已发送請求書到期提醒: ${invoice.invoiceNo}`);
             }
-            console.log(`請求書到期提醒发送完成，共 ${reminders.length} 条`);
+            this.logger.log(`請求書到期提醒发送完成，共 ${reminders.length} 条`);
         }
         catch (error) {
-            console.error('請求書到期提醒发送失败:', error);
+            this.logger.error('請求書到期提醒发送失败:', error);
         }
     }
     async handleWeeklyReport() {
-        console.log('执行任务：生成周报数据');
+        this.logger.log('执行任务：生成周报数据');
         try {
             const report = await this.generateReport('weekly');
             await this.notifyAdmins('周报', report);
-            console.log('周报生成完成', report);
+            this.logger.log('周报生成完成', report);
         }
         catch (error) {
-            console.error('周报生成失败:', error);
+            this.logger.error('周报生成失败:', error);
         }
     }
     async handleMonthlyReport() {
-        console.log('执行任务：生成月报数据');
+        this.logger.log('执行任务：生成月报数据');
         try {
             const report = await this.generateReport('monthly');
             await this.notifyAdmins('月报', report);
-            console.log('月报生成完成', report);
+            this.logger.log('月报生成完成', report);
         }
         catch (error) {
-            console.error('月报生成失败:', error);
+            this.logger.error('月报生成失败:', error);
         }
     }
     async generateReport(type) {
@@ -90,8 +92,8 @@ let TasksService = class TasksService {
         COALESCE(SUM(total_amount), 0) as totalAmount,
         COALESCE(AVG(total_amount), 0) as avgAmount
       FROM orders
-      WHERE created_at >= $1 AND status IN ('confirmed', 'completed')`, [startDate]);
-        const customerStats = await this.dataSource.query(`SELECT COUNT(*) as newCustomerCount FROM customers WHERE created_at >= $1`, [startDate]);
+      WHERE created_at >= $1 AND status IN ('confirmed', 'completed') AND deleted_at IS NULL`, [startDate]);
+        const customerStats = await this.dataSource.query(`SELECT COUNT(*) as newCustomerCount FROM customers WHERE created_at >= $1 AND deleted_at IS NULL`, [startDate]);
         return {
             type,
             period: { startDate, endDate: now },
@@ -101,7 +103,7 @@ let TasksService = class TasksService {
         };
     }
     async notifyAdmins(reportType, report) {
-        const admins = await this.dataSource.query(`SELECT id FROM staff WHERE role IN ('super_admin', 'admin') AND is_active = true`);
+        const admins = await this.dataSource.query(`SELECT id FROM staff WHERE role IN ('super_admin', 'admin') AND is_active = true AND deleted_at IS NULL`);
         const title = `${reportType}统计`;
         const content = `${reportType}生成完成。订单数: ${report.orders.orderCount}, 总金额: ${report.orders.totalamount}`;
         for (const admin of admins || []) {
@@ -140,7 +142,7 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], TasksService.prototype, "handleMonthlyReport", null);
-exports.TasksService = TasksService = __decorate([
+exports.TasksService = TasksService = TasksService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, common_2.Inject)((0, common_2.forwardRef)(() => invoices_service_1.InvoicesService))),
     __metadata("design:paramtypes", [invoices_service_1.InvoicesService,

@@ -26,47 +26,47 @@ __decorate([
     __metadata("design:type", String)
 ], Customer.prototype, "username", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'passwordHash' }),
+    (0, typeorm_1.Column)({ name: 'password_hash' }),
     __metadata("design:type", String)
 ], Customer.prototype, "passwordHash", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'company_name' }),
     __metadata("design:type", String)
 ], Customer.prototype, "companyName", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ type: 'text', name: 'address' }),
     __metadata("design:type", String)
 ], Customer.prototype, "address", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ name: 'contact_person' }),
     __metadata("design:type", String)
 ], Customer.prototype, "contactPerson", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ name: 'phone' }),
     __metadata("design:type", String)
 ], Customer.prototype, "phone", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 100 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 0, name: 'vip_discount' }),
     __metadata("design:type", Number)
 ], Customer.prototype, "vipDiscount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, name: 'invoice_name' }),
     __metadata("design:type", String)
 ], Customer.prototype, "invoiceName", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, name: 'invoice_address' }),
     __metadata("design:type", String)
 ], Customer.prototype, "invoiceAddress", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, name: 'invoice_phone' }),
     __metadata("design:type", String)
 ], Customer.prototype, "invoicePhone", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, name: 'invoice_bank' }),
     __metadata("design:type", String)
 ], Customer.prototype, "invoiceBank", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: true }),
+    (0, typeorm_1.Column)({ default: true, name: 'is_active' }),
     __metadata("design:type", Boolean)
 ], Customer.prototype, "isActive", void 0);
 __decorate([
@@ -89,6 +89,10 @@ __decorate([
     (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
 ], Customer.prototype, "updatedAt", void 0);
+__decorate([
+    (0, typeorm_1.DeleteDateColumn)(),
+    __metadata("design:type", Date)
+], Customer.prototype, "deletedAt", void 0);
 exports.Customer = Customer = __decorate([
     (0, typeorm_1.Entity)('customers')
 ], Customer);

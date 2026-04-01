@@ -22,36 +22,36 @@ __decorate([
 ], OrderItem.prototype, "id", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => order_entity_1.Order, order => order.items, { onDelete: 'CASCADE' }),
-    (0, typeorm_1.JoinColumn)({ name: 'orderId' }),
+    (0, typeorm_1.JoinColumn)({ name: 'order_id' }),
     __metadata("design:type", order_entity_1.Order)
 ], OrderItem.prototype, "order", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'order_id' }),
     __metadata("design:type", String)
 ], OrderItem.prototype, "orderId", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => product_entity_1.Product, product => product.orderItems),
-    (0, typeorm_1.JoinColumn)({ name: 'productId' }),
+    (0, typeorm_1.ManyToOne)(() => product_entity_1.Product, product => product.orderItems, { onDelete: 'SET NULL' }),
+    (0, typeorm_1.JoinColumn)({ name: 'product_id' }),
     __metadata("design:type", product_entity_1.Product)
 ], OrderItem.prototype, "product", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'product_id' }),
     __metadata("design:type", String)
 ], OrderItem.prototype, "productId", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'product_name' }),
     __metadata("design:type", String)
 ], OrderItem.prototype, "productName", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 1 }),
+    (0, typeorm_1.Column)({ type: 'int', default: 1, name: 'quantity' }),
     __metadata("design:type", Number)
 ], OrderItem.prototype, "quantity", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, name: 'unit_price' }),
     __metadata("design:type", Number)
 ], OrderItem.prototype, "unitPrice", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, default: 0, name: 'discount' }),
     __metadata("design:type", Number)
 ], OrderItem.prototype, "discount", void 0);
 __decorate([

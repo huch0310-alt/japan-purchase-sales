@@ -4,4 +4,5 @@ export declare class Unit {
     sortOrder: number;
     isActive: boolean;
     createdAt: Date;
+    deletedAt: Date;
 }

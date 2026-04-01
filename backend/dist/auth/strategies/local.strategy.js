@@ -20,12 +20,14 @@ let LocalStrategy = class LocalStrategy extends (0, passport_1.PassportStrategy)
         this.authService = authService;
     }
     async validate(username, password) {
-        let user = await this.authService.validateStaff(username, password);
-        if (user) {
+        const staffUser = await this.authService.validateStaff(username, password);
+        if (staffUser) {
+            const { ...user } = staffUser;
             return { ...user, type: 'staff' };
         }
-        user = await this.authService.validateCustomer(username, password);
-        if (user) {
+        const customerUser = await this.authService.validateCustomer(username, password);
+        if (customerUser) {
+            const { ...user } = customerUser;
             return { ...user, type: 'customer' };
         }
         throw new common_1.UnauthorizedException('用户名或密码错误');

@@ -32,8 +32,12 @@ let UnitsService = class UnitsService {
         return this.unitRepository.save(unit);
     }
     async update(id, data) {
+        const unit = await this.findById(id);
+        if (!unit) {
+            throw new common_1.NotFoundException('单位不存在');
+        }
         await this.unitRepository.update(id, data);
-        return this.findById(id);
+        return unit;
     }
     async delete(id) {
         await this.unitRepository.delete(id);

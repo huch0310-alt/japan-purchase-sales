@@ -47,6 +47,8 @@ __decorate([
     __metadata("design:type", Date)
 ], OperationLog.prototype, "createdAt", void 0);
 exports.OperationLog = OperationLog = __decorate([
-    (0, typeorm_1.Entity)('operation_logs')
+    (0, typeorm_1.Entity)('operation_logs'),
+    (0, typeorm_1.Index)('idx_operation_logs_user_id', ['userId']),
+    (0, typeorm_1.Index)('idx_operation_logs_created_at', ['createdAt'])
 ], OperationLog);
 //# sourceMappingURL=log.entity.js.map

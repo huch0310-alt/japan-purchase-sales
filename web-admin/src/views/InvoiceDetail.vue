@@ -1,34 +1,74 @@
 <template>
   <div class="invoice-detail-page">
-    <el-page-header @back="goBack" :content="t('nav.invoiceDetail')">
+    <el-page-header
+      :content="t('nav.invoiceDetail')"
+      @back="goBack"
+    >
       <template #extra>
-        <el-button type="primary" @click="handleDownloadPdf">{{ t('invoice.downloadPdf') }}</el-button>
-        <el-button v-if="invoice.status === 'unpaid'" type="success" @click="handleMarkPaid">{{ t('invoice.markPaid') }}</el-button>
+        <el-button
+          type="primary"
+          @click="handleDownloadPdf"
+        >
+          {{ t('invoice.downloadPdf') }}
+        </el-button>
+        <el-button
+          v-if="invoice.status === 'unpaid'"
+          type="success"
+          @click="handleMarkPaid"
+        >
+          {{ t('invoice.markPaid') }}
+        </el-button>
       </template>
     </el-page-header>
 
     <el-card style="margin-top: 20px">
-      <el-descriptions :column="2" border>
-        <el-descriptions-item :label="t('invoice.invoiceNo')">{{ invoice.invoiceNo }}</el-descriptions-item>
-        <el-descriptions-item :label="t('common.status')">
-          <el-tag :type="getStatusType(invoice.status)">{{ getStatusText(invoice.status) }}</el-tag>
+      <el-descriptions
+        :column="2"
+        border
+      >
+        <el-descriptions-item :label="t('invoice.invoiceNo')">
+          {{ invoice.invoiceNo }}
         </el-descriptions-item>
-        <el-descriptions-item :label="t('order.customer')">{{ invoice.customer?.companyName }}</el-descriptions-item>
-        <el-descriptions-item :label="t('common.contact')">{{ invoice.customer?.contactPerson }}</el-descriptions-item>
-        <el-descriptions-item :label="t('invoice.issueDate')">{{ formatDate(invoice.issueDate) }}</el-descriptions-item>
-        <el-descriptions-item :label="t('invoice.dueDate')" :class="{ 'overdue': isOverdue }">{{ formatDate(invoice.dueDate) }}</el-descriptions-item>
+        <el-descriptions-item :label="t('common.status')">
+          <el-tag :type="getStatusType(invoice.status)">
+            {{ getStatusText(invoice.status) }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('order.customer')">
+          {{ invoice.customer?.companyName }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('common.contact')">
+          {{ invoice.customer?.contactPerson }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('invoice.issueDate')">
+          {{ formatDate(invoice.issueDate) }}
+        </el-descriptions-item>
+        <el-descriptions-item
+          :label="t('invoice.dueDate')"
+          :class="{ 'overdue': isOverdue }"
+        >
+          {{ formatDate(invoice.dueDate) }}
+        </el-descriptions-item>
         <el-descriptions-item :label="t('invoice.subtotalNoTax')">
           {{ formatCurrency(invoice.subtotal) }}
         </el-descriptions-item>
         <el-descriptions-item :label="t('invoice.taxAmount')">
           {{ formatCurrency(invoice.taxAmount) }}
         </el-descriptions-item>
-        <el-descriptions-item :label="t('order.total')" :span="2">
+        <el-descriptions-item
+          :label="t('order.total')"
+          :span="2"
+        >
           <span style="font-size: 20px; font-weight: bold; color: var(--color-danger);">
             {{ formatCurrency(invoice.totalAmount) }}
           </span>
         </el-descriptions-item>
-        <el-descriptions-item :label="t('invoice.paidAt')" v-if="invoice.paidAt">{{ formatDateTime(invoice.paidAt) }}</el-descriptions-item>
+        <el-descriptions-item
+          v-if="invoice.paidAt"
+          :label="t('invoice.paidAt')"
+        >
+          {{ formatDateTime(invoice.paidAt) }}
+        </el-descriptions-item>
       </el-descriptions>
     </el-card>
 
@@ -36,15 +76,34 @@
       <template #header>
         <span>{{ t('order.orderDetails') }}</span>
       </template>
-      <el-table :data="orders" border>
-        <el-table-column prop="orderNo" :label="t('order.orderNo')" />
-        <el-table-column prop="createdAt" :label="t('order.orderTime')">
-          <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+      <el-table
+        :data="orders"
+        border
+      >
+        <el-table-column
+          prop="orderNo"
+          :label="t('order.orderNo')"
+        />
+        <el-table-column
+          prop="createdAt"
+          :label="t('order.orderTime')"
+        >
+          <template #default="{ row }">
+            {{ formatDateTime(row.createdAt) }}
+          </template>
         </el-table-column>
-        <el-table-column prop="totalAmount" :label="t('order.amount')">
-          <template #default="{ row }">{{ formatCurrency(row.totalAmount) }}</template>
+        <el-table-column
+          prop="totalAmount"
+          :label="t('order.amount')"
+        >
+          <template #default="{ row }">
+            {{ formatCurrency(row.totalAmount) }}
+          </template>
         </el-table-column>
-        <el-table-column prop="status" :label="t('common.status')">
+        <el-table-column
+          prop="status"
+          :label="t('common.status')"
+        >
           <template #default="{ row }">
             <el-tag>{{ row.status }}</el-tag>
           </template>
@@ -108,11 +167,17 @@ const goBack = () => {
   router.back()
 }
 
+const downloading = ref(false)
 const handleDownloadPdf = async () => {
   try {
+    downloading.value = true
+    // 使用 window.open 打开 PDF 生成接口
     window.open(`/api/invoices/${invoice.value.id}/pdf`, '_blank')
+    ElMessage.success(t('messages.operationSuccess'))
   } catch (e) {
     ElMessage.error(t('messages.operationFailed'))
+  } finally {
+    downloading.value = false
   }
 }
 

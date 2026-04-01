@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import '../../i18n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 
 /**
@@ -42,25 +43,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       );
     } catch (e) {
       if (mounted) {
-        String errorMsg = '登录失败';
+        String errorMsg = AppLocalizations.get('login_fail');
         if (e is DioException) {
           if (e.response != null) {
             // 服务器返回了错误响应
             final data = e.response?.data;
             if (data is Map) {
-              errorMsg = data['message'] ?? data['error'] ?? '登录失败';
+              errorMsg = data['message'] ?? data['error'] ?? AppLocalizations.get('login_fail');
             } else {
-              errorMsg = '服务器错误: ${e.response?.statusCode}';
+              errorMsg = '${AppLocalizations.get('server_error')}: ${e.response?.statusCode}';
             }
           } else if (e.type == DioExceptionType.connectionTimeout) {
-            errorMsg = '连接超时，请检查网络';
+            errorMsg = AppLocalizations.get('connection_timeout');
           } else if (e.type == DioExceptionType.receiveTimeout) {
-            errorMsg = '服务器响应超时';
+            errorMsg = AppLocalizations.get('server_error');
           } else {
-            errorMsg = '网络错误: ${e.message}';
+            errorMsg = '${AppLocalizations.get('network_error')}: ${e.message}';
           }
         } else {
-          errorMsg = '登录失败: ${e.toString()}';
+          errorMsg = '${AppLocalizations.get('login_fail')}: ${e.toString()}';
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
@@ -93,10 +94,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
                 const SizedBox(height: 16),
                 // 标题
-                const Text(
-                  '日本采销管理系统',
+                Text(
+                  AppLocalizations.get('app_name'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -104,16 +105,16 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 const SizedBox(height: 48),
                 // 登录类型选择
                 SegmentedButton<String>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: 'staff',
-                      label: Text('员工登录'),
-                      icon: Icon(Icons.person),
+                      label: Text(AppLocalizations.get('staff_login')),
+                      icon: const Icon(Icons.person),
                     ),
                     ButtonSegment(
                       value: 'customer',
-                      label: Text('客户登录'),
-                      icon: Icon(Icons.business),
+                      label: Text(AppLocalizations.get('customer_login')),
+                      icon: const Icon(Icons.business),
                     ),
                   ],
                   selected: {_loginType},
@@ -125,14 +126,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 // 用户名
                 TextFormField(
                   controller: _usernameController,
-                  decoration: const InputDecoration(
-                    labelText: '账号',
-                    prefixIcon: Icon(Icons.person_outline),
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.get('username'),
+                    prefixIcon: const Icon(Icons.person_outline),
+                    border: const OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return '请输入账号';
+                      return AppLocalizations.get('please_enter_username');
                     }
                     return null;
                   },
@@ -143,7 +144,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: '密码',
+                    labelText: AppLocalizations.get('password'),
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -157,7 +158,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return '请输入密码';
+                      return AppLocalizations.get('please_enter_password');
                     }
                     return null;
                   },
@@ -180,7 +181,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text('登录', style: TextStyle(fontSize: 16)),
+                      : Text(AppLocalizations.get('login'), style: const TextStyle(fontSize: 16)),
                 ),
               ],
             ),

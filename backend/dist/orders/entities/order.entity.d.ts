@@ -15,12 +15,16 @@ export declare class Order {
     contactPerson: string;
     contactPhone: string;
     remark: string;
-    confirmedById: string;
     invoice: Invoice;
     invoiceId: string;
+    invoicedAt: Date;
+    cancelledById: string;
+    cancelReason: string;
+    cancelledAt: Date;
     items: OrderItem[];
     createdAt: Date;
     confirmedAt: Date;
     completedAt: Date;
     updatedAt: Date;
+    deletedAt: Date;
 }

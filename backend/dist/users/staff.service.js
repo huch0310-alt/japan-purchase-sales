@@ -51,17 +51,32 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const bcrypt = __importStar(require("bcryptjs"));
 const staff_entity_1 = require("./entities/staff.entity");
+function validatePasswordStrength(password) {
+    if (!password || password.length < 8) {
+        throw new common_1.BadRequestException('密码长度不能少于8位');
+    }
+    if (!/[A-Z]/.test(password)) {
+        throw new common_1.BadRequestException('密码必须包含大写字母');
+    }
+    if (!/[a-z]/.test(password)) {
+        throw new common_1.BadRequestException('密码必须包含小写字母');
+    }
+    if (!/[0-9]/.test(password)) {
+        throw new common_1.BadRequestException('密码必须包含数字');
+    }
+}
 let StaffService = class StaffService {
     constructor(staffRepository) {
         this.staffRepository = staffRepository;
     }
     async findByUsername(username) {
-        return this.staffRepository.findOne({ where: { username } });
+        return this.staffRepository.findOne({ where: { username, deletedAt: (0, typeorm_2.IsNull)() } });
     }
     async findById(id) {
-        return this.staffRepository.findOne({ where: { id } });
+        return this.staffRepository.findOne({ where: { id, deletedAt: (0, typeorm_2.IsNull)() } });
     }
     async create(data) {
+        validatePasswordStrength(data.password);
         const existing = await this.findByUsername(data.username);
         if (existing) {
             throw new common_1.ConflictException('用户名已存在');
@@ -75,18 +90,24 @@ let StaffService = class StaffService {
     }
     async findAll() {
         return this.staffRepository.find({
+            where: { deletedAt: (0, typeorm_2.IsNull)() },
             order: { createdAt: 'DESC' },
             loadRelationIds: false,
         });
     }
     async update(id, data) {
+        const staff = await this.findById(id);
+        if (!staff) {
+            throw new common_1.NotFoundException('员工不存在');
+        }
         await this.staffRepository.update(id, data);
-        return this.findById(id);
+        return staff;
     }
     async delete(id) {
         await this.staffRepository.delete(id);
     }
     async updatePassword(id, newPassword) {
+        validatePasswordStrength(newPassword);
         const passwordHash = await bcrypt.hash(newPassword, 10);
         await this.staffRepository.update(id, { passwordHash });
     }

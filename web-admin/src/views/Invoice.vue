@@ -5,72 +5,157 @@
         <div class="card-header">
           <span>{{ t('invoice.title') }}</span>
           <div>
-            <el-button type="primary" @click="handleCreate">{{ t('invoice.createInvoice') }}</el-button>
+            <el-button
+              type="primary"
+              @click="handleCreate"
+            >
+              {{ t('invoice.createInvoice') }}
+            </el-button>
           </div>
         </div>
       </template>
 
-      <el-table :data="tableData" border stripe>
-        <el-table-column prop="invoiceNo" :label="t('invoice.invoiceNo')" width="180" />
-        <el-table-column prop="companyName" :label="t('order.customer')" min-width="150" />
-        <el-table-column prop="subtotal" :label="t('invoice.subtotalNoTax')" width="120">
-          <template #default="{ row }">¥{{ row.subtotal }}</template>
-        </el-table-column>
-        <el-table-column prop="taxAmount" :label="t('invoice.taxAmount')" width="100">
-          <template #default="{ row }">¥{{ row.taxAmount }}</template>
-        </el-table-column>
-        <el-table-column prop="totalAmount" :label="t('invoice.totalWithTax')" width="120">
+      <el-table
+        :data="tableData"
+        border
+        stripe
+      >
+        <el-table-column
+          prop="invoiceNo"
+          :label="t('invoice.invoiceNo')"
+          width="180"
+        />
+        <el-table-column
+          prop="companyName"
+          :label="t('order.customer')"
+          min-width="150"
+        />
+        <el-table-column
+          prop="subtotal"
+          :label="t('invoice.subtotalNoTax')"
+          width="120"
+        >
           <template #default="{ row }">
-            <span style="font-weight: bold; color: #f56c6c">¥{{ row.totalAmount }}</span>
+            {{ formatCurrency(row.subtotal) }}
           </template>
         </el-table-column>
-        <el-table-column prop="status" :label="t('common.status')" width="100">
+        <el-table-column
+          prop="taxAmount"
+          :label="t('invoice.taxAmount')"
+          width="100"
+        >
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
+            {{ formatCurrency(row.taxAmount) }}
           </template>
         </el-table-column>
-        <el-table-column prop="issueDate" :label="t('invoice.issueDate')" width="120">
-          <template #default="{ row }">{{ formatDate(row.issueDate) }}</template>
+        <el-table-column
+          prop="totalAmount"
+          :label="t('invoice.totalWithTax')"
+          width="120"
+        >
+          <template #default="{ row }">
+            <span style="font-weight: bold; color: #f56c6c">{{ formatCurrency(row.totalAmount) }}</span>
+          </template>
         </el-table-column>
-        <el-table-column prop="dueDate" :label="t('invoice.dueDate')" width="120">
+        <el-table-column
+          prop="status"
+          :label="t('common.status')"
+          width="100"
+        >
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.status)">
+              {{ getStatusText(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="issueDate"
+          :label="t('invoice.issueDate')"
+          width="120"
+        >
+          <template #default="{ row }">
+            {{ formatDate(row.issueDate) }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="dueDate"
+          :label="t('invoice.dueDate')"
+          width="120"
+        >
           <template #default="{ row }">
             <span :class="{ 'overdue': isOverdue(row) }">{{ formatDate(row.dueDate) }}</span>
           </template>
         </el-table-column>
-        <el-table-column :label="t('common.action')" width="180" fixed="right">
+        <el-table-column
+          :label="t('common.action')"
+          width="180"
+          fixed="right"
+        >
           <template #default="{ row }">
-            <el-button type="primary" link @click="handleView(row)">{{ t('common.view') }}</el-button>
-            <el-button type="success" link @click="handleDownloadPdf(row)">{{ t('invoice.downloadPdf') }}</el-button>
-            <el-button v-if="row.status === 'unpaid'" type="warning" link @click="handleMarkPaid(row)">{{ t('invoice.markPaid') }}</el-button>
+            <el-button
+              type="primary"
+              link
+              @click="handleView(row)"
+            >
+              {{ t('common.view') }}
+            </el-button>
+            <el-button
+              type="success"
+              link
+              @click="handleDownloadPdf(row)"
+            >
+              {{ t('invoice.downloadPdf') }}
+            </el-button>
+            <el-button
+              v-if="row.status === 'unpaid'"
+              type="warning"
+              link
+              @click="handleMarkPaid(row)"
+            >
+              {{ t('invoice.markPaid') }}
+            </el-button>
+            <el-button
+              v-if="row.status === 'unpaid'"
+              type="danger"
+              link
+              @click="handleCancel(row)"
+            >
+              {{ t('invoice.cancel') }}
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
-    <!-- 生成請求書对话框 -->
-    <el-dialog v-model="createVisible" :title="t('invoice.createInvoice')" width="600px">
-      <el-form :model="createForm" label-width="100px">
-        <el-form-item :label="t('invoice.selectCustomer')">
-          <el-select v-model="createForm.customerId" :placeholder="t('invoice.selectCustomer')" filterable style="width: 100%">
-            <el-option v-for="c in customers" :key="c.id" :label="c.companyName" :value="c.id" />
-          </el-select>
-        </el-form-item>
-        <el-form-item :label="t('invoice.selectOrder')">
-          <el-table :data="customerOrders" border @selection-change="handleOrderSelect">
-            <el-table-column type="selection" width="50" />
-            <el-table-column prop="orderNo" :label="t('order.orderNo')" />
-            <el-table-column prop="totalAmount" :label="t('order.amount')">
-              <template #default="{ row }">¥{{ row.totalAmount }}</template>
-            </el-table-column>
-            <el-table-column prop="createdAt" :label="t('order.orderTime')">
-              <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
-            </el-table-column>
-          </el-table>
+    <!-- 撤销請求書对话框 -->
+    <el-dialog
+      v-model="cancelVisible"
+      :title="t('invoice.cancelInvoice')"
+      width="500px"
+    >
+      <el-form :model="cancelForm">
+        <el-form-item
+          :label="t('invoice.cancelReason')"
+          required
+        >
+          <el-input
+            v-model="cancelForm.reason"
+            type="textarea"
+            :rows="3"
+            :placeholder="t('invoice.enterCancelReason')"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="createVisible = false">{{ t('common.cancel') }}</el-button>
-        <el-button type="primary" @click="handleSubmitCreate">{{ t('invoice.generate') }}</el-button>
+        <el-button @click="cancelVisible = false">
+          {{ t('common.cancel') }}
+        </el-button>
+        <el-button
+          type="danger"
+          @click="confirmCancel"
+        >
+          {{ t('invoice.confirmCancel') }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -78,28 +163,33 @@
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import api from '../api'
-import { formatDateTime, formatDate } from '../utils/format'
+import { formatDateTime, formatDate, formatCurrency } from '../utils/format'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const tableData = ref([])
 const createVisible = ref(false)
+const cancelVisible = ref(false)
 const customers = ref([])
 const customerOrders = ref([])
 const selectedOrders = ref([])
+const currentCancelInvoice = ref(null)
 
 const createForm = reactive({ customerId: '', orderIds: [] })
+const cancelForm = reactive({ reason: '' })
 
 const getStatusType = (status) => {
-  const map = { unpaid: 'warning', paid: 'success', overdue: 'danger' }
+  const map = { unpaid: 'warning', paid: 'success', overdue: 'danger', cancelled: 'info' }
   return map[status] || 'info'
 }
 
 const getStatusText = (status) => {
-  const map = { unpaid: t('invoice.unpaid'), paid: t('invoice.paid'), overdue: t('invoice.overdue') }
+  const map = { unpaid: t('invoice.unpaid'), paid: t('invoice.paid'), overdue: t('invoice.overdue'), cancelled: t('invoice.cancelled') }
   return map[status] || status
 }
 
@@ -110,80 +200,25 @@ const isOverdue = (row) => {
 const loadData = async () => {
   try {
     const res = await api.get('/invoices')
-    tableData.value = res.data
+    tableData.value = res.data.data || []
   } catch (e) {
     ElMessage.error(t('messages.loadFailed'))
   }
 }
 
-const loadCustomers = async () => {
-  try {
-    const res = await api.get('/customers')
-    customers.value = res.data
-  } catch (e) {
-    ElMessage.error(t('messages.loadFailed'))
-  }
-}
-
-const handleCreate = async () => {
-  await loadCustomers()
-  createVisible.value = true
-}
-
-watch(() => createForm.customerId, async (customerId) => {
-  if (!customerId) {
-    customerOrders.value = []
-    return
-  }
-  try {
-    // 获取已完成但未生成請求书的订单
-    const res = await api.get('/orders/available-for-invoice', { params: { customerId } })
-    customerOrders.value = res.data
-  } catch (e) {
-    ElMessage.error(t('messages.loadFailed'))
-  }
-})
-
-const handleOrderSelect = (selection) => {
-  selectedOrders.value = selection
-}
-
-const handleSubmitCreate = async () => {
-  if (!createForm.customerId || selectedOrders.value.length === 0) {
-    ElMessage.warning(t('messages.selectCustomerOrder'))
-    return
-  }
-  try {
-    await api.post('/invoices', {
-      customerId: createForm.customerId,
-      orderIds: selectedOrders.value.map(o => o.id)
-    })
-    ElMessage.success(t('invoice.createSuccess'))
-    createVisible.value = false
-    loadData()
-  } catch (e) {
-    ElMessage.error(t('messages.operationFailed'))
-  }
+const handleCreate = () => {
+  router.push('/invoice-generate')
 }
 
 const handleView = (row) => {
-  // TODO: 跳转到請求書详情页
+  router.push(`/invoice/${row.id}`)
 }
 
 const handleDownloadPdf = async (row) => {
   try {
-    ElMessage.info(t('invoice.downloadingPdf'))
-    const response = await api.get(`/invoices/${row.id}/pdf`, { responseType: 'blob' })
-    const blob = new Blob([response.data], { type: 'application/pdf' })
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `invoice_${row.invoiceNo}.pdf`
-    link.click()
-    window.URL.revokeObjectURL(url)
-    ElMessage.success(t('invoice.downloadSuccess'))
+    window.open(`/api/invoices/${row.id}/pdf`, '_blank')
+    ElMessage.success(t('messages.operationSuccess'))
   } catch (e) {
-    console.error('PDF download failed:', e)
     ElMessage.error(t('invoice.downloadFailed'))
   }
 }
@@ -195,6 +230,29 @@ const handleMarkPaid = async (row) => {
     loadData()
   } catch (e) {
     ElMessage.error(t('messages.operationFailed'))
+  }
+}
+
+const handleCancel = (row) => {
+  currentCancelInvoice.value = row
+  cancelForm.reason = ''
+  cancelVisible.value = true
+}
+
+const confirmCancel = async () => {
+  if (!cancelForm.reason.trim()) {
+    ElMessage.warning(t('invoice.cancelReasonRequired'))
+    return
+  }
+  try {
+    await api.put(`/invoices/${currentCancelInvoice.value.id}/cancel`, {
+      reason: cancelForm.reason
+    })
+    ElMessage.success(t('invoice.cancelSuccess'))
+    cancelVisible.value = false
+    loadData()
+  } catch (e) {
+    ElMessage.error(e.response?.data?.message || t('messages.operationFailed'))
   }
 }
 

@@ -17,20 +17,20 @@ export class OrderItem {
   @Column({ name: 'order_id' })
   orderId: string;
 
-  @ManyToOne(() => Product, product => product.orderItems)
+  @ManyToOne(() => Product, product => product.orderItems, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'product_id' })
   product: Product;
 
   @Column({ name: 'product_id' })
   productId: string;
 
-  @Column({ name: 'productName' })
+  @Column({ name: 'product_name' })
   productName: string;  // 商品名称（冗余）
 
   @Column({ type: 'int', default: 1, name: 'quantity' })
   quantity: number;  // 数量
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'unitPrice' })
+  @Column({ type: 'decimal', precision: 10, scale: 2, name: 'unit_price' })
   unitPrice: number;  // 单价（税拔）
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, name: 'discount' })

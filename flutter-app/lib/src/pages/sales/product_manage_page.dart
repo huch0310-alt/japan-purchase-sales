@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 
+// 商品列表 Provider
+final productListProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, status) async {
+  final query = status.isEmpty ? '/products' : '/products?status=$status';
+  final response = await ref.read(dioProvider).get(query);
+  return List<Map<String, dynamic>>.from(response.data['data'] ?? []);
+});
+
 /**
  * 商品管理页面（销售端）
  * 商品上下架、价格修改
@@ -19,6 +26,8 @@ class _ProductManagePageState extends ConsumerState<ProductManagePage> {
 
   @override
   Widget build(BuildContext context) {
+    final productsAsync = ref.watch(productListProvider(_filterStatus));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('商品管理'),
@@ -50,7 +59,40 @@ class _ProductManagePageState extends ConsumerState<ProductManagePage> {
           ),
           // 商品列表
           Expanded(
-            child: _buildProductList(),
+            child: productsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('加载失败: $error'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => ref.invalidate(productListProvider(_filterStatus)),
+                      child: const Text('重试'),
+                    ),
+                  ],
+                ),
+              ),
+              data: (products) {
+                if (products.isEmpty) {
+                  return const Center(child: Text('暂无商品'));
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(productListProvider(_filterStatus));
+                  },
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      return _buildProductCard(products[index]);
+                    },
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -64,45 +106,6 @@ class _ProductManagePageState extends ConsumerState<ProductManagePage> {
       selected: isSelected,
       onSelected: (selected) {
         setState(() => _filterStatus = value);
-      },
-    );
-  }
-
-  Widget _buildProductList() {
-    String query = '/products?status=${_filterStatus == 'all' ? '' : _filterStatus}';
-    if (_filterCategoryId != null) {
-      query += '&categoryId=$_filterCategoryId';
-    }
-
-    return FutureBuilder(
-      future: ref.read(dioProvider).get(query),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(child: Text('加载失败: ${snapshot.error}'));
-        }
-
-        final products = snapshot.data?.data ?? [];
-
-        if (products.isEmpty) {
-          return const Center(child: Text('暂无商品'));
-        }
-
-        return RefreshIndicator(
-          onRefresh: () async {
-            setState(() {});
-          },
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              return _buildProductCard(products[index]);
-            },
-          ),
-        );
       },
     );
   }
@@ -143,7 +146,7 @@ class _ProductManagePageState extends ConsumerState<ProductManagePage> {
                   ? '/products/${product['id']}/activate'
                   : '/products/${product['id']}/deactivate';
               await ref.read(dioProvider).put(endpoint);
-              setState(() {});
+              ref.invalidate(productListProvider(_filterStatus));
             } catch (e) {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(

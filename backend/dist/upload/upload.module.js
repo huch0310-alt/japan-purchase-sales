@@ -33,6 +33,22 @@ exports.UploadModule = UploadModule = __decorate([
                     limits: {
                         fileSize: 10 * 1024 * 1024,
                     },
+                    fileFilter: (req, file, cb) => {
+                        const allowedMimes = [
+                            'image/jpeg',
+                            'image/jpg',
+                            'image/png',
+                            'image/gif',
+                            'image/webp',
+                            'image/svg+xml',
+                        ];
+                        if (allowedMimes.includes(file.mimetype)) {
+                            cb(null, true);
+                        }
+                        else {
+                            cb(new Error('只允许上传图片文件 (JPEG, PNG, GIF, WebP, SVG)'), false);
+                        }
+                    },
                 }),
                 inject: [config_1.ConfigService],
             }),

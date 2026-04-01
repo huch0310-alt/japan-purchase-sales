@@ -62,10 +62,15 @@ __decorate([
     __metadata("design:type", String)
 ], InventoryLog.prototype, "remark", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], InventoryLog.prototype, "relatedId", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], InventoryLog.prototype, "createdAt", void 0);
 exports.InventoryLog = InventoryLog = __decorate([
-    (0, typeorm_1.Entity)('inventory_logs')
+    (0, typeorm_1.Entity)('inventory_logs'),
+    (0, typeorm_1.Index)('idx_inventory_logs_product_id', ['productId'])
 ], InventoryLog);
 //# sourceMappingURL=inventory-log.entity.js.map

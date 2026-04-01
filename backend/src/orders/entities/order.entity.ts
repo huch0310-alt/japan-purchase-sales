@@ -30,10 +30,10 @@ export class Order {
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0, name: 'discount_amount' })
   discountAmount: number;  // VIP折扣金额
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0, name: 'taxAmount' })
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0, name: 'tax_amount' })
   taxAmount: number;  // 消费税
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0, name: 'totalAmount' })
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0, name: 'total_amount' })
   totalAmount: number;  // 税込合计
 
   @Column({
@@ -67,6 +67,15 @@ export class Order {
 
   @Column({ nullable: true, name: 'invoiced_at' })
   invoicedAt: Date;  // 生成請求書时间
+
+  @Column({ nullable: true, name: 'cancelled_by' })
+  cancelledById: string;  // 取消人ID
+
+  @Column({ nullable: true, type: 'text', name: 'cancel_reason' })
+  cancelReason: string;  // 取消原因
+
+  @Column({ nullable: true, name: 'cancelled_at' })
+  cancelledAt: Date;  // 取消时间
 
   @OneToMany(() => OrderItem, item => item.order, { cascade: true })
   items: OrderItem[];

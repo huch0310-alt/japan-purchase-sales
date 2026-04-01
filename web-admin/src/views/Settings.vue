@@ -1,8 +1,13 @@
 <template>
   <div class="settings-page">
     <el-card>
-      <template #header><span>{{ t('settings.title') }}</span></template>
-      <el-form :model="form" label-width="120px">
+      <template #header>
+        <span>{{ t('settings.title') }}</span>
+      </template>
+      <el-form
+        :model="form"
+        label-width="120px"
+      >
         <el-divider>{{ t('settings.companyInfo') }}</el-divider>
         <el-row :gutter="20">
           <el-col :span="12">
@@ -48,27 +53,53 @@
           <el-col :span="12">
             <el-form-item :label="t('settings.taxRate')">
               <el-select v-model="form.tax_rate">
-                <el-option label="10%" value="10" />
-                <el-option label="8%" value="8" />
+                <el-option
+                  label="10%"
+                  value="10"
+                />
+                <el-option
+                  label="8%"
+                  value="8"
+                />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item :label="t('settings.defaultPaymentDays')">
-              <el-input-number v-model="form.default_payment_days" :min="1" :max="90" />
+              <el-input-number
+                v-model="form.default_payment_days"
+                :min="1"
+                :max="90"
+              />
             </el-form-item>
           </el-col>
         </el-row>
 
         <el-divider>{{ t('settings.unitSettings') }}</el-divider>
         <el-form-item :label="t('settings.productUnits')">
-          <el-select v-model="form.units" multiple allow-create filterable style="width: 100%">
-            <el-option v-for="u in defaultUnits" :key="u" :label="u" :value="u" />
+          <el-select
+            v-model="form.units"
+            multiple
+            allow-create
+            filterable
+            style="width: 100%"
+          >
+            <el-option
+              v-for="u in defaultUnits"
+              :key="u"
+              :label="u"
+              :value="u"
+            />
           </el-select>
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="handleSave">{{ t('settings.saveSettings') }}</el-button>
+          <el-button
+            type="primary"
+            @click="handleSave"
+          >
+            {{ t('settings.saveSettings') }}
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>

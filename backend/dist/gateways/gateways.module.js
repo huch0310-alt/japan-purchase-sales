@@ -22,7 +22,7 @@ exports.GatewaysModule = GatewaysModule = __decorate([
         imports: [
             passport_1.PassportModule.register({ defaultStrategy: 'jwt' }),
             jwt_1.JwtModule.register({
-                secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this',
+                secret: process.env.JWT_SECRET,
                 signOptions: { expiresIn: '7d' },
             }),
             auth_module_1.AuthModule,

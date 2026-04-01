@@ -319,5 +319,12 @@ export default {
     unitSettings: '単位設定',
     productUnits: '商品単位',
     saveSettings: '設定を保存'
+  },
+  error: {
+    title: 'エラーが発生しました',
+    defaultMessage: '申し訳ございません、ページでエラーが発生しました',
+    retry: '再試行',
+    goHome: 'ホームに戻る',
+    details: 'エラー詳細'
   }
 }

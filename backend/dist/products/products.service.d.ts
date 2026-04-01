@@ -1,16 +1,20 @@
 import { Repository } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { EventService } from '../common/services/event.service';
+import { PaginatedResponse } from '../common/dto/validation.dto';
 export declare class ProductsService {
     private productRepository;
     private eventService;
     constructor(productRepository: Repository<Product>, eventService: EventService);
     findById(id: string): Promise<Product | null>;
+    findByIds(ids: string[]): Promise<Product[]>;
     findAll(filters?: {
         categoryId?: string;
         status?: string;
         keyword?: string;
-    }): Promise<Product[]>;
+        page?: number;
+        pageSize?: number;
+    }): Promise<PaginatedResponse<Product>>;
     findPending(): Promise<Product[]>;
     findActive(): Promise<Product[]>;
     create(data: {

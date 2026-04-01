@@ -19,6 +19,8 @@ const products_service_1 = require("./products.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const roles_guard_1 = require("../auth/guards/roles.guard");
 const roles_decorator_1 = require("../auth/decorators/roles.decorator");
+const validation_dto_1 = require("../common/dto/validation.dto");
+const product_dto_1 = require("./dto/product.dto");
 let ProductsController = class ProductsController {
     constructor(productsService) {
         this.productsService = productsService;
@@ -29,8 +31,8 @@ let ProductsController = class ProductsController {
     async findPending() {
         return this.productsService.findPending();
     }
-    async findAll(categoryId, status, keyword) {
-        return this.productsService.findAll({ categoryId, status, keyword });
+    async findAll(pagination, categoryId, status, keyword) {
+        return this.productsService.findAll({ categoryId, status, keyword, page: pagination.page, pageSize: pagination.pageSize });
     }
     async findOne(id) {
         return this.productsService.findById(id);
@@ -94,11 +96,12 @@ __decorate([
     (0, roles_decorator_1.Roles)('super_admin', 'admin', 'procurement', 'sales'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, swagger_1.ApiOperation)({ summary: '获取所有商品列表（管理后台）' }),
-    __param(0, (0, common_1.Query)('categoryId')),
-    __param(1, (0, common_1.Query)('status')),
-    __param(2, (0, common_1.Query)('keyword')),
+    __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Query)('categoryId')),
+    __param(2, (0, common_1.Query)('status')),
+    __param(3, (0, common_1.Query)('keyword')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [validation_dto_1.PaginationQueryDto, String, String, String]),
     __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "findAll", null);
 __decorate([
@@ -186,7 +189,7 @@ __decorate([
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, product_dto_1.UpdateProductDto]),
     __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "update", null);
 __decorate([

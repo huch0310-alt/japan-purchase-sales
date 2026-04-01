@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn, Index, DeleteDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn, Index, DeleteDateColumn, AfterLoad } from 'typeorm';
 import { Category } from '../../categories/entities/category.entity';
 import { OrderItem } from '../../orders/entities/order-item.entity';
 import { CartItem } from '../../cart/entities/cart-item.entity';
@@ -13,6 +13,14 @@ import { CartItem } from '../../cart/entities/cart-item.entity';
 export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  // 虚拟属性：分类名称（用于前端显示）
+  categoryName: string | null;
+
+  @AfterLoad()
+  updateCategoryName() {
+    this.categoryName = this.category?.nameZh || this.category?.name || null;
+  }
 
   @ManyToOne(() => Category, category => category.products, { nullable: true })
   @JoinColumn({ name: 'category_id' })

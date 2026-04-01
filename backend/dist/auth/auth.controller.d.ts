@@ -1,4 +1,6 @@
+import { Response } from 'express';
 import { AuthService } from './auth.service';
+import { AuthenticatedRequest } from '../common/types';
 declare class LoginDto {
     username: string;
     password: string;
@@ -10,28 +12,31 @@ declare class ChangePasswordDto {
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    staffLogin(loginDto: LoginDto): Promise<{
+    private getCookieSecure;
+    private getCookieSameSite;
+    private getAuthCookieMaxAgeMs;
+    staffLogin(loginDto: LoginDto, res: Response): Promise<{
         access_token: string;
         user: {
-            id: any;
-            username: any;
-            name: any;
-            role: any;
-            type: string;
-        };
-    }>;
-    customerLogin(loginDto: LoginDto): Promise<{
-        access_token: string;
-        user: {
-            id: any;
-            username: any;
-            companyName: any;
+            id: string;
+            username: string;
+            name: string;
             role: string;
             type: string;
         };
     }>;
-    verifyToken(req: any): Promise<any>;
-    changePassword(req: any, changePasswordDto: ChangePasswordDto): Promise<{
+    customerLogin(loginDto: LoginDto, res: Response): Promise<{
+        access_token: string;
+        user: {
+            id: string;
+            username: string;
+            companyName: string;
+            role: string;
+            type: string;
+        };
+    }>;
+    verifyToken(req: AuthenticatedRequest): Promise<import("../common/types").UserPayload>;
+    changePassword(req: AuthenticatedRequest, changePasswordDto: ChangePasswordDto): Promise<{
         message: string;
     }>;
 }

@@ -19,39 +19,40 @@ __decorate([
     __metadata("design:type", String)
 ], Message.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'user_id' }),
     __metadata("design:type", String)
 ], Message.prototype, "userId", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'user_type' }),
     __metadata("design:type", String)
 ], Message.prototype, "userType", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'title' }),
     __metadata("design:type", String)
 ], Message.prototype, "title", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text' }),
+    (0, typeorm_1.Column)({ type: 'text', name: 'content' }),
     __metadata("design:type", String)
 ], Message.prototype, "content", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
         enum: ['order', 'product', 'invoice', 'system'],
-        default: 'system'
+        default: 'system',
+        name: 'type'
     }),
     __metadata("design:type", String)
 ], Message.prototype, "type", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: false }),
+    (0, typeorm_1.Column)({ default: false, name: 'is_read' }),
     __metadata("design:type", Boolean)
 ], Message.prototype, "isRead", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ nullable: true, name: 'related_id' }),
     __metadata("design:type", String)
 ], Message.prototype, "relatedId", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)(),
+    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], Message.prototype, "createdAt", void 0);
 exports.Message = Message = __decorate([
