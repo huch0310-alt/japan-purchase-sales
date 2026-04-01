@@ -62,15 +62,15 @@ export const cachedGet = async (url, config = {}, cacheDuration = CACHE_DURATION
   // 发送请求
   const response = await api.get(url, config)
 
-  // 缓存响应数据
+  // 缓存响应数据（只缓存 data 部分）
   if (cacheDuration > 0) {
     cache.set(cacheKey, {
-      data: response,
+      data: response.data,
       timestamp: Date.now()
     })
   }
 
-  return response
+  return response.data
 }
 
 /**

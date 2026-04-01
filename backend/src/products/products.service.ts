@@ -232,10 +232,10 @@ export class ProductsService {
   }
 
   /**
-   * 删除商品
+   * 删除商品（软删除）
    */
   async delete(id: string): Promise<void> {
-    await this.productRepository.delete(id);
+    await this.productRepository.softDelete(id);
   }
 
   /**

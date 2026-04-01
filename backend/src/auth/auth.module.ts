@@ -23,10 +23,13 @@ import { UsersModule } from '../users/users.module';
         const insecurePlaceholder = 'japan-purchase-sales-secret-key-change-in-production';
 
         // 安全验证：生产环境禁止使用默认占位符
-        if (process.env.NODE_ENV === 'production' && jwtSecret === insecurePlaceholder) {
-          const logger = new Logger('AuthModule');
-          logger.error('🚨 安全警告: JWT_SECRET 使用了默认占位符！请在生产环境使用强随机密钥。');
-          logger.error('生成命令: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
+        if (process.env.NODE_ENV === 'production') {
+          if (jwtSecret === insecurePlaceholder) {
+            throw new Error('🚨 安全错误: JWT_SECRET 使用了默认占位符！请在生产环境使用强随机密钥。');
+          }
+          if (!jwtSecret || jwtSecret.length < 32) {
+            throw new Error('🚨 安全错误: JWT_SECRET 必须至少32个字符。');
+          }
         }
 
         return {

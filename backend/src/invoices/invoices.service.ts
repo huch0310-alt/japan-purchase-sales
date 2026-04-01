@@ -2,6 +2,7 @@ import { Injectable, Inject, forwardRef, BadRequestException, NotFoundException 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Invoice } from './entities/invoice.entity';
+import { Order } from '../orders/entities/order.entity';
 import { OrdersService } from '../orders/orders.service';
 import { SettingService } from '../settings/settings.service';
 import { v4 as uuidv4 } from 'uuid';

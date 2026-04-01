@@ -498,7 +498,7 @@ export class OrdersService {
 
   /**
    * 取消订单（使用事务，并恢复库存）
-   * 状态校验：只能取消待确认或已确认状态的订单
+   * 状态校验：只能取消待确认（pending）状态的订单
    * 客户只能在下单后30分钟内取消
    * @param id 订单ID
    * @param cancelledById 取消人ID

@@ -135,8 +135,16 @@ router.beforeEach((to, from, next) => {
     }
 
     // 从 localStorage 获取用户信息（同步）
-    const userStr = localStorage.getItem('user')
-    const user = (userStr && userStr !== 'undefined') ? JSON.parse(userStr) : null
+    let user = null
+    try {
+      const userStr = localStorage.getItem('user')
+      user = (userStr && userStr !== 'undefined') ? JSON.parse(userStr) : null
+    } catch (e) {
+      // localStorage 数据损坏，清除并重新登录
+      localStorage.removeItem('user')
+      next('/login')
+      return
+    }
 
     // 页面角色权限检查
     if (to.meta.roles && user) {

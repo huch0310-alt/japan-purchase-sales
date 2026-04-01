@@ -128,6 +128,14 @@ export class CustomerService {
       throw new BadRequestException('VIP折扣必须在0-100之间');
     }
 
+    // 必填字段不能更新为空
+    const requiredFields = ['username', 'companyName', 'address', 'contactPerson', 'phone'];
+    for (const field of requiredFields) {
+      if (field in data && (data as any)[field] === '') {
+        throw new BadRequestException(`${field}不能为空字符串`);
+      }
+    }
+
     const customer = await this.findById(id);
     if (!customer) {
       throw new NotFoundException('客户不存在');
