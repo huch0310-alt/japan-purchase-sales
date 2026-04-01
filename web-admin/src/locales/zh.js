@@ -82,7 +82,7 @@ export default {
     enterName: '请输入名称',
     enterNameZh: '请输入中文名称',
     enterNameJa: '请输入日语名称',
-    enterNameEn: 'Please enter English name'
+    enterNameEn: '请输入英文名称'
   },
   messages: {
     loadSuccess: '加载成功',
@@ -173,7 +173,7 @@ export default {
     categoryName: '分类名称',
     nameZh: '中文名称',
     nameJa: '日本語名',
-    nameEn: 'English Name',
+    nameEn: '英文名称',
     systemCategory: '系统分类'
   },
   unit: {

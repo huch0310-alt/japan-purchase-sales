@@ -173,7 +173,7 @@ export default {
     categoryName: 'カテゴリ名',
     nameZh: '中文名称',
     nameJa: '日本語名',
-    nameEn: 'English名',
+    nameEn: '英語名',
     systemCategory: 'システムカテゴリ'
   },
   unit: {
